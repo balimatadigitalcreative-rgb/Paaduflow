@@ -184,6 +184,124 @@ Format nomor: `D-nnn`. Status: `Berlaku` · `Direvisi oleh D-nnn` · `Dicabut`.
 
 ---
 
+## Stack & Struktur Repo
+
+*Diputuskan di Sesi A1. Seluruh entri di bawah menyebutkan alternatif yang kalah, karena alasannya lebih penting daripada pilihannya — bila alasannya gugur, keputusannya boleh dicabut.*
+
+### D-029 · PostgreSQL adalah satu-satunya penyimpan kebenaran
+**Status:** Berlaku · **Sumber:** Module 01 §5, Platform Architecture Resilience §3
+**Konteks.** Empat kebutuhan menunjuk ke basis data yang sama: isolasi tenant yang ditegakkan basis data (D-003), pencabutan hak tulis pada tabel append-only (D-005), posting atomik lintas tabel, dan outbox yang tidak boleh kehilangan peristiwa.
+**Keputusan.** PostgreSQL 16+. Seluruh data transaksional, antrean pekerjaan, dan outbox berada di dalamnya.
+**Alternatif yang kalah.** *MySQL/MariaDB* — tidak punya row-level security; isolasi tenant akan kembali menjadi disiplin aplikasi, yang persis dilarang D-003. *MongoDB* — transaksi multi-dokumen ada, tetapi constraint jurnal berimbang dan hak akses per tabel tidak, sehingga seluruh invarian hidup hanya di kode. *CockroachDB* — keunggulannya adalah penulisan multi-region, yang justru sudah kita tolak di D-027; biaya dan ketidaklengkapan RLS-nya dibayar tanpa imbalan.
+**Konsekuensi.** Kita bergantung pada satu mesin. Batas skalanya dinaikkan lewat replika baca, partisi per tenant, dan pemisahan tenant besar (Resilience §5) — bukan lewat penambahan jenis basis data.
+
+### D-030 · Satu bahasa untuk domain, API, dan antarmuka
+**Status:** Berlaku
+**Keputusan.** TypeScript di Node.js 22 LTS, dari entitas domain sampai komponen React.
+**Alternatif yang kalah.** *Go* — lebih tangguh untuk pekerja latar dan throughput, tetapi tidak punya tipe penjumlahan yang membuat tiga sumbu status dan hasil-atau-galat dapat diperiksa kompilator, dan memaksa domain ditulis dua kali karena frontend tetap React. *Java/Kotlin atau .NET* — matang, tetapi berat untuk ukuran tim ini. *Laravel* — cepat di awal, melawan Clean Architecture, dan cerita pipeline token jauh lebih lemah.
+**Konsekuensi.** Glosarium, value object uang, dan kunci i18n dibagikan satu kali, tidak diterjemahkan antar bahasa. Risiko yang diterima: pekerjaan berat CPU (ekspor besar, penggajian) berjalan di kelompok pekerja terpisah dan dapat dipindah ke bahasa lain tanpa menyentuh domain.
+
+### D-031 · Framework HTTP hanya tinggal di lapisan interface
+**Status:** Berlaku · **Sumber:** src/interface/README.md
+**Keputusan.** Fastify dengan skema JSON (TypeBox) di setiap rute. Validasi permintaan, respons, dan berkas OpenAPI berasal dari satu skema yang sama.
+**Alternatif yang kalah.** *NestJS* — memaksakan arsitekturnya sendiri lewat dekorator dan modul, sehingga lapisan interface merembes ke aplikasi; kita sudah punya arsitektur. *Express* — tanpa validasi berbasis skema, OpenAPI menjadi dokumen terpisah yang segera basi. *Hono* — unggul di edge, tidak relevan untuk proses panjang dengan kolam koneksi Postgres.
+**Konsekuensi.** Modul mendaftarkan dirinya sebagai plugin. Mengganti framework berarti menulis ulang satu folder, bukan seluruh sistem.
+
+### D-032 · Transaksi dan konteks RLS dikelola aplikasi, bukan ORM
+**Status:** Berlaku · **Sumber:** Module 01 §5, Module 02 §6
+**Konteks.** RLS menuntut `SET LOCAL` pada koneksi yang sama dengan transaksinya. Penerjemahan cakupan izin menjadi klausa `WHERE` menuntut penyusunan predikat yang dapat dikarang saat berjalan. Testnya menuntut SQL yang benar-benar dijalankan dapat dibaca.
+**Keputusan.** Driver `pg` ditambah Kysely sebagai penyusun kueri bertipe. Satu `UnitOfWork` di lapisan aplikasi memiliki transaksi, memasang konteks tenant dan company, menulis outbox, dan mengantre pekerjaan — seluruhnya dalam satu transaksi.
+**Alternatif yang kalah.** *Prisma* — mesin kueri terpisah membuat `SET LOCAL` per transaksi rapuh, model migrasinya melawan disiplin expand-contract, dan predikat izin dinamis kehilangan tipe di jalur keluar SQL mentah. *Drizzle* — nyaris setara dan sah dipilih; Kysely menang tipis karena penyusunan ekspresi dinamisnya lebih kuat dan ia tidak pernah ikut mengurus migrasi. *SQL mentah saja* — pengubahan nama kolom lolos ke produksi tanpa peringatan.
+
+### D-033 · Migrasi adalah berkas SQL bernomor yang hanya menambah
+**Status:** Berlaku · **Sumber:** migrations/README.md, Resilience §6
+**Keputusan.** SQL tulisan tangan, berurutan, dijalankan node-pg-migrate di dalam transaksi. Pemeriksa di CI menolak `DROP COLUMN`, `ALTER COLUMN ... TYPE`, penambahan `NOT NULL` tanpa nilai bawaan, dan pengubahan bentuk tabel append-only. Perubahan merusak dipecah tiga rilis. Backfill besar tidak pernah berada di dalam migrasi — ia pekerjaan latar yang dapat dijeda dan dilanjutkan.
+**Alternatif yang kalah.** *Atlas atau Sqitch* — kuat, tetapi diff deklaratifnya justru menyembunyikan tahapan expand-contract yang ingin kita lihat di tinjauan kode. *Prisma Migrate* — terikat D-032 yang sudah ditolak.
+**Konsekuensi.** CI menjalankan test rilis sebelumnya terhadap skema baru. Kompatibilitas dua arah menjadi hal yang diuji, bukan diklaim.
+
+### D-034 · Antrean pekerjaan hidup di dalam basis data
+**Status:** Berlaku · **Sumber:** Resilience §5
+**Konteks.** Outbox hanya bermakna bila penulisan dokumen dan pengantrean peristiwanya berhasil atau gagal bersama. Antrean di luar basis data mustahil memenuhi itu tanpa relay — dan bila relay tetap dibutuhkan, antrean luarnya tinggal biaya.
+**Keputusan.** pg-boss di atas `FOR UPDATE SKIP LOCKED`. Pekerjaan berat berjalan di kelompok pekerja terpisah dengan batas laju per tenant.
+**Alternatif yang kalah.** *BullMQ/Redis* — Redis dapat kehilangan pesan yang basis data sudah nyatakan terkomit; dua wilayah durabilitas untuk satu kebenaran. *SQS/Cloud Tasks* — mengikat ke satu penyedia, melawan penyematan region D-027. *Temporal* — tepat untuk alur panjang seperti penggajian dan persetujuan; ditunda sampai mesin alur persetujuan diputuskan.
+
+### D-035 · Outbox adalah tabel kerja; audit log yang append-only
+**Status:** Berlaku · **Sumber:** Module 03, D-005
+**Konteks.** Relay harus menandai pesan terkirim, sedangkan D-005 melarang `UPDATE`. Keduanya tidak dapat berlaku pada tabel yang sama.
+**Keputusan.** `outbox_messages` bukan tabel append-only: ia boleh diperbarui dan dipangkas. Catatan yang harus abadi ditulis ke `audit_log` oleh konsumen peristiwa, dan `audit_log` tetap append-only.
+**Konsekuensi.** Daftar tabel append-only di `src/db/append-only-tables.ts` tidak pernah memuat outbox. Kehilangan baris outbox lama tidak menghilangkan jejak audit.
+
+### D-036 · Redis hanya cache, tidak pernah sumber kebenaran
+**Status:** Berlaku · **Sumber:** Resilience §3.4
+**Keputusan.** Cache dua lapis — LRU dalam proses, lalu Redis — untuk resolusi izin dan lapisan semantik. Kunci cache memuat hash konteks izin (D-023). Mode terdegradasi memakai cache dengan masa berlaku pendek dan **tidak pernah** memperluas izin: cache yang tidak memuat jawaban berarti tolak.
+**Konsekuensi.** Kehilangan Redis menurunkan kecepatan, tidak menghilangkan data maupun membuka akses.
+
+### D-037 · Aplikasi satu halaman, bukan render sisi server
+**Status:** Berlaku · **Sumber:** Design Handoff §3, Information Architecture §2
+**Keputusan.** React di atas Vite. Routing memakai TanStack Router karena parameter pencarian bertipe dan tervalidasi — di situlah aturan "seluruh state daftar hidup di URL" ditegakkan, bukan sekadar diimbau. State server memakai TanStack Query dengan kueri berkursor.
+**Alternatif yang kalah.** *Next.js* — SSR tidak memberi apa pun untuk aplikasi belakang layar yang seluruhnya terautentikasi, sementara ia menambah runtime server kedua yang harus ikut memahami izin dan konteks company. Dua tempat memutuskan izin adalah dua tempat yang dapat bocor.
+**Konsekuensi.** Bundel awal dijaga lewat pemecahan kode per modul. Modul desktop-only tetap dimuat malas.
+
+### D-038 · Nilai visual hanya dari custom property, tanpa framework utility
+**Status:** Berlaku · **Sumber:** D-025, Design Tokens §11
+**Keputusan.** CSS Modules yang membaca custom property dari `src/styles/tokens.css`. Tema dan kepadatan berpindah di lapisan CSS, tanpa build ulang dan tanpa keterlibatan TypeScript.
+**Alternatif yang kalah.** *Tailwind* — skalanya tinggal di konfigurasinya sendiri, menjadi sumber kebenaran kedua yang bersaing dengan `tokens.json`, dan nilai sembarang seperti `text-[#fff]` membuat lint D-025 mudah diakali. *CSS-in-JS runtime* — biaya saat berjalan dan nilai yang sulit diperiksa secara statis. *vanilla-extract* — kandidat kuat dan boleh ditinjau ulang; kalah hanya karena mengikat pergantian tema ke build.
+
+### D-039 · Uang adalah bilangan bulat berskala, tidak pernah pecahan biner
+**Status:** Berlaku · **Sumber:** Flow Archetypes §4, Typography System
+**Keputusan.** Di basis data `numeric(19,4)`. Di domain, `Money` sebagai bilangan bulat pada skala minor mata uang, dengan angka penjaga tambahan untuk hasil antara. Pembulatan hanya terjadi di langkah terakhir urutan perhitungan.
+**Konteks.** Diskon dokumen dialokasikan proporsional ke setiap baris sebelum pajak, dan tarif pajak dapat berbeda antar baris. Pembulatan di tengah menghasilkan DPP dan pajak yang salah, dan salahnya kecil sehingga lolos tinjauan.
+**Konsekuensi.** Tidak ada `number` JavaScript di jalur uang mana pun — ditegakkan tipe dan lint. IDR tanpa desimal hanyalah keputusan tampilan.
+
+### D-040 · Modul adalah irisan vertikal; batasnya ditegakkan lint
+**Status:** Berlaku · **Sumber:** src/*/README.md
+**Keputusan.** Setiap modul hadir sebagai folder di keempat lapisan. Dua aturan lint menggagalkan build: arah ketergantungan (interface → aplikasi → domain; infrastruktur mengenal domain, tidak sebaliknya) dan batas antar modul (`domain/sales` tidak boleh mengimpor `domain/inventory`). Lintas modul hanya lewat dua jalan: port yang dideklarasikan modul pemakai dan disuntik di composition root, atau peristiwa domain lewat outbox.
+**Konsekuensi.** Modul ketiga puluh menambah folder, bukan menambah keterikatan. Mengangkat satu modul menjadi layanan terpisah kelak berarti mengganti implementasi port, bukan membongkar kode.
+
+### D-041 · Kursor menggantikan `page` dan `per_page`
+**Status:** Berlaku · **Merevisi:** kosakata di Information Architecture §2 dan Design Handoff §3 · **Sumber:** D-024
+**Konteks.** Kedua dokumen desain masih menuliskan `?page=` dan `?per_page=`, sedangkan D-024 melarang pagination berbasis offset di API. Keduanya tidak dapat berlaku bersamaan.
+**Keputusan.** API dan URL memakai `?cursor=` dan `?per_page=`. Parameter `?page=` dihapus dari kosakata baku. Respons daftar membawa `meta.total`, `meta.next_cursor`, `meta.prev_cursor`, dan definisi filter yang diterapkan — `total` tetap wajib karena teks "Pilih semua N baris yang cocok" bergantung padanya.
+**Konsekuensi.** Tidak ada penomoran halaman di UI; navigasinya berikutnya dan sebelumnya. `total` dihitung terpisah dan boleh berupa perkiraan di atas ambang tertentu, dengan penandaan jujur di UI.
+
+### D-042 · Pencarian memakai pencarian teks penuh Postgres lebih dulu
+**Status:** Berlaku, provisional · **Sumber:** Information Architecture §6, Design Handoff §10
+**Konteks.** Menutup sementara item terbuka "strategi indeks pencarian".
+**Keputusan.** `tsvector` dengan indeks GIN di dalam basis data yang sama, sehingga penyaringan izin dan RLS berlaku pada kueri pencarian tanpa jalur kedua.
+**Alternatif yang kalah.** *OpenSearch/Elasticsearch* — indeks di luar basis data berarti izin dievaluasi dua kali di dua tempat, dan IA §6 melarang pencarian mengakui keberadaan data yang tidak diizinkan. Ditinjau ulang bila latensi pencarian melewati ambang pada tenant nyata.
+
+### D-043 · Autentikasi dibangun sendiri
+**Status:** Berlaku · **Sumber:** Module 02
+**Keputusan.** Argon2id, TOTP dengan kode pemulihan, refresh token berotasi dengan deteksi penggunaan ulang — dibangun di dalam sistem.
+**Alternatif yang kalah.** *Auth0, Clerk, Supabase Auth* — Module 02 menetapkan perilaku yang tidak dapat dititipkan: pencabutan seluruh sesi saat kata sandi berubah, token yang membawa keanggotaan tenant tetapi tidak membawa `company_id` (D-002), dan jenis pelaku di audit trail. Menaruh identitas di luar batas tenant juga melawan penyematan region D-027.
+
+### D-044 · Satu image, tiga jenis proses
+**Status:** Berlaku · **Sumber:** Resilience §5
+**Keputusan.** `api`, `worker` untuk pekerjaan berat, dan `scheduler` yang menjalankan relay outbox, pekerjaan berjadwal, serta pemeriksaan invarian berkala. Ketiganya dari satu image dengan composition root yang sama, dibedakan perintah jalan dan peran basis data.
+**Konsekuensi.** Ekspor besar tidak pernah memperlambat orang yang sedang membuat faktur. Pemeriksaan invarian punya tempat berjalan sejak hari pertama, sehingga D-028 bukan niat melainkan pekerjaan yang terjadwal.
+
+### D-045 · Tiga penyesuaian agar batas modul dapat ditegakkan mesin
+**Status:** Berlaku · **Menyempurnakan:** D-040 · **Sumber:** implementasi Sesi A1
+**Konteks.** Rencana awal menempatkan modul langsung di bawah nama lapisan. Di `infrastructure` dan `interface` itu tidak dapat dibedakan dari folder teknis seperti `db`, `outbox`, atau `components`, sehingga lint harus menebak dari daftar nama yang harus dirawat manual — dan daftar semacam itu selalu tertinggal.
+**Keputusan.** Tiga penyesuaian: (1) `infrastructure` dan `interface` memakai segmen `modules/` eksplisit, sedangkan `domain` dan `application` tidak memerlukannya karena seluruh isinya modul; (2) `interface` tidak boleh mengimpor `domain` — ia melewati use case, dan kosakata lintas modul seperti tiga sumbu status tinggal di `shared`; (3) `composition` menjadi lapisan tersendiri di `src/composition`, satu-satunya yang dikecualikan dari aturan batas modul.
+**Konsekuensi.** Batas modul dihitung dari jalur berkas, bukan dari konfigurasi. Menambah modul tidak menyentuh berkas aturan mana pun. Terbukti: berkas yang melanggar membuat `npm run lint` keluar dengan kode 1.
+
+---
+
+## Sengaja Ditunda
+
+Bukan kelalaian. Setiap butir punya syarat kapan ia layak diputuskan.
+
+| Item | Ditunda sampai |
+|---|---|
+| Mesin alur persetujuan | Modul yang memerlukannya lebih dari satu. Kandidat: mesin state sendiri, atau Temporal bila alurnya berumur panjang |
+| Ekstraksi modul menjadi layanan terpisah | Ada batas tim atau batas beban yang nyata. D-040 sudah menyiapkan jalannya |
+| Sharding atau partisi per tenant | Ambang pemisahan tenant besar terukur dari pemakaian nyata (Resilience §10) |
+| Mesin pencarian terpisah | Latensi pencarian Postgres melewati ambang pada tenant nyata (D-042) |
+| Region kedua sebagai siaga aktif | Sasaran ketersediaan per tier ditetapkan bisnis (V-06) |
+
+---
+
 ## Menunggu Validasi Profesional
 
 Keputusan berikut **belum final** dan menunggu konfirmasi dari luar tim.
