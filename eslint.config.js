@@ -21,6 +21,8 @@ export default tseslint.config(
       globals: {
         console: 'readonly',
         process: 'readonly',
+        URL: 'readonly',
+        URLSearchParams: 'readonly',
       },
     },
   },
@@ -30,6 +32,14 @@ export default tseslint.config(
     rules: {
       'arsitektur/layer-direction': 'error',
       'arsitektur/no-cross-module-import': 'error',
+    },
+  },
+  {
+    files: ['src/interface/web/**/*.tsx'],
+    languageOptions: { parserOptions: { ecmaFeatures: { jsx: true } } },
+    plugins: { arsitektur },
+    rules: {
+      'arsitektur/no-style-prop-values': 'error',
     },
   },
 )

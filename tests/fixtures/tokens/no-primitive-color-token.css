@@ -1,0 +1,5 @@
+/* Fixture pelanggar — paadu/no-primitive-color-token */
+.button-primary {
+  background: var(--indigo-600);
+  border-color: var(--neutral-300);
+}

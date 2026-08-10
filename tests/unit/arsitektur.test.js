@@ -7,6 +7,14 @@ const ruleTester = new RuleTester({
   languageOptions: { ecmaVersion: 'latest', sourceType: 'module' },
 })
 
+const jsxRuleTester = new RuleTester({
+  languageOptions: {
+    ecmaVersion: 'latest',
+    sourceType: 'module',
+    parserOptions: { ecmaFeatures: { jsx: true } },
+  },
+})
+
 test('layer-direction menolak impor yang melawan arah ketergantungan', () => {
   ruleTester.run('layer-direction', arsitektur.rules['layer-direction'], {
     valid: [
@@ -119,6 +127,55 @@ test('no-cross-module-import menolak modul yang saling mengimpor', () => {
         filename: 'src/application/sales/post-invoice.ts',
         code: "const m = await import('#application/inventory/reserve')",
         errors: [{ messageId: 'terlarang' }],
+      },
+    ],
+  })
+})
+
+test('no-style-prop-values menutup jalan pintas gaya inline di TSX', () => {
+  jsxRuleTester.run('no-style-prop-values', arsitektur.rules['no-style-prop-values'], {
+    valid: [
+      {
+        name: 'custom property untuk nilai yang baru diketahui saat berjalan',
+        filename: 'src/interface/web/modules/sales/invoice-row.tsx',
+        code: "const a = <tr style={{ '--row-height': tinggi }} />",
+      },
+      {
+        name: 'komponen tanpa atribut style',
+        filename: 'src/interface/web/components/button.tsx',
+        code: 'const a = <button className={kelas} />',
+      },
+    ],
+    invalid: [
+      {
+        name: 'nilai warna lolos dari jangkauan Stylelint',
+        filename: 'src/interface/web/components/badge.tsx',
+        code: "const a = <span style={{ color: '#FF0000' }} />",
+        errors: [{ messageId: 'bukanCustomProperty' }],
+      },
+      {
+        name: 'padding di luar skala',
+        filename: 'src/interface/web/components/card.tsx',
+        code: "const a = <div style={{ padding: '15px' }} />",
+        errors: [{ messageId: 'bukanCustomProperty' }],
+      },
+      {
+        name: 'z-index literal',
+        filename: 'src/interface/web/components/dropdown.tsx',
+        code: 'const a = <div style={{ zIndex: 9999 }} />',
+        errors: [{ messageId: 'bukanCustomProperty' }],
+      },
+      {
+        name: 'objek gaya yang disebar tidak dapat diperiksa',
+        filename: 'src/interface/web/components/card.tsx',
+        code: 'const a = <div style={{ ...gaya }} />',
+        errors: [{ messageId: 'bukanObjek' }],
+      },
+      {
+        name: 'gaya dari variabel juga tidak dapat diperiksa',
+        filename: 'src/interface/web/components/card.tsx',
+        code: 'const a = <div style={gaya} />',
+        errors: [{ messageId: 'bukanObjek' }],
       },
     ],
   })

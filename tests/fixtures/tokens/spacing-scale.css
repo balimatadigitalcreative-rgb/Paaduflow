@@ -1,0 +1,5 @@
+/* Fixture pelanggar — paadu/spacing-scale */
+.card {
+  padding: 15px;
+  gap: 7px;
+}

@@ -1,0 +1,5 @@
+/* Fixture pelanggar — paadu/no-opacity-on-text */
+.label-disabled {
+  color: var(--text-primary);
+  opacity: 0.4;
+}

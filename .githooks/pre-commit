@@ -1,0 +1,23 @@
+#!/bin/sh
+#
+# Menolak commit yang melanggar aturan token atau batas arsitektur.
+#
+# Dipasang lewat `core.hooksPath`, bukan disalin ke .git/hooks — supaya ia ikut
+# terversi bersama repo dan tidak perlu dipasang ulang di tiap mesin.
+#
+# Melewatinya: `git commit --no-verify`. Itu ada untuk keadaan darurat, dan CI
+# tetap menjalankan pemeriksaan yang sama — jadi yang dilewati di sini akan
+# tertangkap di sana.
+
+set -e
+
+echo "pre-commit: memeriksa token dan batas arsitektur…"
+
+if ! npm run --silent lint; then
+  echo ""
+  echo "Commit ditolak. Perbaiki pelanggaran di atas lalu commit ulang."
+  echo "Rujukan: docs/Design_Tokens.md §11 · docs/DECISIONS.md D-040, D-046"
+  exit 1
+fi
+
+echo "pre-commit: lolos."

@@ -286,6 +286,19 @@ Format nomor: `D-nnn`. Status: `Berlaku` · `Direvisi oleh D-nnn` · `Dicabut`.
 **Keputusan.** Tiga penyesuaian: (1) `infrastructure` dan `interface` memakai segmen `modules/` eksplisit, sedangkan `domain` dan `application` tidak memerlukannya karena seluruh isinya modul; (2) `interface` tidak boleh mengimpor `domain` — ia melewati use case, dan kosakata lintas modul seperti tiga sumbu status tinggal di `shared`; (3) `composition` menjadi lapisan tersendiri di `src/composition`, satu-satunya yang dikecualikan dari aturan batas modul.
 **Konsekuensi.** Batas modul dihitung dari jalur berkas, bukan dari konfigurasi. Menambah modul tidak menyentuh berkas aturan mana pun. Terbukti: berkas yang melanggar membuat `npm run lint` keluar dengan kode 1.
 
+### D-046 · Larangan Lapis 1 berlaku untuk warna, belum untuk seluruh primitive
+**Status:** Berlaku, menunggu tinjauan pemilik design system · **Sumber:** Design Tokens §1 dan §11
+**Konteks.** §1 menulis komponen tidak pernah membaca Lapis 1, dan §11 menjadikannya lint yang menggagalkan build. Tetapi Lapis 2 di `tokens.json` seluruhnya warna — tidak ada token semantik untuk spacing, sizing, radius, z-index, atau motion. Larangan harfiah membuat komponen tidak punya apa pun untuk dipakai sebagai padding, dan §3 justru menyebut `space-4` sebagai padding default komponen.
+**Keputusan.** Lint menolak rujukan ke ramp warna Lapis 1 — `indigo`, `neutral`, `success`, `warning`, `danger`, `info`, `dataviz`. Primitive non-warna tetap boleh dirujuk langsung.
+**Alasan.** Seluruh pembenaran §1 berbicara tentang warna: tombol yang menulis `var(--indigo-600)` mengunci diri ke warna, bukan ke peran. §10 juga hanya menandai ramp warna sebagai hal yang berubah antar tenant dan antar mode. Spacing tidak berubah karena brand berganti.
+**Konsekuensi.** Aturan diperketat begitu token semantik non-warna ada — dan itu memang sudah dibutuhkan untuk mode kepadatan, yang §12 catat belum lengkap. Sampai saat itu, ini menunggu keputusan pemilik design system, bukan keputusan engineering.
+
+### D-047 · Penegakan token hidup di Stylelint; atribut `style` ditutup ESLint
+**Status:** Berlaku · **Sumber:** Design Tokens §11, D-038
+**Konteks.** Nilai visual tinggal di CSS Module (D-038), jadi kelima aturan §11 harus memeriksa CSS. ESLint tidak membaca CSS; Stylelint tidak membaca TSX.
+**Keputusan.** Kelima aturan token diimplementasikan sebagai plugin Stylelint di `tools/stylelint-rules`. Atribut `style` di TSX — satu-satunya jalan nilai visual dapat masuk tanpa melewati Stylelint — dibatasi aturan ESLint sehingga hanya boleh memuat custom property.
+**Konsekuensi.** Nilai yang baru diketahui saat berjalan tetap terlayani lewat `style={{ '--row-height': … }}`, dan nilainya tetap berasal dari token. Satu pengecualian yang disengaja: parameter `@media` tidak diperiksa, karena custom property memang tidak berfungsi di dalam media query — batasan CSS, bukan kelalaian. Nilai yang diizinkan dibaca langsung dari `docs/tokens.json` saat lint berjalan, sehingga aturan tidak dapat menyimpang dari sumber kebenaran.
+
 ---
 
 ## Sengaja Ditunda

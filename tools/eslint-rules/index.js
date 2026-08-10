@@ -151,10 +151,75 @@ const noCrossModuleImport = {
   }),
 }
 
+/* ── Menutup jalan pintas gaya inline ───────────────────────────────────────
+ *
+ * Kelima aturan token hidup di Stylelint, jadi ia hanya melihat berkas CSS.
+ * Atribut `style` di TSX adalah satu-satunya cara nilai visual dapat masuk
+ * tanpa melewatinya. Aturan ini menutupnya: `style` hanya boleh memuat custom
+ * property, yang nilainya tetap berasal dari token.
+ *
+ * Kasus sah yang tetap terlayani: tinggi baris virtual, lebar progress bar,
+ * posisi popover — semuanya nilai yang memang baru diketahui saat berjalan.
+ */
+
+const noStylePropValues = {
+  meta: {
+    type: 'problem',
+    docs: {
+      description:
+        'Atribut style hanya boleh memuat custom property, supaya nilai visual tetap lewat token.',
+    },
+    schema: [],
+    messages: {
+      bukanObjek:
+        'Atribut style harus berupa objek literal berisi custom property. Nilai visual lain milik CSS Module, tempat aturan token berlaku.',
+      bukanCustomProperty:
+        "Properti '{{key}}' menulis nilai visual di luar jangkauan lint token. Pindahkan ke CSS Module, atau pakai custom property seperti '--row-height' bila nilainya memang baru diketahui saat berjalan.",
+    },
+  },
+  create(context) {
+    return {
+      JSXAttribute(node) {
+        if (node.name.type !== 'JSXIdentifier' || node.name.name !== 'style') return
+
+        const value = node.value
+        if (value === null || value.type !== 'JSXExpressionContainer') {
+          context.report({ node, messageId: 'bukanObjek' })
+          return
+        }
+        if (value.expression.type !== 'ObjectExpression') {
+          context.report({ node, messageId: 'bukanObjek' })
+          return
+        }
+
+        for (const property of value.expression.properties) {
+          if (property.type !== 'Property') {
+            context.report({ node: property, messageId: 'bukanObjek' })
+            continue
+          }
+          const key =
+            property.key.type === 'Literal'
+              ? String(property.key.value)
+              : property.key.type === 'Identifier' && !property.computed
+                ? property.key.name
+                : null
+          if (key !== null && key.startsWith('--')) continue
+          context.report({
+            node: property,
+            messageId: 'bukanCustomProperty',
+            data: { key: key ?? 'dinamis' },
+          })
+        }
+      },
+    }
+  },
+}
+
 export default {
   meta: { name: 'arsitektur', version: '1.0.0' },
   rules: {
     'layer-direction': layerDirection,
     'no-cross-module-import': noCrossModuleImport,
+    'no-style-prop-values': noStylePropValues,
   },
 }
