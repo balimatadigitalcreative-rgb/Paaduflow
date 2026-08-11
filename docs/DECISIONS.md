@@ -384,6 +384,46 @@ Format nomor: `D-nnn`. Status: `Berlaku` · `Direvisi oleh D-nnn` · `Dicabut`.
 
 ---
 
+## Model Izin
+
+*Diputuskan di Sesi B2, bagian pertama.*
+
+### D-060 · Cakupan izin hanya tiga, dan ketiganya wajib dapat menjadi predikat
+**Status:** Berlaku · **Sumber:** Module 02 §5
+**Konteks.** Modul 02 mengikat desain dengan satu kalimat: izin wajib dapat diterjemahkan menjadi klausa `WHERE`. Mengambil seluruh baris lalu menyaring di aplikasi gagal pada tenant besar, dan bocor lewat penghitungan total jauh sebelum itu.
+**Keputusan.** `own`, `company`, `tenant` — tidak lebih. Setiap cakupan yang tidak dapat menjadi predikat adalah cakupan yang tidak boleh ada. Cakupan `tenant` pun tetap daftar tertutup: ia berarti seluruh company yang penggunanya punya akses, bukan seluruh company yang ada.
+**Konsekuensi.** Kebutuhan seperti "akses per cabang" atau "per kategori barang" tidak dipaksakan ke model ini; ia menunggu ABAC di Modul 02 §13.
+
+### D-061 · Izin diperiksa sebelum paket langganan
+**Status:** Berlaku · **Sumber:** Information Architecture §5, Module 02 §7
+**Konteks.** `plan_restricted` dirancang untuk **ditampilkan** beserta tawaran upgrade, sedangkan `permission_denied` dirancang untuk **disembunyikan sepenuhnya**.
+**Keputusan.** Urutan pemeriksaan tidak boleh dibalik: izin dulu, paket kemudian. Pengguna yang tidak berizin menerima `permission_denied` meski paketnya juga kurang.
+**Konsekuensi.** Tanpa urutan ini, `plan_restricted` menjadi saluran yang mengakui keberadaan fitur — persis yang `permission_denied` ada untuk sembunyikan. Ada test khusus untuk urutan ini.
+
+### D-062 · Izin yang tidak dimiliki menghasilkan filter buntu, bukan pengecualian
+**Status:** Berlaku · **Sumber:** Information Architecture §6
+**Keputusan.** Di jalur baca, izin yang tidak dimiliki menurunkan `ScopeFilter` dengan daftar company kosong. Kuerinya tetap berjalan dan mengembalikan nol baris.
+**Konsekuensi.** Pencarian lintas entitas dapat melewati satu entitas tanpa menggagalkan permintaan, dan tanpa pernah mengakui entitas itu ada. Tidak ada "3 hasil disembunyikan", dan tidak ada perbedaan bentuk galat yang dapat dipakai menyimpulkan keberadaan data. Pengecualian tetap dipakai di jalur tulis, tempat penolakan memang harus terdengar.
+
+### D-063 · Satu-satunya jalan membaca data bertenant adalah `ScopedStore`
+**Status:** Berlaku · **Sumber:** Module 02 §12
+**Konteks.** Kebocoran lintas company hampir tidak pernah terjadi di endpoint utama. Ia terjadi di pencarian global dan di laporan, karena keduanya ditulis belakangan oleh orang lain dengan kueri yang dirakit sendiri.
+**Keputusan.** Daftar, pencarian, dan penjumlahan laporan melewati kelas yang sama. Setiap metodenya menerima `ScopeFilter` sebagai argumen wajib, dan tidak ada satu pun metode yang menerima SQL mentah.
+**Konsekuensi.** Menambah jalur baca baru tidak berarti menulis ulang penyaringannya. Melupakan filter bukan menghasilkan kueri tanpa filter — ia tidak menghasilkan kueri sama sekali, karena tidak dapat dikompilasi.
+
+### D-064 · Pengguna boleh membaca baris aksesnya sendiri tanpa konteks tenant
+**Status:** Berlaku
+**Konteks.** Saat permintaan tiba, sistem belum tahu tenant mana yang dimaksud — ia baru tahu penggunanya. Tetapi seluruh tabel bertenant disaring RLS berdasarkan konteks tenant yang belum ada. Ayam dan telur.
+**Keputusan.** Kebijakan RLS `company_access` mengizinkan dua jalan: `tenant_id` cocok dengan konteks, **atau** `user_id` cocok dengan `app.user_id`. Dari baris itulah tenant ditentukan, lalu konteks dipasang dan sisanya berjalan normal.
+**Konsekuensi.** Yang terbuka tanpa konteks tenant hanyalah daftar akses milik pengguna itu sendiri. Alternatif yang ditolak: fungsi `SECURITY DEFINER` — ia memerlukan pemilik yang melewati RLS, dan `FORCE ROW LEVEL SECURITY` justru membuat pemilik ikut tersaring, sehingga jalur itu hanya bekerja bila migrasi dijalankan superuser.
+
+### D-065 · `roles` berkunci tunggal, pengecualian sadar terhadap D-048
+**Status:** Berlaku
+**Keputusan.** `roles.tenant_id` dapat NULL untuk menandai peran bawaan sistem, sehingga kunci primer komposit `(tenant_id, id)` tidak mungkin. Keunikan dijaga `UNIQUE NULLS NOT DISTINCT (tenant_id, key)`.
+**Konsekuensi.** Peran bawaan terlihat oleh semua tenant lewat kebijakan RLS yang mengizinkan `tenant_id IS NULL`, dan dilindungi trigger yang menolak `UPDATE` maupun `DELETE` atasnya — Modul 02 §10 menyatakan tidak ada peran mana pun yang dapat mengubah peran bawaan.
+
+---
+
 ## Sengaja Ditunda
 
 Bukan kelalaian. Setiap butir punya syarat kapan ia layak diputuskan.
