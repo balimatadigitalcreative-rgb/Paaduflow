@@ -495,6 +495,35 @@ Format nomor: `D-nnn`. Status: `Berlaku` · `Direvisi oleh D-nnn` · `Dicabut`.
 
 ---
 
+## Komponen Primitif
+
+*Diputuskan di Sesi C1, bagian pertama.*
+
+### D-076 · Tombol nonaktif memakai `aria-disabled`, bukan atribut `disabled`
+**Status:** Berlaku · **Sumber:** Component_Specs_Primitives §1
+**Konteks.** Spesifikasi menganjurkan menghindari tombol disabled karena ia tidak menjelaskan apa pun. Tetapi ia tetap dibutuhkan pada kasus yang alasannya terlihat di layar, dan atribut `disabled` mengeluarkan tombol dari urutan fokus — sehingga pengguna keyboard dan screen reader tidak pernah tahu tombol itu ada.
+**Keputusan.** `aria-disabled="true"` dengan penghentian klik di penangan. Tombol tetap dapat difokus dan dibacakan.
+**Konsekuensi.** Penghentian aksi menjadi tanggung jawab komponen, bukan browser. Ada test yang memastikan klik tidak menjalankan aksi dan atribut `disabled` benar-benar tidak dipasang.
+
+### D-077 · `Switch` tidak menerima `name`, ditegakkan tipe
+**Status:** Berlaku · **Sumber:** Component_Specs_Primitives §7
+**Konteks.** "Switch di dalam form yang punya tombol Simpan adalah bug — ia menjanjikan efek langsung lalu tidak menepatinya." Aturan yang hanya tertulis di dokumen akan dilanggar.
+**Keputusan.** Properti `SwitchProps` sengaja tidak memuat `name`, sedangkan `CheckboxProps` memuatnya. Memasukkan switch ke dalam form yang dikirim tidak akan dapat dikompilasi.
+**Konsekuensi.** Pembeda antara "berlaku seketika" dan "bagian dari form" menjadi keputusan yang harus diambil sadar saat memilih komponen, bukan setelah tinjauan desain.
+
+### D-078 · Enam token semantik tambahan diusulkan
+**Status:** **Menunggu persetujuan pemilik design system** · **Melanjutkan:** D-073
+**Konteks.** Component_Specs_Primitives memanggil `--action-disabled-bg`, `--border-danger`, dan `--text-danger`; ketiganya tidak ada di `tokens.json`. Tanpa mereka, komponen tidak dapat menyatakan state error maupun nonaktif tanpa melanggar lint token.
+**Keputusan.** Ditambahkan bersama `--action-danger-bg-hover`, `--text-success`, dan `--text-warning`, masing-masing untuk light dan dark, bertanda `USULAN Sesi C1`.
+**Konsekuensi.** Sama seperti D-073: commit ini adalah pull request yang dimaksud Design_Tokens §11. Nilai dark mode sengaja tidak menyalin light mode — `danger.600` hanya mencapai kontras rendah di atas surface gelap, jadi yang dipakai `danger.300`.
+
+### D-079 · Format dan parsing nominal tinggal di kernel bersama
+**Status:** Berlaku · **Sumber:** Component_Specs_Primitives §3 dan §13
+**Keputusan.** `src/shared/money-format.ts`, bukan di dalam komponen. Aturan pemisah: bila titik dan koma sama-sama muncul, yang terakhir adalah pemisah desimal; bila hanya satu dan diikuti tepat tiga angka, ia pemisah ribuan.
+**Konsekuensi.** Menutup item terbuka "perilaku input mata uang saat tempel belum diuji" di §13. Teks yang tidak terbaca menghasilkan `null`, bukan `0` — nol adalah nilai yang sah, dan menyamakan keduanya akan diam-diam menyimpan nominal yang salah.
+
+---
+
 ## Sengaja Ditunda
 
 Bukan kelalaian. Setiap butir punya syarat kapan ia layak diputuskan.
