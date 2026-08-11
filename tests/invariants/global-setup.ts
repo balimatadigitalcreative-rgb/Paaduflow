@@ -45,7 +45,12 @@ export async function setup(): Promise<void> {
 
   stop = async () => {
     await postgres.stop()
-    await rm(dataDir, { recursive: true, force: true })
+    // Windows masih memegang berkas beberapa saat setelah proses berhenti.
+    // Direktori sementara yang tertinggal bukan alasan menggagalkan test yang
+    // sudah lulus — sistem operasi yang akan membersihkannya.
+    await rm(dataDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 }).catch(
+      () => undefined,
+    )
   }
 
   // Sejak titik ini instans sudah berjalan. Kegagalan apa pun harus tetap

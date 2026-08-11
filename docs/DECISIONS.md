@@ -349,6 +349,41 @@ Format nomor: `D-nnn`. Status: `Berlaku` · `Direvisi oleh D-nnn` · `Dicabut`.
 
 ---
 
+## Autentikasi & Sesi
+
+*Diputuskan di Sesi B1.*
+
+### D-055 · Preferensi pengguna adalah tabel, bukan kolom jsonb di `users`
+**Status:** Berlaku · **Menyimpang dari:** Module 02 §6 yang menempatkan `preferences jsonb` di `users`
+**Konteks.** Modul tersemat yang dipilih seseorang di grup usaha A tidak sama dengan pilihannya di grup usaha B. Kolom jsonb di tabel identitas global tidak punya tempat untuk membedakannya.
+**Keputusan.** `user_preferences` berkunci `(tenant_id, user_id)`, dibuat di migrasi `0007`.
+**Konsekuensi.** Preferensi ikut aturan RLS seperti data bertenant lainnya, dan tabel identitas global tetap ramping.
+
+### D-056 · Penguncian akun tidak diumumkan
+**Status:** Berlaku · **Sumber:** Module 02 §11
+**Konteks.** Modul mensyaratkan pesan kredensial salah tidak membedakan email tidak ditemukan dari kata sandi salah. Menjawab "akun terkunci" mengembalikan pembedaan itu lewat pintu lain — ia mengakui akun tersebut ada, sekaligus memberi tahu penyerang bahwa serangannya menimbulkan efek.
+**Keputusan.** Akun terkunci menjawab `invalid_credentials`, sama seperti kata sandi salah. Penguncian tercatat di `auth_events`; pemiliknya diberi tahu lewat email, bukan lewat jawaban HTTP.
+**Konsekuensi.** Biaya kegunaan yang nyata dan disengaja: pengguna sah yang terkunci tidak tahu mengapa kata sandi benarnya ditolak. Pemberitahuan lewat email menjadi wajib, bukan tambahan.
+
+### D-057 · Deteksi penggunaan ulang hanya berlaku untuk token hasil rotasi
+**Status:** Berlaku · **Sumber:** Module 02 §4
+**Konteks.** Menganggap setiap token yang sudah dicabut sebagai serangan berarti tab lama yang menyegarkan setelah logout akan mencabut seluruh sesi pengguna dan membunyikan alarm keamanan palsu.
+**Keputusan.** Hanya `revoked_reason = 'rotated'` yang dinilai sebagai penggunaan ulang. Logout, pencabutan manual, dan perubahan kata sandi menghasilkan penolakan biasa.
+**Konsekuensi.** Alarm yang berbunyi berarti sesuatu yang sungguh terjadi. Alarm yang sering berbunyi tanpa sebab akan diabaikan, dan itu lebih berbahaya daripada tidak ada alarm.
+
+### D-058 · Tantangan MFA berupa token bertanda tangan, bukan baris basis data
+**Status:** Berlaku
+**Keputusan.** Tantangan MFA adalah JWT berumur lima menit dengan klaim `purpose` tersendiri, diverifikasi terpisah dari access token.
+**Konsekuensi.** Tidak ada tabel tantangan yang harus dipangkas. Pemeriksaan `purpose` wajib: tanpa itu, access token dapat dipakai sebagai tantangan MFA karena keduanya ditandatangani kunci yang sama — dan itu melewati MFA sepenuhnya. Ada test khusus untuk jalur itu.
+
+### D-059 · Pembatasan laju per IP dihitung dari `auth_events`
+**Status:** Berlaku · **Sumber:** Module 02 §5
+**Konteks.** Penguncian bertahap per akun tidak melihat credential stuffing sama sekali: satu kata sandi umum dicoba ke ribuan akun berbeda, dan tidak ada satu akun pun yang mencapai ambangnya.
+**Keputusan.** Kegagalan dihitung dari `auth_events` dalam jendela 15 menit per alamat, dengan indeks parsial. Tidak ada tabel penghitung baru.
+**Konsekuensi.** Kegagalan terhadap email yang **tidak terdaftar** wajib ikut dicatat — justru itu bentuk serangannya. Peristiwa blokade memakai jenis tersendiri supaya tidak ikut menghitung dirinya dan memperpanjang blokade selamanya; keduanya punya test. Ambang 20 sengaja longgar: satu kantor di belakang satu IP publik dapat menghasilkan puluhan salah ketik yang sah.
+
+---
+
 ## Sengaja Ditunda
 
 Bukan kelalaian. Setiap butir punya syarat kapan ia layak diputuskan.
@@ -360,6 +395,9 @@ Bukan kelalaian. Setiap butir punya syarat kapan ia layak diputuskan.
 | Sharding atau partisi per tenant | Ambang pemisahan tenant besar terukur dari pemakaian nyata (Resilience §10) |
 | Mesin pencarian terpisah | Latensi pencarian Postgres melewati ambang pada tenant nyata (D-042) |
 | Region kedua sebagai siaga aktif | Sasaran ketersediaan per tier ditetapkan bisnis (V-06) |
+| Daftar kata sandi bocor sungguhan | Sebelum peluncuran. Port `BreachedPasswordList` sudah ada dan dipanggil; implementasinya belum — saat ini hanya tiruan di test, sehingga Module 02 §11 belum terpenuhi di produksi |
+| Pencabutan access token sebelum kedaluwarsa | Saat lapisan HTTP dirakit. Mencabut sesi menghentikan penyegaran seketika, tetapi access token yang sudah terbit tetap berlaku sampai 15 menit |
+| Endpoint HTTP autentikasi | Sesi B2, bersama kontrak kesalahan tiga sebab dan konteks company dari path |
 
 ---
 

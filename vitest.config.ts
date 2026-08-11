@@ -28,8 +28,8 @@ export default defineConfig({
       {
         resolve: { alias },
         test: {
-          name: 'invariants',
-          include: ['tests/invariants/**/*.test.ts'],
+          name: 'db',
+          include: ['tests/invariants/**/*.test.ts', 'tests/integration/**/*.test.ts'],
           environment: 'node',
           globalSetup: ['tests/invariants/global-setup.ts'],
           // Menyalakan PostgreSQL dan menjalankan migrasi memakan waktu nyata.
