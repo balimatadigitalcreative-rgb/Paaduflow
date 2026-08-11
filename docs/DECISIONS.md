@@ -473,6 +473,28 @@ Format nomor: `D-nnn`. Status: `Berlaku` · `Direvisi oleh D-nnn` · `Dicabut`.
 
 ---
 
+## App Shell
+
+*Diputuskan di Sesi B3.*
+
+### D-073 · Tiga token layout diusulkan ke `tokens.json`
+**Status:** **Menunggu persetujuan pemilik design system** · **Sumber:** Layout_System §3
+**Konteks.** Shell membutuhkan tinggi top bar (46px), lebar rail (46px), dan lebar panel kanan (360px). Ketiganya ada di Layout_System tetapi tidak ada di `tokens.json`, dan ketiganya di luar skala spacing — sehingga lint token menolaknya, sebagaimana seharusnya.
+**Keputusan.** `size.topbar`, `size.rail`, dan `size.panel` ditambahkan ke `tokens.json` dengan penanda `USULAN Sesi B3` di deskripsinya. Design_Tokens §11 mensyaratkan perubahan token lewat pull request dengan tinjauan pemilik design system — commit ini adalah pull request itu.
+**Konflik yang ikut terangkat.** Layout_System §3 menyebut rail 46px **dan** sidebar yang diciutkan 46px, sedangkan `tokens.json` sudah memuat `size.sidebar-collapsed` 56px. Keduanya tidak dapat benar sekaligus. Implementasi memakai 46px untuk rail dan 56px untuk sidebar terciut; bila itu keliru, yang berubah hanya `tokens.json`.
+
+### D-074 · Router ditunda sampai modul pertama punya halaman
+**Status:** Berlaku · **Menyempurnakan:** D-037
+**Keputusan.** TanStack Router tetap pilihan yang berlaku, tetapi belum dipasang. Shell dirakit tanpa router.
+**Alasan.** Memasangnya sekarang berarti merancang bentuk URL sebelum ada satu pun halaman yang menempatinya, lalu merancangnya ulang saat modul nyata datang. Kosakata URL sudah ditetapkan di Information Architecture §2 dan D-041; yang belum ada adalah halamannya.
+
+### D-075 · Audit aksesibilitas otomatis berjalan di CI, dan batasnya dinyatakan
+**Status:** Berlaku · **Sumber:** Audit_Accessibility_Quality, Design_Handoff §8
+**Keputusan.** `axe-core` berjalan di jsdom terhadap shell yang dirender penuh, dengan aturan WCAG 2.0 A/AA dan 2.1 A/AA. Ia bagian dari `npm test`, sehingga ikut menjadi gerbang CI.
+**Konsekuensi yang harus dinyatakan.** Audit otomatis menangkap sekitar sepertiga masalah aksesibilitas nyata. Ia tidak dapat menilai apakah pengumuman `aria-live` benar-benar terdengar masuk akal, apakah urutan fokus terasa wajar, atau apakah kontras terukur pada piksel yang sungguh dirender. Karena itu berkas test yang sama juga menguji perilaku yang tidak dapat dilihat axe — fokus yang kembali ke pemicu, hasil yang disaring izin, pintasan yang mati saat mengetik. Uji screen reader sungguhan tetap terbuka di Design_Handoff §10.
+
+---
+
 ## Sengaja Ditunda
 
 Bukan kelalaian. Setiap butir punya syarat kapan ia layak diputuskan.

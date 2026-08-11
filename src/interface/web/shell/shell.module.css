@@ -1,0 +1,430 @@
+/* App shell — Layout_System §3, Component_Specs_AppShell.
+   Seluruh nilai berasal dari tokens.css. Tidak ada satu pun angka di sini. */
+
+.shell {
+  display: grid;
+  grid-template-columns: var(--size-rail) auto 1fr;
+  grid-template-rows: var(--size-topbar) 1fr;
+  height: 100vh;
+  background: var(--bg-canvas);
+  color: var(--text-primary);
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-body);
+  line-height: var(--font-line-height-body);
+}
+
+/* Mode kepadatan mengubah line-height dan padding, tidak pernah ukuran font
+   — D-026. */
+.shell[data-density='compact'] {
+  line-height: var(--font-line-height-body-compact);
+}
+
+/* ── Skip link ─────────────────────────────────────────────────────────────
+   Elemen pertama yang menerima fokus. Tanpanya, pengguna keyboard melewati
+   dua puluh lebih elemen chrome di setiap halaman. */
+
+.skipLinks {
+  position: absolute;
+  z-index: var(--z-tooltip);
+}
+
+.skipLink {
+  position: absolute;
+  top: 0;
+  left: 0;
+  padding: var(--space-2) var(--space-4);
+  background: var(--bg-surface);
+  color: var(--text-accent);
+  border: var(--border-width-default) solid var(--border-focus);
+  border-radius: var(--radius-md);
+  transform: translateY(-200%);
+}
+
+.skipLink:focus-visible {
+  transform: translateY(0);
+  outline: var(--border-width-focus) solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+/* ── Top bar ───────────────────────────────────────────────────────────────
+   Tidak mengecil di mode compact: ia memuat pengalih company, dan mengecilkan
+   target itu menukar keselamatan data dengan beberapa piksel. */
+
+.topBar {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding-inline: var(--space-3);
+  background: var(--bg-surface);
+  border-bottom: var(--border-width-default) solid var(--border-default);
+  z-index: var(--z-nav);
+}
+
+.mark {
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-accent);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-md);
+}
+
+.topBarSpacer {
+  flex: 1;
+}
+
+/* ── Pengalih company ──────────────────────────────────────────────────────
+   Elemen terakhir yang dipotong saat top bar menyempit — karena itu ia yang
+   diberi flex-shrink paling kecil. */
+
+.companyTrigger {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+  min-height: var(--size-control-md);
+  padding: var(--space-1) var(--space-3);
+  background: var(--bg-surface-sunken);
+  border: var(--border-width-default) solid var(--border-default);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.tenantName {
+  color: var(--text-secondary);
+}
+
+.companyName {
+  font-weight: var(--font-weight-medium);
+}
+
+/* Company memakai rounded square; orang memakai lingkaran. Pembedaan bentuk
+   ini penting justru di top bar, tempat keduanya bersebelahan. */
+.companyAvatar {
+  display: grid;
+  place-items: center;
+  inline-size: var(--size-control-sm);
+  block-size: var(--size-control-sm);
+  border-radius: var(--radius-sm);
+  background: var(--bg-accent-subtle);
+  color: var(--text-accent);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+}
+
+.userAvatar {
+  composes: companyAvatar;
+  border-radius: var(--radius-full);
+}
+
+.switcherPanel {
+  position: absolute;
+  inset-block-start: var(--size-topbar);
+  inset-inline-start: var(--space-3);
+  inline-size: var(--size-container-narrow);
+  max-block-size: 70vh;
+  overflow-y: auto;
+  padding: var(--space-3);
+  background: var(--bg-surface-raised);
+  border: var(--border-width-default) solid var(--border-default);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--elevation-3);
+  z-index: var(--z-dropdown);
+}
+
+.groupLabel {
+  font-size: var(--font-size-overline);
+  letter-spacing: var(--font-tracking-overline);
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+  padding: var(--space-2) var(--space-2) var(--space-1);
+}
+
+.companyOption {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--space-3);
+  inline-size: 100%;
+  padding: var(--space-2) var(--space-3);
+  background: transparent;
+  border: var(--border-width-default) solid transparent;
+  border-radius: var(--radius-md);
+  text-align: start;
+  color: var(--text-primary);
+  cursor: pointer;
+}
+
+.companyOption[aria-selected='true'],
+.companyOption:hover {
+  background: var(--bg-surface-sunken);
+}
+
+.companyMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  font-size: var(--font-size-caption);
+  color: var(--text-secondary);
+}
+
+/* ── Banner konfirmasi perpindahan ────────────────────────────────────────
+   Selebar konten, bukan toast di pojok — banner yang tidak bisa dilewatkan
+   mata (Layout_System §4, lapis 3). */
+
+.contextBanner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: var(--space-4) var(--space-6) 0;
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg-accent-subtle);
+  border: var(--border-width-default) solid var(--border-focus);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+}
+
+/* ── Module rail ──────────────────────────────────────────────────────────*/
+
+.rail {
+  grid-row: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  padding-block: var(--space-2);
+  background: var(--bg-surface);
+  border-inline-end: var(--border-width-default) solid var(--border-default);
+}
+
+.railButton {
+  position: relative;
+  display: grid;
+  place-items: center;
+  inline-size: var(--size-control-md);
+  block-size: var(--size-control-md);
+  background: transparent;
+  border: var(--border-width-default) solid transparent;
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.railButton[aria-current='page'] {
+  background: var(--bg-accent-subtle);
+  color: var(--text-accent);
+  font-weight: var(--font-weight-medium);
+}
+
+.railBadge {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-end: 0;
+  min-inline-size: var(--space-4);
+  padding-inline: var(--space-1);
+  border-radius: var(--radius-full);
+  background: var(--action-danger-bg);
+  color: var(--text-on-accent);
+  font-size: var(--font-size-overline);
+}
+
+/* ── Sidebar ──────────────────────────────────────────────────────────────*/
+
+.sidebar {
+  grid-row: 2;
+  inline-size: var(--size-sidebar);
+  overflow-y: auto;
+  padding: var(--space-3) var(--space-2);
+  background: var(--bg-surface);
+  border-inline-end: var(--border-width-default) solid var(--border-default);
+}
+
+.sidebar[data-collapsed='true'] {
+  inline-size: var(--size-sidebar-collapsed);
+}
+
+.navItem {
+  display: block;
+  inline-size: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: var(--border-width-default) solid transparent;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-secondary);
+  text-align: start;
+  cursor: pointer;
+}
+
+/* Item aktif ditandai latar dan bobot, bukan warna teks saja — warna tidak
+   pernah menjadi satu-satunya pembeda makna. */
+.navItem[aria-current='page'] {
+  background: var(--bg-surface-sunken);
+  color: var(--text-primary);
+  font-weight: var(--font-weight-medium);
+}
+
+.shell[data-density='compact'] .navItem {
+  padding-block: var(--space-1);
+}
+
+/* ── Konten ───────────────────────────────────────────────────────────────*/
+
+.content {
+  grid-row: 2;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.pageHeader {
+  padding: var(--space-6) var(--space-6) var(--space-4);
+  border-bottom: var(--border-width-default) solid var(--border-subtle);
+}
+
+.shell[data-density='compact'] .pageHeader {
+  padding: var(--space-4) var(--space-4) var(--space-3);
+}
+
+.breadcrumb {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  font-size: var(--font-size-caption);
+  color: var(--text-secondary);
+  margin-block-end: var(--space-2);
+}
+
+.pageTitle {
+  font-size: var(--font-size-heading-2);
+  line-height: var(--font-line-height-heading-2);
+  letter-spacing: var(--font-tracking-heading-2);
+  font-weight: var(--font-weight-semibold);
+  margin: 0;
+}
+
+/* Lapis 2 dari empat lapis indikator konteks: konteks diulang di titik kerja,
+   bukan hanya di chrome yang berada di luar fokus perhatian. */
+.contextRow {
+  margin-block-start: var(--space-2);
+  font-size: var(--font-size-body-sm);
+  color: var(--text-secondary);
+}
+
+.contextRow strong {
+  color: var(--text-primary);
+  font-weight: var(--font-weight-medium);
+}
+
+.body {
+  flex: 1;
+  padding: var(--space-6);
+}
+
+.panel {
+  inline-size: var(--size-panel);
+  padding: var(--space-4);
+  border-inline-start: var(--border-width-default) solid var(--border-default);
+  background: var(--bg-surface);
+}
+
+.contentRow {
+  display: flex;
+  flex: 1;
+  min-block-size: 0;
+}
+
+/* ── Command palette ──────────────────────────────────────────────────────*/
+
+.paletteBackdrop {
+  position: fixed;
+  inset: 0;
+  background: var(--bg-canvas);
+  opacity: var(--opacity-scrim-light);
+  z-index: var(--z-backdrop);
+}
+
+.palette {
+  position: fixed;
+  inset-block-start: var(--space-16);
+  inset-inline: 0;
+  margin-inline: auto;
+  inline-size: var(--size-container-form);
+  max-block-size: 60vh;
+  overflow-y: auto;
+  background: var(--bg-surface-raised);
+  border: var(--border-width-default) solid var(--border-default);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--elevation-4);
+  z-index: var(--z-modal);
+}
+
+.paletteInput {
+  inline-size: 100%;
+  min-block-size: var(--size-control-lg);
+  padding: var(--space-3) var(--space-4);
+  border: none;
+  border-bottom: var(--border-width-default) solid var(--border-subtle);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: var(--font-size-body-lg);
+}
+
+.paletteList {
+  list-style: none;
+  margin: 0;
+  padding: var(--space-2);
+}
+
+.paletteItem {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  inline-size: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: var(--border-width-default) solid transparent;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-primary);
+  text-align: start;
+  cursor: pointer;
+}
+
+.paletteItem[aria-selected='true'] {
+  background: var(--bg-accent-subtle);
+}
+
+.paletteHint {
+  color: var(--text-tertiary);
+  font-size: var(--font-size-caption);
+}
+
+.paletteEmpty {
+  padding: var(--space-6);
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+/* ── Fokus ────────────────────────────────────────────────────────────────
+   Tidak pernah dihapus, di seluruh elemen interaktif. */
+
+.shell :focus-visible,
+.palette :focus-visible,
+.switcherPanel :focus-visible {
+  outline: var(--border-width-focus) solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+.visuallyHidden {
+  position: absolute;
+  inline-size: var(--space-px);
+  block-size: var(--space-px);
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skipLink {
+    transition-duration: var(--duration-instant);
+  }
+}

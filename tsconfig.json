@@ -4,7 +4,10 @@
     "lib": ["ES2023", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "types": ["node"],
+    // `vite/client` memberi tipe untuk impor `*.module.css`, sehingga kelas CSS
+    // tidak perlu dideklarasikan tangan di berkas .d.ts yang mudah tertinggal.
+    "types": ["node", "vite/client"],
+    "jsx": "react-jsx",
 
     "strict": true,
     "noUncheckedIndexedAccess": true,
