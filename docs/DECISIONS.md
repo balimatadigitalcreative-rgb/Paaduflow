@@ -301,6 +301,54 @@ Format nomor: `D-nnn`. Status: `Berlaku` · `Direvisi oleh D-nnn` · `Dicabut`.
 
 ---
 
+## Skema Fondasi
+
+*Diputuskan di Sesi A3, saat migrasi pertama ditulis.*
+
+### D-048 · Kunci primer komposit `(tenant_id, id)`
+**Status:** Berlaku · **Menyimpang dari:** Module 01 §6 yang menulis `UUID (PK)` polos · **Sumber:** Module 01 §5, Platform Architecture Resilience §5
+**Konteks.** Modul 01 menjanjikan skema yang siap di-*shard* per tenant. Postgres mensyaratkan kunci partisi berada di dalam kunci primer, jadi `PRIMARY KEY (id)` menutup jalan itu selamanya.
+**Keputusan.** Seluruh tabel bertenant memakai `PRIMARY KEY (tenant_id, id)`. Foreign key ikut menjadi dua kolom: `(tenant_id, company_id) REFERENCES companies (tenant_id, id)`. Tabel identitas global — `users` dan `tenants` — tetap berkunci tunggal.
+**Konsekuensi.** Rujukan lintas tenant menjadi mustahil di tingkat basis data, bukan hanya tidak diizinkan RLS — lapisan kedua yang didapat gratis. Biayanya: setiap FK dua kolom, dan pencarian dengan `id` saja memerlukan konteks tenant. Yang terakhir tidak menyakitkan karena konteks tenant selalu ada, ia datang dari path URL (D-002).
+
+### D-049 · Fondasi memuat kerangka buku besar, bukan hanya konvensi
+**Status:** Berlaku · **Sumber:** Design_Handoff_Spec §2, Module 03, Module 07
+**Konteks.** `audit_log`, `journals`, dan `journal_lines` adalah tabel append-only. Hak akses dan constraint yang menjaganya harus berlaku sejak baris pertama, bukan sejak modul akuntansi dibangun.
+**Keputusan.** Ketiganya dibuat di migrasi fondasi dengan bentuk sesuai modulnya. Modul 03 dan 07 menambah kolom dan tabel di atasnya; keduanya tidak pernah mengubah bentuk yang ada.
+**Konsekuensi.** `journal_lines.account_id` belum punya foreign key — tabel `accounts` lahir di Sesi D1, dan menambahkan FK-nya kelak bersifat menambah.
+
+### D-050 · Jurnal berimbang ditegakkan constraint trigger yang ditunda
+**Status:** Berlaku · **Sumber:** Module 07 §73
+**Konteks.** Jurnal dan barisnya disisipkan dalam satu transaksi. Pemeriksaan per baris akan selalu gagal pada baris pertama, karena saat itu jurnalnya memang belum berimbang.
+**Keputusan.** `CONSTRAINT TRIGGER … DEFERRABLE INITIALLY DEFERRED` di `journal_lines` **dan** di `journals`. Yang kedua tidak berlebihan: jurnal tanpa satu pun baris tidak akan pernah memicu trigger di tabel baris, dan akan lolos.
+**Konsekuensi.** Kegagalan muncul di titik `COMMIT`, bukan di titik `INSERT`. Kode yang menangani galat harus menyiapkan diri untuk itu, dan test invarian memeriksanya persis di titik itu.
+
+### D-051 · Penomoran dokumen memakai baris terkunci, bukan `SEQUENCE`
+**Status:** Berlaku · **Sumber:** D-007, Flow Archetypes §2
+**Konteks.** `SEQUENCE` tidak ikut dibatalkan saat transaksi gagal. Ia meninggalkan celah, dan celah pada urutan nomor dokumen adalah temuan audit.
+**Keputusan.** Tabel `document_sequences` dengan `SELECT … FOR UPDATE` di dalam transaksi yang sama dengan penyisipan dokumennya.
+**Konsekuensi.** Submit untuk satu jenis dokumen di satu company menjadi serial. Itu harga dari "tanpa celah", diterima secara sadar, dan kuncinya dipersempit ke `(company, jenis, periode)` supaya modul lain tidak ikut menunggu.
+
+### D-052 · RLS menegakkan tenant; company adalah otorisasi
+**Status:** Berlaku · **Sumber:** D-003, D-001, Information Architecture §2
+**Konteks.** Isolasi tenant dan pembatasan company terlihat mirip, tetapi bukan hal yang sama. Pengalih company memang harus melihat lintas company di dalam satu tenant.
+**Keputusan.** Kebijakan RLS hanya membandingkan `tenant_id` dengan konteks yang dipasang `SET LOCAL`. Pembatasan company diterjemahkan menjadi predikat `WHERE` di lapisan izin (Sesi B2).
+**Konsekuensi.** Konteks tenant yang belum dipasang menghasilkan nol baris — gagal tertutup. `WITH CHECK` ikut dipasang, sehingga menulis baris ke tenant lain juga ditolak, bukan hanya membacanya.
+
+### D-053 · Basis data wajib ber-encoding UTF8
+**Status:** Berlaku
+**Konteks.** Klaster Postgres di Windows mewarisi locale sistem dan melahirkan basis data ber-encoding WIN1252. Migrasi gagal dengan galat konversi karakter yang tidak menyebutkan sebab sebenarnya.
+**Keputusan.** Penjalan migrasi memeriksa `server_encoding` dan menolak sebelum menjalankan apa pun, dengan pesan yang menyebutkan cara memperbaikinya.
+**Konsekuensi.** Berlaku juga untuk produksi. Nama pelanggan, alamat, dan pesan galat berbahasa Indonesia semuanya memerlukan UTF8.
+
+### D-054 · Test invarian memakai PostgreSQL tertanam, bukan Docker
+**Status:** Berlaku
+**Konteks.** Row-level security dan pencabutan hak tidak dapat dipalsukan — basis data tiruan akan meluluskan tepat kelas kesalahan yang paling mahal. Tetapi mensyaratkan Docker berarti mensyaratkannya di setiap mesin pengembang.
+**Keputusan.** `TEST_DATABASE_URL` dipakai bila ada — itu jalur CI, tempat Postgres berjalan sebagai service container. Bila tidak, satu instans PostgreSQL tertanam disalakan di direktori sementara. Keduanya tidak memerlukan Docker, dan test tidak pernah lulus tanpa basis data sungguhan.
+**Konsekuensi.** Versi Postgres di uji lokal saat ini 18, sedangkan D-029 menetapkan 16 sebagai batas bawah. Versi mayor produksi wajib disamakan dengan yang dipakai CI, dan CI wajib memakai versi produksi — selisih mayor antara uji dan produksi adalah kelas kesalahan yang tidak akan tertangkap satu test pun.
+
+---
+
 ## Sengaja Ditunda
 
 Bukan kelalaian. Setiap butir punya syarat kapan ia layak diputuskan.

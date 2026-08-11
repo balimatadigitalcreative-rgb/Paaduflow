@@ -18,6 +18,11 @@
     "skipLibCheck": true,
     "noEmit": true,
 
+    // Perkakas ditulis JavaScript polos. Ia ikut dibaca supaya impor dari kode
+    // TypeScript punya tipe, tetapi tidak ikut diperiksa.
+    "allowJs": true,
+    "checkJs": false,
+
     "baseUrl": ".",
     "paths": {
       "#shared/*": ["./src/shared/*"],

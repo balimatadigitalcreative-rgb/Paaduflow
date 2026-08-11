@@ -3,19 +3,42 @@ import { defineConfig } from 'vitest/config'
 
 const dir = (relative: string): string => fileURLToPath(new URL(relative, import.meta.url))
 
+const alias = {
+  '#shared': dir('./src/shared'),
+  '#domain': dir('./src/domain'),
+  '#application': dir('./src/application'),
+  '#infrastructure': dir('./src/infrastructure'),
+  '#interface': dir('./src/interface'),
+  '#composition': dir('./src/composition'),
+}
+
 export default defineConfig({
-  resolve: {
-    alias: {
-      '#shared': dir('./src/shared'),
-      '#domain': dir('./src/domain'),
-      '#application': dir('./src/application'),
-      '#infrastructure': dir('./src/infrastructure'),
-      '#interface': dir('./src/interface'),
-      '#composition': dir('./src/composition'),
-    },
-  },
+  resolve: { alias },
   test: {
-    include: ['tests/**/*.test.{ts,js}'],
-    environment: 'node',
+    // Dipisah supaya test unit tidak ikut menunggu PostgreSQL menyala.
+    projects: [
+      {
+        resolve: { alias },
+        test: {
+          name: 'unit',
+          include: ['tests/unit/**/*.test.{ts,js}'],
+          environment: 'node',
+        },
+      },
+      {
+        resolve: { alias },
+        test: {
+          name: 'invariants',
+          include: ['tests/invariants/**/*.test.ts'],
+          environment: 'node',
+          globalSetup: ['tests/invariants/global-setup.ts'],
+          // Menyalakan PostgreSQL dan menjalankan migrasi memakan waktu nyata.
+          hookTimeout: 180_000,
+          testTimeout: 60_000,
+          // Berkas test boleh berjalan bersamaan: masing-masing menyeed tenant
+          // sendiri, dan isolasi antar tenant justru yang sedang diuji di sini.
+        },
+      },
+    ],
   },
 })
