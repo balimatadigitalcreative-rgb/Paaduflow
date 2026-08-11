@@ -522,6 +522,18 @@ Format nomor: `D-nnn`. Status: `Berlaku` · `Direvisi oleh D-nnn` · `Dicabut`.
 **Keputusan.** `src/shared/money-format.ts`, bukan di dalam komponen. Aturan pemisah: bila titik dan koma sama-sama muncul, yang terakhir adalah pemisah desimal; bila hanya satu dan diikuti tepat tiga angka, ia pemisah ribuan.
 **Konsekuensi.** Menutup item terbuka "perilaku input mata uang saat tempel belum diuji" di §13. Teks yang tidak terbaca menghasilkan `null`, bukan `0` — nol adalah nilai yang sah, dan menyamakan keduanya akan diam-diam menyimpan nominal yang salah.
 
+### D-080 · Lima keadaan combobox adalah tipe, bukan konvensi
+**Status:** Berlaku · **Sumber:** Component_Specs_Primitives §5
+**Konteks.** Spesifikasi menyebut lima keadaan yang wajib dirancang: memuat, kosong, tidak ada hasil untuk pencarian ini, gagal muat, dan opsi terpilih yang berada di luar halaman hasil. Keadaan yang hanya disebut di dokumen akan disederhanakan menjadi "ada data atau tidak" oleh implementasi pertama yang terburu-buru.
+**Keputusan.** `ComboboxState` adalah union bertag. Menambahkan keadaan baru tanpa menanganinya tidak dapat dikompilasi.
+**Konsekuensi.** "Belum ada pelanggan" dan "tidak ada pelanggan bernama itu" tidak dapat tertukar — keduanya menuntut tindakan berbeda dari pengguna. Opsi terpilih dibaca dari `value`, bukan dicari di dalam daftar hasil, sehingga ia tetap terbaca meski berada di halaman lain.
+
+### D-081 · Avatar berwarna per identitas ditunda, bukan dikarang
+**Status:** Berlaku · **Sumber:** Component_Specs_Primitives §9
+**Konteks.** §9 meminta latar avatar diturunkan deterministik dari id pengguna. Menerapkannya berarti membangkitkan warna di dalam komponen — persis yang D-025 larang, dan lint token akan menolaknya dengan benar.
+**Keputusan.** Seluruh avatar memakai satu latar netral untuk sekarang. Pembeda identitas sementara adalah inisial dan bentuk — lingkaran untuk orang, rounded square untuk company.
+**Konsekuensi.** Menunggu palet warna identitas di `tokens.json`. Ramp `dataviz` sudah ada dan berjumlah delapan, tetapi ia Lapis 1 dan komponen tidak boleh menyentuhnya; yang dibutuhkan adalah token semantik yang merujuk ke sana.
+
 ---
 
 ## Sengaja Ditunda

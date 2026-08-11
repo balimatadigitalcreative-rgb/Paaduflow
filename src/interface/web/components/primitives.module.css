@@ -344,6 +344,119 @@
   border-radius: var(--radius-full);
 }
 
+/* ── Daftar combobox ──────────────────────────────────────────────────────*/
+
+.listbox {
+  max-block-size: var(--size-container-narrow);
+  overflow-y: auto;
+  background: var(--bg-surface-raised);
+  border: var(--border-width-default) solid var(--border-default);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--elevation-3);
+}
+
+.listMessage {
+  padding: var(--space-4);
+  color: var(--text-secondary);
+  font-size: var(--font-size-body-sm);
+}
+
+.listOption {
+  display: block;
+  inline-size: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: var(--border-width-default) solid transparent;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-primary);
+  text-align: start;
+  cursor: pointer;
+}
+
+.listOption[aria-selected='true'] {
+  background: var(--bg-accent-subtle);
+}
+
+/* ── Avatar ───────────────────────────────────────────────────────────────*/
+
+.avatar {
+  display: inline-grid;
+  place-items: center;
+  border-radius: var(--radius-full);
+  background: var(--bg-accent-subtle);
+  color: var(--text-accent);
+  font-weight: var(--font-weight-medium);
+  font-size: var(--font-size-caption);
+}
+
+/* Pembedaan bentuk konsisten di seluruh produk: company rounded square. */
+.avatarSquare {
+  border-radius: var(--radius-sm);
+}
+
+.avatarSm {
+  inline-size: var(--space-5);
+  block-size: var(--space-5);
+  font-size: var(--font-size-overline);
+}
+
+.avatarMd {
+  inline-size: var(--space-6);
+  block-size: var(--space-6);
+}
+
+.avatarLg {
+  inline-size: var(--space-10);
+  block-size: var(--space-10);
+  font-size: var(--font-size-body);
+}
+
+/* ── Tooltip ──────────────────────────────────────────────────────────────*/
+
+.tooltipWrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.tooltip {
+  position: absolute;
+  inset-block-end: 100%;
+  inset-inline-start: 0;
+  margin-block-end: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  background: var(--bg-surface-raised);
+  border: var(--border-width-default) solid var(--border-default);
+  border-radius: var(--radius-md);
+  box-shadow: var(--elevation-3);
+  color: var(--text-primary);
+  font-size: var(--font-size-caption);
+  white-space: nowrap;
+  z-index: var(--z-tooltip);
+}
+
+/* ── Skeleton ─────────────────────────────────────────────────────────────*/
+
+.skeletonLine {
+  display: block;
+  block-size: var(--font-line-height-body);
+  margin-block-end: var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface-sunken);
+}
+
+.skeletonLine:last-child {
+  inline-size: 60%;
+}
+
+.srOnly {
+  position: absolute;
+  inline-size: var(--space-px);
+  block-size: var(--space-px);
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 /* ── Fokus lintas komponen ────────────────────────────────────────────────*/
 
 .button:focus-visible,
