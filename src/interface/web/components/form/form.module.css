@@ -1,0 +1,66 @@
+/* Form layout — Component_Specs_Composite §3. */
+
+.errorSummary {
+  padding: var(--space-4);
+  margin-block-end: var(--space-6);
+  background: var(--bg-surface);
+  border: var(--border-width-default) solid var(--border-danger);
+  border-radius: var(--radius-lg);
+  color: var(--text-primary);
+}
+
+.errorTitle {
+  color: var(--text-danger);
+  font-weight: var(--font-weight-medium);
+  margin-block-end: var(--space-2);
+}
+
+.errorList {
+  margin: 0;
+  padding-inline-start: var(--space-5);
+}
+
+.errorLink {
+  color: var(--text-danger);
+}
+
+/* Tombol simpan yang harus dicari dengan scroll adalah kegagalan aturan tiga
+   klik. Footer menempel di bawah viewport, bukan di bawah dokumen. */
+.footer {
+  position: sticky;
+  inset-block-end: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg-surface);
+  border-block-start: var(--border-width-default) solid var(--border-default);
+  box-shadow: var(--elevation-2);
+  z-index: var(--z-sticky);
+}
+
+.footerActions {
+  display: flex;
+  gap: var(--space-2);
+  margin-inline-start: auto;
+}
+
+.dirtyNote {
+  color: var(--text-secondary);
+  font-size: var(--font-size-body-sm);
+}
+
+.guard {
+  padding: var(--space-4);
+  background: var(--bg-surface-raised);
+  border: var(--border-width-default) solid var(--border-focus);
+  border-radius: var(--radius-lg);
+}
+
+.guardActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-block-start: var(--space-4);
+}

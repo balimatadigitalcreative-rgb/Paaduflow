@@ -612,6 +612,23 @@ Format nomor: `D-nnn`. Status: `Berlaku` · `Direvisi oleh D-nnn` · `Dicabut`.
 **Keputusan.** Nomor diambil lewat `SELECT max(sequence) + 1` **di dalam** `INSERT … SELECT` yang sama, bukan lewat pembacaan terpisah lalu penyisipan.
 **Konsekuensi.** Kekangan unik atas `(tenant_id, company_id, sequence)` menjadi jaring terakhir: dua mutasi yang tetap memperoleh nomor sama akan ditolak, bukan tersimpan diam-diam.
 
+### D-094 · Transisi status adalah tabel, bukan `switch`
+**Status:** Berlaku · **Sumber:** Flow_Archetypes §2, Module 04
+**Konteks.** Penjualan adalah modul referensi. Bentuk apa pun yang dipilih di sini akan disalin dua puluh modul berikutnya, termasuk bentuk yang buruk.
+**Keputusan.** `document_transitions` menyimpan `(doc_type, from, to, requires)`. Domain hanya mengevaluasi daftar yang dimuat; ia tidak memuat satu pun aturan modul.
+**Konsekuensi.** Pertanyaan "siapa yang boleh mengubah faktur dari approved ke posted" dapat dijawab dengan kueri, bukan dengan membaca kode dua puluh modul. Penolakan menyertakan daftar tujuan yang tersedia, sehingga ia menjadi petunjuk alih-alih sekadar penolakan.
+
+### D-095 · `document_numbering` Modul 04 dan `document_sequences` A3 adalah hal yang sama
+**Status:** Berlaku · **Menyimpang dari:** Module 04 §6 (penamaan)
+**Keputusan.** Tidak ada tabel baru. Modul 04 menyebutnya `document_numbering`; migrasi `0006` sudah membangunnya sebagai `document_sequences` beserta fungsi pengambil nomornya.
+**Konsekuensi.** Diuji: sepuluh submit bersamaan menghasilkan sepuluh nomor berurutan tanpa celah dan tanpa duplikat, dan transaksi yang dibatalkan **tidak** membakar nomor — bukti bahwa penomoran memakai baris terkunci, bukan `SEQUENCE`.
+
+### D-096 · Tiga komponen Form Layout dibangun sebagai library, bukan sebagai bagian modul
+**Status:** Berlaku · **Sumber:** Component_Specs_Composite §3, gerbang Sesi D4
+**Konteks.** Modul referensi membutuhkan ringkasan error, penjaga perubahan belum tersimpan, dan action footer sticky. Ketiganya tidak masuk C1 maupun C2.
+**Keputusan.** Dibangun di `components/form`, bukan di dalam modul Penjualan.
+**Konsekuensi.** Gerbang D4 menanyakan apakah modul referensi memerlukan komponen baru. Membangunnya di dalam modul akan membuat jawabannya "ya" sekaligus menyembunyikan komponennya dari modul lain. Penjaga perubahan menyebut secara eksplisit bahwa berpindah company mengubah konteks — akibatnya bukan kehilangan ketikan, melainkan bekerja di entitas legal yang berbeda.
+
 ---
 
 ## Sengaja Ditunda
