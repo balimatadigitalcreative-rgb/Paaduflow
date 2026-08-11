@@ -1,5 +1,9 @@
 import type { IdempotencyStore } from '#shared/idempotency'
 
+import type { OverrideMatchService, PostBillService } from './purchasing/bills.js'
+import type { PurchaseDocumentService } from './purchasing/documents.js'
+import type { PostReceiptService } from './purchasing/receipts.js'
+
 import type { AuthenticationService } from './identity/authentication.js'
 import type { AuthorizationService } from './identity/authorization.js'
 import type { CompanyAccessService } from './identity/company-access.js'
@@ -14,9 +18,24 @@ import type { SessionService } from './identity/sessions.js'
  * konteks tenant di dalamnya.
  */
 
+/**
+ * Modul Pembelian sebagaimana dilihat lapisan HTTP.
+ *
+ * `bills.post` dan `override.override` sengaja dua pintu terpisah. Menyatukan
+ * keduanya di sini akan membuat rute mana pun yang memegang salah satunya
+ * memegang keduanya.
+ */
+export interface PurchasingScopedServices {
+  readonly documents: PurchaseDocumentService
+  readonly receipts: PostReceiptService
+  readonly bills: PostBillService
+  readonly override: OverrideMatchService
+}
+
 export interface CompanyScopedServices {
   readonly authorization: AuthorizationService
   readonly companyAccess: CompanyAccessService
+  readonly purchasing: PurchasingScopedServices
 }
 
 export interface TenantContext {

@@ -20,3 +20,4 @@
 0016_stock_sequence.sql 486a688d67b8eeb6
 0017_auth_events_request_id.sql 43e5897c469a90a7
 0018_transisi_lengkap.sql 772915a9cd3325e6
+0019_purchasing.sql fe8c7a34d91da9d1

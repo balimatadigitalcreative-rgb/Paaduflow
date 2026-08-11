@@ -4,7 +4,7 @@ import type {
   PostingLine,
   SalesDocumentPort,
 } from '#application/sales/posting'
-import type { LifecycleStatus, Transition } from '#domain/sales/transitions'
+import type { LifecycleStatus, Transition } from '#shared/document-lifecycle'
 import type { Queryable } from '#infrastructure/db/queryable'
 
 export class PostgresSalesDocumentRepository implements SalesDocumentPort, SalesWritePort {

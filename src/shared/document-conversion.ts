@@ -1,9 +1,10 @@
 /**
- * Konversi dokumen — Flow_Archetypes §3, Module 04 §11.
+ * Konversi dokumen — Flow_Archetypes Archetype 3.
  *
- * Konversi parsial per baris dengan penjagaan konversi berlebih. Aturannya
- * murni supaya dapat diuji tanpa basis data, dan supaya pesan penolakannya
- * dapat menyebut sisa per baris — bukan sekadar "kuantitas tidak valid".
+ * Dipindahkan dari `domain/sales/` bersama mesin siklus hidup, dan karena
+ * alasan yang sama: Penawaran → Pesanan → Faktur dan RFQ → Pesanan → Penerimaan
+ * → Tagihan adalah pola yang sama, dan pola yang sama tidak boleh punya dua
+ * implementasi.
  */
 
 export interface SourceLine {
@@ -19,6 +20,11 @@ export interface ConversionRequest {
   readonly qty: number
 }
 
+/**
+ * `invoice` melacak apa yang sudah ditagih, `delivery` apa yang sudah bergerak
+ * secara fisik. Di Pembelian keduanya berarti "ditagih" dan "diterima" — sisi
+ * yang berbeda dari transaksi yang sama.
+ */
 export type ConversionTarget = 'invoice' | 'delivery'
 
 export interface LineShortfall {

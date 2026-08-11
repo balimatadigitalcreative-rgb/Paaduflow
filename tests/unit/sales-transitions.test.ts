@@ -5,13 +5,13 @@ import {
   isFullyConverted,
   remainingOf,
   type SourceLine,
-} from '#domain/sales/conversion'
+} from '#shared/document-conversion'
 import {
   evaluateTransition,
   isEditable,
   needsNumber,
   type Transition,
-} from '#domain/sales/transitions'
+} from '#shared/document-lifecycle'
 
 const TRANSISI: Transition[] = [
   { docType: 'invoice', from: 'draft', to: 'submitted', requires: [] },

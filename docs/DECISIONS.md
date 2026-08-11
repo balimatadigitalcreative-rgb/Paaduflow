@@ -747,6 +747,72 @@ Format nomor: `D-nnn`. Status: `Berlaku` · `Direvisi oleh D-nnn` · `Dicabut`.
 
 ---
 
+## Modul 06 · Pembelian
+
+*Modul kedua. Sebagian besar catatan di bawah adalah temuan tentang modul pertama — pola yang terlihat benar dengan satu contoh baru menunjukkan bentuknya saat ada contoh kedua.*
+
+### D-114 · Arketipe dokumen pindah dari `domain/sales/` ke `src/shared/`
+**Status:** Berlaku · **Mengoreksi:** penempatan di D3
+**Temuan.** `evaluateTransition` dan `evaluateConversion` adalah mesin Flow Archetypes 2 dan 3, bukan logika Penjualan. Karena keduanya tinggal di `domain/sales/`, lint `no-cross-module-import` melarang Pembelian memakainya — modul kedua hanya punya pilihan menyalin atau melanggar batas.
+**Keputusan.** Dipindahkan ke `src/shared/document-lifecycle.ts` dan `src/shared/document-conversion.ts`. `docType` diubah dari union per modul menjadi `string`, karena tabel transisilah yang menentukan jenis dokumen apa yang ada, bukan tipe TypeScript.
+**Konsekuensi.** Menyentuh kode Penjualan yang sudah lolos gerbang, tanpa mengubah perilakunya; 326 test menjadi jaringnya, dan seluruhnya tetap lulus. Alternatif yang ditolak: menyalin mesinnya ke Pembelian. Dua salinan aturan status akan menyimpang, dan yang menyimpang adalah aturan siapa boleh memposting apa.
+
+### D-115 · `document_transitions.doc_type` menjadi `text`
+**Status:** Berlaku · **Mengoreksi:** D3
+**Temuan.** Tabel bernama `document_transitions` bertipe kolom `sales_doc_type`. Namanya generik, isinya tidak.
+**Keputusan.** Diubah menjadi `text` di `0019_purchasing.sql`, dengan penanda `-- paadu:allow-breaking` karena perubahan tipe kolom adalah pola terlarang pemeriksa migrasi. Penandanya memang layak terlihat di tinjauan.
+**Konsekuensi.** Validasi jenis dokumen berpindah dari basis data ke baris yang disisipkan tiap modul. Ditukar sadar: satu tabel yang melayani seluruh modul lebih berharga daripada penjagaan enum yang memaksa modul ketiga menyalin tabelnya.
+
+### D-116 · Utang usaha lahir saat posting tagihan, bukan saat barang diterima
+**Status:** Berlaku · **Sumber:** Module 06 §9
+**Keputusan.** Penerimaan barang menulis `DR Persediaan / CR Akun Perantara Penerimaan Barang`. Posting tagihan menulis `DR Akun Perantara / DR Selisih Harga / DR PPN Masukan / CR Utang Usaha`, dan nilai yang mendebit akun perantara adalah kuantitas ditagih × **harga pesanan** — angka yang sama dengan yang dulu mengkreditnya.
+**Alasan.** Barang masuk gudang sebelum tagihan datang, dan sering sebelum harganya pasti. Menulis langsung ke utang akan memuat laporan utang dengan angka yang belum pernah ditagih vendor mana pun, dan tidak menyisakan satu saldo pun yang dapat membuktikan berapa yang belum tertagih.
+**Konsekuensi.** Saldo akun perantara pada saat mana pun sama dengan nilai barang diterima belum ditagih. Diuji sebagai invarian dengan 25 siklus acak berbibit tetap, diperiksa setelah **setiap** siklus.
+
+### D-117 · Kontrol pencocokan hidup di tiga lapisan, dan tidak satu pun menerima parameter
+**Status:** Berlaku · **Sumber:** Module 06 §11
+**Keputusan.** `PostBillService.post(billId, postedBy)` tidak punya argumen ketiga. Rute `POST /bills/:id/post` tidak punya skema badan. `CHECK (qty_billed <= qty_received)` dan trigger `t40_match_guard` menolak di basis data.
+**Alasan.** Kalau kontrol bisa dilewati dengan parameter, ia bukan kontrol. Bentuk tanda tangan dan bentuk skema HTTP adalah kontrolnya — bukan pemeriksaan `if` yang dapat dilewati pemanggil berikutnya.
+**Konsekuensi.** Pencocokan **dijalankan ulang** saat posting, tidak dibaca dari kolom `match_status`. Kolom itu mungkin disetel sejam lalu, sebelum penerimaan dibatalkan. Yang menentukan adalah keadaan sekarang.
+
+### D-118 · Menagih barang yang belum diterima tidak dapat di-override
+**Status:** Berlaku · **Sumber:** Module 06 §11
+**Keputusan.** Tiga jenis selisih diperlakukan berbeda. `received_over_ordered` dan `price_variance` punya toleransi dan dapat disetujui lewat override. `billed_over_received` tidak punya toleransi dan **tidak dapat disetujui siapa pun**, termasuk pemegang `pembelian.pencocokan.override`.
+**Alasan.** Dua selisih pertama adalah kenyataan komersial yang dapat diterima dengan pertimbangan. Yang ketiga adalah pembayaran atas barang yang belum ada. Jalan keluarnya mencatat penerimaannya atau memperbaiki tagihannya, bukan menyetujui ketiadaannya.
+**Konsekuensi.** Toleransi harga memakai dua batas — persen dan nilai mutlak — dan yang **longgar** yang menang: persen melindungi baris bernilai besar, nilai mutlak melindungi baris kecil yang persentasenya besar hanya karena pembaginya kecil.
+
+### D-119 · Pemisahan tugas override ditegakkan di layanan, bukan di katalog izin
+**Status:** Berlaku · **Sumber:** Module 06 §10
+**Keputusan.** `pembelian.pencocokan.override` adalah izin tersendiri, tidak diberikan bersama `pembelian.tagihan.posting`. Di atasnya, dua aturan berbasis relasi: pembuat atau pengaju tagihan tidak dapat menyetujui pengecualiannya, dan penyetuju pengecualian tidak dapat memposting tagihan yang sama.
+**Alasan.** Sama dengan D-009: aturan ini bergantung pada relasi pengguna dengan dokumen, bukan pada peran. Menyandikannya ke katalog izin akan meledakkan jumlah peran.
+**Batas yang diakui.** Empat peran sistem yang ada — `tenant_owner`, `tenant_admin`, `company_admin`, `member` — **tidak dapat menyatakan** tiga tugas Pembelian sebagai tiga peran terpisah; `member` memegang pesanan, penerimaan, dan posting sekaligus. Izinnya sudah terpisah, jadi tenant dapat membuat peran khusus. Sampai itu dilakukan, pemisahan tugas tingkat peran belum berlaku, sedangkan pemisahan tingkat dokumen sudah — dan yang terakhir itulah yang diuji.
+
+### D-120 · Penulis pertama `audit_log` lahir di sini
+**Status:** Berlaku · **Temuan**
+**Temuan.** `audit_log` dibuat di Sesi B2 dan **tidak pernah ada yang menulis ke sana**. Peristiwa override adalah tulisan pertamanya.
+**Keputusan.** `PostgresAuditLog` menomori `sequence` dengan `max + 1` di bawah `pg_advisory_xact_lock` per tenant, bukan dengan SEQUENCE. Rantai `hash`/`prev_hash` dihitung dari isi yang bermakna, bukan dari seluruh baris.
+**Alasan.** Celah pada urutan audit berarti baris hilang, dan tabel audit yang tidak dapat membuktikan kelengkapannya tidak berguna sebagai bukti — berbeda dengan `stock_movements.sequence` yang boleh bercelah (D-100) karena ia kursor proyeksi.
+**Konsekuensi.** Penulisan audit menjadi serial per tenant. Harganya nyata dan diterima; alternatifnya adalah bukti yang tidak dapat dibuktikan.
+
+### D-121 · Adapter Akuntansi dan Persediaan kembar di dua composition root
+**Status:** Terbuka · **Sumber:** aturan proyek "jangan buat abstraksi sebelum dibutuhkan di dua tempat"
+**Temuan.** `composition/purchasing.ts` mengulang `AccountResolverPort` dan `LedgerPort` hampir kata per kata dari `composition/sales.ts`.
+**Keputusan.** Dibiarkan kembar untuk sekarang. Syaratnya sudah terpenuhi ("dua tempat"), tetapi bentuk yang benar baru terlihat setelah contoh ketiga — apakah port-nya identik, atau Pembelian kelak butuh konteks vendor yang Penjualan tidak punya.
+**Konsekuensi.** Perubahan pada penentuan akun harus disalin ke dua berkas sampai penyatuannya dilakukan. Dicatat supaya penyatuan itu tidak lupa, bukan supaya dianggap selesai.
+
+### D-122 · Dua invarian mesin status dibuat tidak bergantung jumlah modul
+**Status:** Berlaku · **Mengoreksi:** D-112
+**Temuan.** `mesin-status.test.ts` memeriksa `rows.length` pada tabel `document_transitions` lintas modul. Kedatangan Pembelian membuat kedua test gagal — gagal karena bertambah, bukan karena rusak.
+**Keputusan.** Diubah menjadi pemeriksaan himpunan dan "lebih dari nol, dan setiap barisnya memenuhi syarat".
+**Konsekuensi.** Invarian tetap menangkap pelanggaran nyata (perpindahan keluar dari `posted` selain `void`/`closed`; penarikan tanpa `own_document`) sambil tumbuh bersama modul berikutnya.
+
+### D-123 · Gerbang UI Pembelian: tidak ada komponen baru karena tidak ada layar
+**Status:** Terbuka · **Melanjutkan:** D-109
+**Jawaban jujur atas pertanyaan gerbang.** Modul Pembelian tidak menambah satu komponen UI pun — dan alasannya sama dengan D-109: `src/interface/web/modules/` masih tidak ada. Pembelian dibangun sampai lapisan HTTP, tanpa layar.
+**Penyimpangan dari Flow Archetypes yang diketahui.** Archetype 3 kini benar-benar berjalan di Pembelian (`evaluateConversion` dipanggil di penerimaan dan pembuatan tagihan, `qty_received`/`qty_billed` diperbarui) — yang berarti D-111 kini hanya berlaku untuk Penjualan, bukan untuk seluruh sistem. Archetype 2 masih kehilangan ambang nilai persetujuan (D-113), dan `approve()` di Pembelian belum memanggil `canApprove` yang sudah ditulis, persis seperti di Penjualan.
+
+---
+
 ## Sengaja Ditunda
 
 Bukan kelalaian. Setiap butir punya syarat kapan ia layak diputuskan.

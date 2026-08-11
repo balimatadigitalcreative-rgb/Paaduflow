@@ -8,6 +8,7 @@ import Fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest }
 
 import { bearerToken, sendError } from './context.js'
 import { registerIdentityRoutes } from './modules/identity/routes.js'
+import { registerPurchasingRoutes } from './modules/purchasing/routes.js'
 
 export type PaaduServer = FastifyInstance<
   import('node:http').Server,
@@ -82,6 +83,7 @@ export async function buildHttpApp(options: HttpOptions): Promise<PaaduServer> {
   )
 
   registerIdentityRoutes(app, options.services)
+  registerPurchasingRoutes(app, options.services)
 
   app.get('/openapi.json', { schema: { hide: true } }, async () => app.swagger())
 

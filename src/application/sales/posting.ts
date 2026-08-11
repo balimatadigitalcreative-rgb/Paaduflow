@@ -1,4 +1,4 @@
-import { evaluateTransition, type LifecycleStatus, type Transition } from '#domain/sales/transitions'
+import { evaluateTransition, type LifecycleStatus, type Transition } from '#shared/document-lifecycle'
 
 /**
  * Posting faktur — Module 04 §9, Flow_Archetypes §2.

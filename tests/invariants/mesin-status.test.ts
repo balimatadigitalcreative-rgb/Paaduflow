@@ -77,7 +77,10 @@ test('dokumen terposting hanya punya jalan ke void dan closed', async () => {
   // menurut urutan deklarasi tipe, bukan menurut abjad.
   // D-008: dokumen terposting tidak dapat diedit peran mana pun. Perpindahan
   // ke status lain akan membuka pintu itu lewat jalan memutar.
-  expect(rows.map((row) => row.to_status).sort()).toEqual(['closed', 'void'])
+  // Himpunan, bukan daftar: pemeriksaan ini berlaku untuk SELURUH modul, dan
+  // menghitung barisnya akan membuatnya pecah setiap kali modul baru lahir —
+  // pecah karena bertambah, bukan karena rusak.
+  expect([...new Set(rows.map((row) => row.to_status))].sort()).toEqual(['closed', 'void'])
 })
 
 test('void selalu mensyaratkan jurnal pembalik', async () => {
@@ -95,6 +98,6 @@ test('penarikan kembali hanya boleh dilakukan pengajunya sendiri', async () => {
       WHERE from_status = 'submitted' AND to_status = 'draft'`,
   )
 
-  expect(rows.length).toBe(3)
+  expect(rows.length).toBeGreaterThan(0)
   for (const row of rows) expect(row.requires).toContain('own_document')
 })

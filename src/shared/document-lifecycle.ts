@@ -1,12 +1,14 @@
 /**
- * Mesin transisi dokumen — Flow_Archetypes §2.
+ * Mesin siklus hidup dokumen — Flow_Archetypes Archetype 2.
  *
- * Transisi adalah **data**, bukan `switch`. Fungsi di berkas ini menerima
- * daftar transisi yang dimuat dari basis data dan memutuskan; ia tidak memuat
- * satu pun aturan modul di dalamnya.
+ * Dipindahkan dari `domain/sales/` di Sesi Pembelian. Ia tidak pernah menjadi
+ * logika Penjualan: ia kontrak desain untuk setiap modul yang punya dokumen
+ * bersiklus. Selama ia tinggal di rumah satu modul, modul kedua hanya punya dua
+ * pilihan — menyalinnya atau melanggar batas modul, dan keduanya menghasilkan
+ * dialek yang Flow_Archetypes ada untuk mencegah.
  *
- * Alasannya: `switch` per modul adalah dialek, dan dialek itu akan menyebar ke
- * dua puluh modul berikutnya.
+ * Jenis dokumen bertipe `string`, bukan union per modul. Mesinnya tidak perlu
+ * tahu ada berapa jenis dokumen di produk ini; tabel transisi yang tahu.
  */
 
 export type LifecycleStatus =
@@ -20,10 +22,8 @@ export type LifecycleStatus =
   | 'void'
   | 'closed'
 
-export type SalesDocType = 'quotation' | 'order' | 'invoice'
-
 export interface Transition {
-  readonly docType: SalesDocType
+  readonly docType: string
   readonly from: LifecycleStatus
   readonly to: LifecycleStatus
   /** Syarat yang diperiksa layanan, mis. `credit_limit`, `not_own_document`. */
@@ -31,7 +31,7 @@ export interface Transition {
 }
 
 export interface TransitionRequest {
-  readonly docType: SalesDocType
+  readonly docType: string
   readonly from: LifecycleStatus
   readonly to: LifecycleStatus
   /** Syarat yang sudah dipenuhi pemanggil. */

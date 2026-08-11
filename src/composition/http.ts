@@ -14,6 +14,7 @@ import { uuidv7 } from '#shared/uuid'
 import type { Pool } from 'pg'
 
 import { createIdentityModule } from './identity.js'
+import { createPurchasing } from './purchasing.js'
 
 export interface AppServicesOptions {
   readonly pool: Pool
@@ -80,7 +81,7 @@ export function createAppServices(options: AppServicesOptions): AppServices {
           authorization,
           () => uuidv7(),
         )
-        return fn({ authorization, companyAccess })
+        return fn({ authorization, companyAccess, purchasing: createPurchasing(db, context.tenantId) })
       })
     },
   }
