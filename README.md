@@ -2,7 +2,7 @@
 
 **Business Operating System** — platform multi-tenant, multi-company untuk individu, UMKM, hingga enterprise Indonesia.
 
-> **Status: pra-implementasi.** Repo ini berisi dokumentasi desain dan arsitektur lengkap, plus struktur folder. Belum ada kode aplikasi. Sesi build pertama dimulai dari `SETUP.md`.
+> **Status: implementasi berjalan.** Fondasi, autentikasi, model izin, lapisan HTTP, app shell, dan komponen primitif sudah ada dan diuji. Modul bisnis belum. Riwayat keputusannya di `docs/DECISIONS.md`; urutan pembangunannya di `docs/Build_Playbook_Claude_Code.md`.
 
 ---
 
@@ -27,21 +27,32 @@ Keputusan arsitektur yang sudah dikunci: **`docs/DECISIONS.md`**
 ```
 CLAUDE.md              Aturan yang selalu berlaku, dibaca setiap sesi Claude Code
 SETUP.md               Perintah Fase 0, jalankan sekali
-docs/                  48 dokumen desain dan arsitektur
+LICENSE                Proprietary — belum dirilis
+.env.example           Salin menjadi .env; tiga variabel yang benar-benar dipakai
+.nvmrc                 Versi Node yang dipakai proyek dan CI
+docs/                  48 dokumen desain dan arsitektur, plus tokens.json
 src/
+  shared/              Kernel bersama — Money, UUIDv7, manifest modul
   domain/              Entitas dan aturan bisnis, tanpa framework
-  application/         Use case dan orkestrasi
-  infrastructure/      Basis data, antrean, penyimpanan
-  interface/           API dan UI
-migrations/
+  application/         Use case, port, dan orkestrasi
+  infrastructure/      Basis data, transaksi, adapter luar
+  interface/
+    http/              Endpoint Fastify, kontrak kesalahan, idempotency
+    web/               React — app shell dan component library
+  db/                  Kontrak tingkat basis data lintas modul
+  composition/         Satu-satunya yang mengenal seluruh modul
+  styles/              Dibangkitkan Style Dictionary — jangan diedit tangan
+migrations/            SQL bernomor, hanya menambah
 tests/
-  unit/
-  integration/
+  unit/                Murni, tanpa basis data
+  integration/         Alur lintas lapisan di atas Postgres sungguhan
   invariants/          Yang paling penting — lihat Sesi D4 di build playbook
-tools/
+  ui/                  Perilaku keyboard dan audit aksesibilitas
+tools/                 Style Dictionary, aturan lint, runner dan pemeriksa migrasi
+.github/workflows/     CI — tujuh gerbang pada setiap push
 ```
 
-Struktur `src/` mengikuti Clean Architecture sesuai Engineering Standards. Isinya ditentukan di Sesi A1.
+Struktur `src/` mengikuti Clean Architecture. Arah ketergantungan dan batas antar modul **ditegakkan lint**, bukan konvensi — lihat `docs/DECISIONS.md` D-040 dan D-045.
 
 ---
 
@@ -89,4 +100,6 @@ Daftar lengkap di `docs/DECISIONS.md` bagian akhir.
 
 ## Lisensi & Kerahasiaan
 
-Belum ditetapkan. Bila repo ini publik dan itu tidak disengaja, ubah visibilitasnya sebelum riwayat commit bertambah — `docs/` memuat positioning, roadmap, dan arsitektur lengkap sembilan belas modul.
+Proprietary dan belum dirilis — lihat `LICENSE`. Tidak ada izin memakai, menyalin, memodifikasi, atau mendistribusikan isi repositori ini tanpa izin tertulis.
+
+Bila repo ini publik dan itu tidak disengaja, ubah visibilitasnya — `docs/` memuat positioning, roadmap, dan arsitektur lengkap sembilan belas modul.

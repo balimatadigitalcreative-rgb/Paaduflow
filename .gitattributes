@@ -1,0 +1,15 @@
+# Normalkan akhir baris. Tanpa ini, berpindah antara Windows dan Linux membuat
+# seluruh berkas terlihat berubah padahal isinya sama.
+* text=auto eol=lf
+
+*.sh text eol=lf
+*.sql text eol=lf
+
+# Biner — jangan dinormalkan
+*.pdf binary
+*.png binary
+*.jpg binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.zip binary
