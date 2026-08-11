@@ -629,6 +629,23 @@ Format nomor: `D-nnn`. Status: `Berlaku` · `Direvisi oleh D-nnn` · `Dicabut`.
 **Keputusan.** Dibangun di `components/form`, bukan di dalam modul Penjualan.
 **Konsekuensi.** Gerbang D4 menanyakan apakah modul referensi memerlukan komponen baru. Membangunnya di dalam modul akan membuat jawabannya "ya" sekaligus menyembunyikan komponennya dari modul lain. Penjaga perubahan menyebut secara eksplisit bahwa berpindah company mengubah konteks — akibatnya bukan kehilangan ketikan, melainkan bekerja di entitas legal yang berbeda.
 
+### D-097 · Penjualan mendeklarasikan port; composition root menyambungkannya
+**Status:** Berlaku · **Melaksanakan:** D-040 · **Sumber:** Module 04 §9
+**Konteks.** Posting faktur membutuhkan penentuan akun, penulisan jurnal, dan mutasi stok — ketiganya milik modul lain. Mengimpornya langsung akan melanggar batas modul dan ditolak lint.
+**Keputusan.** `application/sales/posting.ts` mendeklarasikan `AccountResolverPort`, `LedgerPort`, dan `StockPort` menurut kebutuhannya sendiri. Adapter yang menerjemahkannya ke layanan Akuntansi dan Persediaan tinggal di `composition/sales.ts` — satu-satunya berkas yang mengenal ketiganya.
+**Konsekuensi.** Ini pemakaian pertama D-040 oleh modul sungguhan, dan ia bekerja: mengangkat salah satu modul menjadi layanan terpisah kelak berarti mengganti adapter di satu berkas, bukan membongkar kode modul.
+
+### D-098 · Jurnal otomatis wajib menyimpan dokumen sumbernya
+**Status:** Berlaku · **Sumber:** Design_Handoff_Spec §3
+**Konteks.** `PostingService` semula tidak meneruskan `source_type` dan `source_id`; kolomnya ada di skema sejak Sesi A3 tetapi tidak pernah terisi. Test posting atomik yang menemukannya, karena ia mencari jurnal berdasarkan dokumen sumbernya dan tidak menemukan apa pun.
+**Keputusan.** Keduanya menjadi bagian masukan `PostJournalInput` dan ditulis di pernyataan yang sama.
+**Konsekuensi.** Penelusuran "jurnal ke sumber" menjadi mungkin. Jurnal otomatis tanpa asal adalah jurnal yang tidak dapat dijelaskan saat audit.
+
+### D-099 · Konflik edit menjawab dengan field, pelaku, dan waktu
+**Status:** Berlaku · **Melaksanakan:** D-004
+**Keputusan.** `409` membawa daftar field yang bentrok beserta nilai kedua belah pihak, siapa mengubahnya, dan kapan — diambil dari `audit_log`. Field yang hanya diubah pengirim dipisahkan sebagai `mergeable`.
+**Konsekuensi.** Menolak seluruh kiriman karena orang lain menyentuh field yang berbeda akan membuat pengguna mengetik ulang pekerjaan yang sebenarnya tidak bertabrakan.
+
 ---
 
 ## Sengaja Ditunda

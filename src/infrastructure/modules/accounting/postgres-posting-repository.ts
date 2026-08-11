@@ -19,8 +19,8 @@ export class PostgresPostingRepository implements PostingRepository {
       `WITH jurnal AS (
          INSERT INTO journals
            (id, tenant_id, company_id, journal_date, fiscal_year, fiscal_period,
-            type, currency, description)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            type, currency, description, source_type, source_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $16, $17)
          RETURNING id, tenant_id
        )
        INSERT INTO journal_lines
@@ -45,6 +45,8 @@ export class PostgresPostingRepository implements PostingRepository {
         journal.lines.map((line) => line.debit),
         journal.lines.map((line) => line.credit),
         journal.lines.map((line) => line.description ?? null),
+        journal.sourceType,
+        journal.sourceId,
       ],
     )
   }

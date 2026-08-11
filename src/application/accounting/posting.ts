@@ -25,6 +25,13 @@ export interface PostJournalInput {
   readonly type: 'auto' | 'manual' | 'adjustment' | 'closing' | 'opening' | 'reversal'
   readonly currency: string
   readonly description?: string
+  /**
+   * Dokumen pemicu. Tanpa keduanya, penelusuran "jurnal ke sumber" di
+   * Design_Handoff_Spec §3 tidak mungkin — dan jurnal otomatis tanpa asal
+   * adalah jurnal yang tidak dapat dijelaskan saat audit.
+   */
+  readonly sourceType?: string
+  readonly sourceId?: string
   readonly lines: readonly JournalLineInput[]
 }
 
@@ -38,6 +45,8 @@ export interface PostingRepository {
     type: PostJournalInput['type']
     currency: string
     description: string | null
+    sourceType: string | null
+    sourceId: string | null
     lines: readonly (JournalLineInput & { id: string; lineNo: number })[]
   }): Promise<void>
 }
@@ -86,6 +95,8 @@ export class PostingService {
       type: input.type,
       currency: input.currency,
       description: input.description ?? null,
+      sourceType: input.sourceType ?? null,
+      sourceId: input.sourceId ?? null,
       lines: input.lines.map((line, index) => ({
         ...line,
         id: this.newId(),
