@@ -549,6 +549,18 @@ Format nomor: `D-nnn`. Status: `Berlaku` · `Direvisi oleh D-nnn` · `Dicabut`.
 
 **Konsekuensi.** Tidak ada lagi token bertanda usulan. Bila keputusan nomor 1 atau 2 keliru, yang berubah tetap hanya `tokens.json` — tidak ada komponen yang menyebut nilainya.
 
+### D-083 · Seleksi baris adalah union bertag; aksi massal tidak menerima daftar id
+**Status:** Berlaku · **Sumber:** Component_Specs_Composite §1.3
+**Konteks.** "Checkbox header hanya memilih halaman ini" dan "aksi massal dieksekusi terhadap kueri filter, bukan daftar id" adalah dua aturan yang paling sering dilanggar di aplikasi enterprise, dan pelanggarannya baru terlihat pada tenant besar.
+**Keputusan.** `Selection` adalah union bertag dengan tiga varian. Varian `query` **tidak memuat daftar id sama sekali**, dan aksi massal menerima `Selection`, bukan `string[]`.
+**Konsekuensi.** "Mengirim 1.284 id dari klien" tidak dapat ditulis — bukan sekadar tidak dianjurkan. `togglePage` tidak pernah menghasilkan varian `query`; satu-satunya jalan ke sana adalah `selectAllMatching`, yang menerima jumlah total supaya afordansnya dapat menyebutkan angka itu. Mengubah satu baris saat seluruh hasil terpilih menurunkan cakupan ke halaman, karena "semua kecuali satu" tidak dapat dinyatakan sebagai kueri filter.
+
+### D-084 · Angka performa tabel dibatasi pada lapisan data
+**Status:** Berlaku · **Sumber:** Sesi C2
+**Konteks.** Playbook meminta uji 50.000 baris dan angka performanya. Test berjalan di jsdom, yang tidak melakukan layout sama sekali.
+**Keputusan.** Yang diukur dan dilaporkan hanya lapisan data: pengurutan, penyaringan, dan pembentukan halaman berkursor. Waktu cat, jank saat menggulir, dan memori **tidak** diukur, dan tidak dilaporkan seolah-olah terukur.
+**Konsekuensi.** Pengukuran render sungguhan menunggu Playwright di Sesi E1, tempat audit performa dan aksesibilitas memang dijadwalkan bersama. Ambang di test sengaja longgar: test performa yang ketat akan berkedip di CI bersama, dan test yang berkedip akan dinonaktifkan orang.
+
 ---
 
 ## Sengaja Ditunda

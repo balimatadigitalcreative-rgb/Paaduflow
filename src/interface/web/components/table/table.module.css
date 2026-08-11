@@ -1,0 +1,187 @@
+/* Data table — Component_Specs_Composite §1. */
+
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.scroll {
+  overflow-x: auto;
+}
+
+.table {
+  inline-size: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.head th {
+  padding: 0;
+  background: var(--bg-surface-sunken);
+  border-block-end: var(--border-width-default) solid var(--border-strong);
+  color: var(--text-secondary);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  text-align: start;
+  white-space: nowrap;
+}
+
+.headEnd {
+  text-align: end;
+}
+
+/* Label header dibungkus button. onClick di th tidak dapat dijangkau keyboard,
+   dan itu persis temuan Major di audit prototype. */
+.sortButton {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  inline-size: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: var(--border-width-default) solid transparent;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+}
+
+.headEnd .sortButton {
+  justify-content: flex-end;
+}
+
+.plainHeader {
+  display: block;
+  padding: var(--space-2) var(--space-3);
+}
+
+.sortRank {
+  font-size: var(--font-size-overline);
+  color: var(--text-tertiary);
+}
+
+/* Tinggi baris ditentukan density, bukan konten — virtual scroll mensyaratkan
+   tinggi tetap, dan baris yang tumbuh mengikuti isinya membuatnya mustahil. */
+.row td {
+  block-size: var(--size-row-comfortable);
+  padding: 0 var(--space-3);
+  border-block-end: var(--border-width-default) solid var(--border-subtle);
+  color: var(--text-primary);
+}
+
+.wrap[data-density='compact'] .row td {
+  block-size: var(--size-row-compact);
+}
+
+.cellEnd {
+  text-align: end;
+}
+
+.row:hover td {
+  background: var(--bg-surface-sunken);
+}
+
+.selectCell {
+  inline-size: var(--size-control-md);
+  padding-inline-start: var(--space-3);
+}
+
+/* ── Banner seleksi ───────────────────────────────────────────────────────
+   Menetap selama mode aktif, supaya pengguna tidak pernah kehilangan jejak
+   mode mana yang sedang berlaku. */
+
+.selectionBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-accent-subtle);
+  border: var(--border-width-default) solid var(--border-focus);
+  border-radius: var(--radius-md);
+}
+
+.selectionText {
+  font-size: var(--font-size-body-sm);
+}
+
+.confirm {
+  padding: var(--space-4);
+  background: var(--bg-surface-raised);
+  border: var(--border-width-default) solid var(--border-danger);
+  border-radius: var(--radius-lg);
+}
+
+/* ── Keadaan kosong ───────────────────────────────────────────────────────*/
+
+.empty {
+  padding: var(--space-12) var(--space-6);
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.emptyTitle {
+  color: var(--text-primary);
+  font-size: var(--font-size-heading-4);
+  font-weight: var(--font-weight-medium);
+  margin-block-end: var(--space-2);
+}
+
+.emptyActions {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-2);
+  margin-block-start: var(--space-4);
+}
+
+.filterSummary {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2);
+  margin-block-start: var(--space-2);
+}
+
+/* ── Skeleton ─────────────────────────────────────────────────────────────
+   Memakai definisi kolom yang sama dengan tabelnya, sehingga ia tidak dapat
+   salah bentuk tanpa tabelnya ikut salah. */
+
+.skeletonCell {
+  display: block;
+  block-size: var(--font-line-height-body);
+  margin-block: var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface-sunken);
+}
+
+/* ── Footer ───────────────────────────────────────────────────────────────*/
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-block: var(--space-2);
+  color: var(--text-secondary);
+  font-size: var(--font-size-body-sm);
+}
+
+.pager {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.srOnly {
+  position: absolute;
+  inline-size: var(--space-px);
+  block-size: var(--space-px);
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.table :focus-visible {
+  outline: var(--border-width-focus) solid var(--border-focus);
+  outline-offset: 2px;
+}
