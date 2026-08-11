@@ -561,6 +561,18 @@ Format nomor: `D-nnn`. Status: `Berlaku` · `Direvisi oleh D-nnn` · `Dicabut`.
 **Keputusan.** Yang diukur dan dilaporkan hanya lapisan data: pengurutan, penyaringan, dan pembentukan halaman berkursor. Waktu cat, jank saat menggulir, dan memori **tidak** diukur, dan tidak dilaporkan seolah-olah terukur.
 **Konsekuensi.** Pengukuran render sungguhan menunggu Playwright di Sesi E1, tempat audit performa dan aksesibilitas memang dijadwalkan bersama. Ambang di test sengaja longgar: test performa yang ketat akan berkedip di CI bersama, dan test yang berkedip akan dinonaktifkan orang.
 
+### D-085 · Perhitungan baris memakai bilangan bulat berskala mikro
+**Status:** Berlaku · **Sumber:** Flow_Archetypes §4, D-039
+**Konteks.** Urutan delapan langkah mensyaratkan pembulatan hanya di langkah terakhir. Pecahan biner tidak dapat memenuhi itu: 0,1 + 0,2 sudah meleset sebelum langkah pertama selesai.
+**Keputusan.** Seluruh hitungan antara berjalan sebagai `bigint` berskala satu juta — enam angka penjaga di bawah unit mata uang. Pembulatan terjadi sekali, saat hasil dibentuk.
+**Konsekuensi.** Nilai baris yang ditampilkan dibulatkan memakai **pembagian sisa terbesar**, sehingga jumlah baris selalu persis sama dengan nilai dokumen. Tanpa itu, invarian "jumlah nilai baris faktur sama dengan subtotalnya" akan gagal pada dokumen mana pun yang angkanya tidak habis dibagi — dan ia adalah invarian nomor 5 di `tests/invariants`.
+
+### D-086 · Diskon dokumen dialokasikan sebelum pajak, dan itu diuji sebagai pembanding
+**Status:** Berlaku, menunggu V-01 · **Sumber:** Flow_Archetypes §4
+**Keputusan.** Diskon dokumen dialokasikan proporsional ke setiap baris di langkah 5, sebelum pajak dihitung per baris di langkah 7.
+**Konsekuensi.** Ada test yang menghitung **angka yang salah** — pajak atas neto penuh — lalu memastikan hasil implementasi berbeda darinya, beserta selisihnya. Selisih itu masuk ke pelaporan pajak, bukan ke tampilan, jadi ia layak diuji sebagai pembanding eksplisit, bukan sebagai angka harapan yang bisa saja ikut salah bila seseorang menyalinnya dari implementasi.
+**Catatan status.** Urutan ini adalah **V-01** — menunggu validasi konsultan pajak, dan memblokir modul Penjualan serta Akuntansi mencapai produksi. Implementasi boleh berjalan dengan asumsi tertulis; rilis tidak.
+
 ---
 
 ## Sengaja Ditunda
