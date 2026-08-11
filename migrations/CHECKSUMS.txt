@@ -13,3 +13,5 @@
 0009_authentication.sql c70c0ebbb75c363e
 0010_auth_ip_throttle.sql 52806f7b6913e6a3
 0011_authorization.sql d38854fd48f2a337
+0012_accounts.sql 676249832b6e4b65
+0013_account_determination.sql e81ade2c330f2e50

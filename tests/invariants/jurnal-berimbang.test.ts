@@ -13,10 +13,22 @@ import { asApp, expectFailure, seedTenant, withClient, type Tenant } from './dat
  */
 
 let tenant: Tenant
+/**
+ * Sejak Sesi D1, `journal_lines.account_id` punya foreign key ke `accounts`.
+ * Test ini sebelumnya memakai UUID acak dan lolos hanya karena foreign key-nya
+ * memang belum ada.
+ */
+let accountId: string
 
 beforeAll(async () => {
   await withClient(async (client) => {
     tenant = await seedTenant(client, `jurnal-${randomUUID().slice(0, 8)}`)
+    accountId = randomUUID()
+    await client.query(
+      `INSERT INTO accounts (id, tenant_id, company_id, code, name, type)
+       VALUES ($1, $2, $3, '1100', 'Kas', 'asset')`,
+      [accountId, tenant.tenantId, tenant.companyId],
+    )
   })
 })
 
@@ -44,7 +56,7 @@ async function postJournal(lines: Line[]): Promise<string> {
         `INSERT INTO journal_lines
            (id, tenant_id, journal_id, line_no, account_id, debit, credit, currency)
          VALUES ($1, $2, $3, $4, $5, $6, $7, 'IDR')`,
-        [randomUUID(), tenant.tenantId, journalId, index + 1, randomUUID(), line.debit, line.credit],
+        [randomUUID(), tenant.tenantId, journalId, index + 1, accountId, line.debit, line.credit],
       )
     }
 
@@ -123,7 +135,7 @@ test('jurnal yang gagal tidak meninggalkan baris apa pun', async () => {
       `INSERT INTO journal_lines
          (id, tenant_id, journal_id, line_no, account_id, debit, credit, currency)
        VALUES ($1, $2, $3, 1, $4, 100, 0, 'IDR')`,
-      [randomUUID(), tenant.tenantId, journalId, randomUUID()],
+      [randomUUID(), tenant.tenantId, journalId, accountId],
     )
     await expectFailure(() => client.query('COMMIT'))
   })

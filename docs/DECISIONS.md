@@ -573,6 +573,28 @@ Format nomor: `D-nnn`. Status: `Berlaku` · `Direvisi oleh D-nnn` · `Dicabut`.
 **Konsekuensi.** Ada test yang menghitung **angka yang salah** — pajak atas neto penuh — lalu memastikan hasil implementasi berbeda darinya, beserta selisihnya. Selisih itu masuk ke pelaporan pajak, bukan ke tampilan, jadi ia layak diuji sebagai pembanding eksplisit, bukan sebagai angka harapan yang bisa saja ikut salah bila seseorang menyalinnya dari implementasi.
 **Catatan status.** Urutan ini adalah **V-01** — menunggu validasi konsultan pajak, dan memblokir modul Penjualan serta Akuntansi mencapai produksi. Implementasi boleh berjalan dengan asumsi tertulis; rilis tidak.
 
+### D-087 · Spesifisitas aturan akun dihitung basis data dengan bobot berjenjang
+**Status:** Berlaku · **Sumber:** Module 07 §6, D-011
+**Konteks.** Kolom `specificity` yang diisi manusia akan diisi berbeda oleh dua orang untuk aturan yang bentuknya sama. Dan bobot yang rata membuat aturan ber-kategori-item berskor sama dengan aturan ber-gudang+pajak+mitra — pemenangnya lalu ditentukan urutan baris, yaitu tidak ditentukan sama sekali.
+**Keputusan.** `specificity` adalah kolom `GENERATED ALWAYS AS … STORED` dengan bobot berjenjang: kategori item 8, gudang 4, kode pajak 2, jenis mitra 1.
+**Konsekuensi.** Bobotnya hidup di dua tempat — kolom terhitung dan fungsi domain yang dapat diuji tanpa basis data. Ada test invarian yang membandingkan keduanya terhadap Postgres sungguhan, sehingga keduanya tidak dapat menyimpang diam-diam.
+
+### D-088 · Aturan seri ditolak sebagai ambigu, bukan diambil yang pertama
+**Status:** Berlaku · **Sumber:** Module 07 §6
+**Keputusan.** Bila dua aturan berskor sama-sama tertinggi, resolver mengembalikan `ambiguous`. Ditambah kekangan unik atas bentuk aturan, sehingga dua aturan yang persis sama tidak dapat hidup berdampingan.
+**Konsekuensi.** Konfigurasi yang tidak dapat dijelaskan ketahuan saat resolve, bukan saat tutup buku. Sejalan dengan D-011: tidak ada akun cadangan, dan penolakan menyebutkan aturan apa yang kurang.
+
+### D-089 · Akun induk tidak dapat dijurnal, ditegakkan basis data
+**Status:** Berlaku · **Menambah:** Module 07 §6
+**Konteks.** Modul 07 melarang akun kontrol dijurnal manual. Larangan kedua tidak tertulis tetapi mengikuti langsung dari hierarki: memposting ke akun induk membuat jumlah anak tidak sama dengan induknya, dan laporan menjadi tidak dapat dijelaskan.
+**Keputusan.** Satu trigger menegakkan keduanya di `journal_lines`, bukan di layanan — karena keduanya harus berlaku juga untuk jalur tulis yang belum ada hari ini.
+
+### D-090 · Template bagan akun adalah data, bukan kode modul
+**Status:** Berlaku, mekanisme saja · **Sumber:** CLAUDE.md, D-011
+**Konteks.** Company baru membutuhkan bagan akun awal, tetapi modul dilarang menyebut nomor akun.
+**Keputusan.** `chart_templates` dan `chart_template_accounts` — template per negara sebagai data, mengikuti pola katalog izin. Sesi D1 membangun mekanismenya saja.
+**Konsekuensi.** Isi template konkret memerlukan akuntan, sama seperti V-01 memerlukan konsultan pajak. Sampai ada, company baru mulai dengan bagan kosong.
+
 ---
 
 ## Sengaja Ditunda
