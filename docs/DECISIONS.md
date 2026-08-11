@@ -534,6 +534,21 @@ Format nomor: `D-nnn`. Status: `Berlaku` · `Direvisi oleh D-nnn` · `Dicabut`.
 **Keputusan.** Seluruh avatar memakai satu latar netral untuk sekarang. Pembeda identitas sementara adalah inisial dan bentuk — lingkaran untuk orang, rounded square untuk company.
 **Konsekuensi.** Menunggu palet warna identitas di `tokens.json`. Ramp `dataviz` sudah ada dan berjumlah delapan, tetapi ia Lapis 1 dan komponen tidak boleh menyentuhnya; yang dibutuhkan adalah token semantik yang merujuk ke sana.
 
+### D-082 · Utang token ditutup
+**Status:** Berlaku · **Menutup:** D-073, D-078 · **Menegaskan:** D-081 · **Sumber:** Design Tokens §11
+**Konteks.** Tiga usulan token menumpuk menunggu keputusan pemilik design system, dan setiap sesi komponen menambah daftarnya. Utang yang menunggu keputusan adalah utang yang tumbuh.
+**Keputusan.** Empat hal diputuskan sekaligus.
+
+**1. `border-default` dan `border-strong` di light mode ditukar.** Sebelumnya `default` memakai `neutral.300` dan `strong` memakai `neutral.200`, sehingga "strong" justru berkontras lebih rendah daripada "default". Dark mode sudah benar dan menaik monoton — subtle 800, default 700, strong 600, interactive 500. Light mode kini mengikuti bentuk yang sama: subtle 100, default 200, strong 300, interactive 450. Ini menutup temuan yang diangkat sejak Sesi A2.
+
+**2. `size.rail` dibatalkan; module rail memakai `size.sidebar-collapsed` (56px).** Layout_System §3 menulis rail 46px, tetapi §2 dokumen yang sama menyatakan lebar chrome 296px. 46 + 240 = 286, sedangkan 56 + 240 = 296. Aritmetika dokumennya sendiri yang menjawab, dan jawabannya sama dengan nilai yang sudah ada di `tokens.json` sejak awal. Satu token lebih sedikit, satu konflik hilang.
+
+**3. `size.topbar` (46px) dan `size.panel` (360px) diterima**, beserta enam token semantik dari Sesi C1 — `action-disabled-bg`, `action-danger-bg-hover`, `border-danger`, `text-danger`, `text-success`, `text-warning`. Penanda `USULAN` dilepas dari seluruhnya.
+
+**4. Warna avatar per identitas tetap tidak diterapkan.** Bukan ditunda lagi — ditolak sampai ada yang mengukur kontrasnya. Ramp `dataviz` berjumlah delapan dan luminansinya sangat beragam; sebagian tidak dapat memuat teks putih maupun gelap dengan aman. Menurunkan palet identitas tanpa pengukuran berarti mengirim avatar yang tidak terbaca ke produksi. Inisial dan bentuk sudah membedakan identitas hari ini.
+
+**Konsekuensi.** Tidak ada lagi token bertanda usulan. Bila keputusan nomor 1 atau 2 keliru, yang berubah tetap hanya `tokens.json` — tidak ada komponen yang menyebut nilainya.
+
 ---
 
 ## Sengaja Ditunda

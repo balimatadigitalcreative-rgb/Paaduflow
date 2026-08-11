@@ -3,7 +3,7 @@
 
 .shell {
   display: grid;
-  grid-template-columns: var(--size-rail) auto 1fr;
+  grid-template-columns: var(--size-sidebar-collapsed) auto 1fr;
   grid-template-rows: var(--size-topbar) 1fr;
   height: 100vh;
   background: var(--bg-canvas);
