@@ -34,6 +34,7 @@ export class JwtAccessTokenIssuer implements AccessTokenIssuer {
     return new SignJWT({
       purpose: ACCESS_PURPOSE,
       email: claims.email,
+      sid: claims.sessionId,
       memberships: claims.memberships.map((membership) => ({
         tenant_id: membership.tenantId,
         is_owner: membership.isOwner,
@@ -44,6 +45,35 @@ export class JwtAccessTokenIssuer implements AccessTokenIssuer {
       .setIssuedAt(Math.floor(now.getTime() / 1000))
       .setExpirationTime(Math.floor((now.getTime() + ACCESS_TOKEN_TTL_MS) / 1000))
       .sign(this.key)
+  }
+
+  async readAccessToken(token: string): Promise<AccessTokenClaims | null> {
+    try {
+      const { payload } = await jwtVerify(token, this.key)
+      if (payload.purpose !== ACCESS_PURPOSE) return null
+      if (
+        typeof payload.sub !== 'string' ||
+        typeof payload.email !== 'string' ||
+        typeof payload.sid !== 'string'
+      ) {
+        return null
+      }
+
+      const raw = Array.isArray(payload.memberships) ? payload.memberships : []
+      return {
+        userId: payload.sub,
+        email: payload.email,
+        sessionId: payload.sid,
+        memberships: raw.flatMap((entry: unknown) => {
+          if (typeof entry !== 'object' || entry === null) return []
+          const record = entry as Record<string, unknown>
+          if (typeof record.tenant_id !== 'string') return []
+          return [{ tenantId: record.tenant_id, isOwner: record.is_owner === true }]
+        }),
+      }
+    } catch {
+      return null
+    }
   }
 
   async issueMfaChallenge(userId: string, now: Date): Promise<string> {

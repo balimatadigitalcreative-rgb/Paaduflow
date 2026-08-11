@@ -3,7 +3,13 @@ import { afterFailedAttempt, isLocked } from '#domain/identity/lockout-policy'
 import { checkPassword, normalizePassword, type PasswordRejection } from '#domain/identity/password-policy'
 import { ACCESS_TOKEN_TTL_MS, REFRESH_TOKEN_TTL_MS } from '#domain/identity/session-policy'
 
-import type { IdentityDependencies, RequestContext, SessionRecord, UserRecord } from './ports.js'
+import type {
+  AccessTokenClaims,
+  IdentityDependencies,
+  RequestContext,
+  SessionRecord,
+  UserRecord,
+} from './ports.js'
 
 /**
  * Registrasi, verifikasi email, masuk, dan MFA.
@@ -90,6 +96,11 @@ export class AuthenticationService {
     })
 
     return { kind: 'accepted' }
+  }
+
+  /** Membaca access token. Lapisan HTTP memakainya di setiap permintaan. */
+  async readAccessToken(token: string): Promise<AccessTokenClaims | null> {
+    return this.deps.accessTokens.readAccessToken(token)
   }
 
   async verifyEmail(token: string): Promise<boolean> {
@@ -396,7 +407,7 @@ export class AuthenticationService {
 
     const memberships = await repository.listMemberships(user.id)
     const accessToken = await accessTokens.issueAccessToken(
-      { userId: user.id, email: user.email, memberships },
+      { userId: user.id, email: user.email, sessionId: session.id, memberships },
       at,
     )
 

@@ -176,12 +176,16 @@ export interface TotpService {
 export interface AccessTokenClaims {
   readonly userId: string
   readonly email: string
+  /** Sesi asal token ini. Dipakai menandai "perangkat ini" di daftar sesi. */
+  readonly sessionId: string
   readonly memberships: readonly TenantMembership[]
 }
 
 export interface AccessTokenIssuer {
   /** Access token. TIDAK pernah memuat company_id — D-002. */
   issueAccessToken(claims: AccessTokenClaims, now: Date): Promise<string>
+  /** Membaca access token. `null` untuk token rusak, kedaluwarsa, atau salah tujuan. */
+  readAccessToken(token: string): Promise<AccessTokenClaims | null>
   /** Tantangan MFA berumur pendek, menggantikan penyimpanan tantangan di basis data. */
   issueMfaChallenge(userId: string, now: Date): Promise<string>
   readMfaChallenge(token: string): Promise<string | null>

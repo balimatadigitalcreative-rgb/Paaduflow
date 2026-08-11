@@ -89,7 +89,7 @@ export class SessionService {
 
     const memberships = await repository.listMemberships(session.userId)
     const accessToken = await accessTokens.issueAccessToken(
-      { userId: user.id, email: user.email, memberships },
+      { userId: user.id, email: user.email, sessionId: newSessionId, memberships },
       at,
     )
 

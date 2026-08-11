@@ -424,6 +424,39 @@ Format nomor: `D-nnn`. Status: `Berlaku` · `Direvisi oleh D-nnn` · `Dicabut`.
 
 ---
 
+## Lapisan HTTP
+
+*Diputuskan di Sesi B2, bagian kedua.*
+
+### D-066 · Tiap sebab penolakan punya status HTTP tersendiri
+**Status:** Berlaku · **Sumber:** Module 02 §7
+**Keputusan.** `permission_denied` → 403 · `plan_restricted` → **402** · `state_restricted` → 409. Kodenya tetap ada di badan jawaban; status hanya membantu klien yang memutuskan sebelum membaca badan.
+**Konsekuensi.** 402 dipilih karena `plan_restricted` satu-satunya sebab yang jalan keluarnya adalah membayar. Klien yang menangani 403 secara seragam tidak akan salah menyembunyikan tawaran upgrade.
+
+### D-067 · Registrasi menjawab 202, bukan 201
+**Status:** Berlaku · **Sumber:** Module 02 §11
+**Konteks.** 201 Created menyatakan sesuatu telah dibuat. Untuk email yang sudah terdaftar, tidak ada yang dibuat — dan mengatakannya berarti mengakui email itu ada.
+**Keputusan.** 202 Accepted dengan pesan yang sama untuk kedua kasus: "bila email tersebut dapat didaftarkan, tautan verifikasi sudah dikirim".
+**Konsekuensi.** Klien tidak dapat mengetahui hasil registrasi dari jawaban HTTP; ia mengetahuinya dari email. Itu memang harganya.
+
+### D-068 · Idempotency memakai `INSERT … ON CONFLICT`, bukan periksa-lalu-tulis
+**Status:** Berlaku · **Sumber:** butir 12 Design_Handoff_Spec §2
+**Keputusan.** Penyisipan baris kunci yang menentukan siapa yang menang. Dua permintaan bersamaan berlomba; hanya satu menyisipkan, yang kalah membaca baris pemenang.
+**Konsekuensi.** Periksa-lalu-tulis akan meloloskan keduanya — persis skenario yang idempotency ada untuk cegah. Kunci dengan muatan berbeda ditolak `422`, bukan dijawab dengan hasil permintaan lain: klien yang menerima jawaban operasi berbeda akan mengira operasinya berhasil. Kunci dilepas bila penangan melempar, supaya percobaan ulang tidak buntu selamanya.
+
+### D-069 · Layanan dirakit ulang per permintaan; cache izin dibagikan
+**Status:** Berlaku · **Sumber:** Module 02 §5
+**Konteks.** Repository terikat pada transaksi permintaan — di situlah konteks tenant hidup lewat `SET LOCAL`. Tetapi cache izin yang lahir dan mati bersama layanan tidak pernah menolong siapa pun, padahal resolusi izin dipanggil di setiap permintaan.
+**Keputusan.** Layanan bercakupan company dibuat ulang tiap permintaan; cache izin dibuat sekali di composition root dan disuntikkan ke setiap instans.
+**Konsekuensi.** Pencabutan akses menginvalidasi cache bersama, bukan salinan yang sudah telanjur tersebar.
+
+### D-070 · Adapter sementara diberi nama yang tidak nyaman dibaca
+**Status:** Berlaku
+**Keputusan.** Pengganti sementara bernama `UncheckedBreachList` dan `ConsoleMailer`, dan proses `api` menuliskan peringatan setiap kali menyala bahwa Modul 02 §11 belum terpenuhi.
+**Konsekuensi.** Adapter pengganti yang bernama netral akan bertahan sampai produksi tanpa ada yang menyadarinya. Nama yang canggung di composition root adalah pengingat yang tidak dapat diabaikan diam-diam.
+
+---
+
 ## Sengaja Ditunda
 
 Bukan kelalaian. Setiap butir punya syarat kapan ia layak diputuskan.
@@ -437,7 +470,8 @@ Bukan kelalaian. Setiap butir punya syarat kapan ia layak diputuskan.
 | Region kedua sebagai siaga aktif | Sasaran ketersediaan per tier ditetapkan bisnis (V-06) |
 | Daftar kata sandi bocor sungguhan | Sebelum peluncuran. Port `BreachedPasswordList` sudah ada dan dipanggil; implementasinya belum — saat ini hanya tiruan di test, sehingga Module 02 §11 belum terpenuhi di produksi |
 | Pencabutan access token sebelum kedaluwarsa | Saat lapisan HTTP dirakit. Mencabut sesi menghentikan penyegaran seketika, tetapi access token yang sudah terbit tetap berlaku sampai 15 menit |
-| Endpoint HTTP autentikasi | Sesi B2, bersama kontrak kesalahan tiga sebab dan konteks company dari path |
+| Idempotency untuk endpoint pra-autentikasi | Saat dibutuhkan. `idempotency_keys` bertenant dan ber-RLS, sedangkan `/v1/auth/*` berjalan sebelum tenant diketahui. Registrasi sendiri sudah idempoten secara desain (D-067) |
+| Pencabutan access token sebelum kedaluwarsa | Masih terbuka dari B1. Lapisan HTTP kini ada, jadi daftar cabut punya tempat untuk dipasang |
 
 ---
 

@@ -6,6 +6,21 @@ import { denyAll, scopeToFilter } from '#domain/identity/permission'
 import type { AuthorizationRepository, CompanyAccess } from './authorization-ports.js'
 
 /**
+ * Kontrak kesalahan diteruskan lewat lapisan aplikasi.
+ *
+ * Lapisan interface tidak boleh mengimpor domain (D-045), sedangkan ia justru
+ * yang harus membentuk amplop galat. Meneruskannya di sini menjaga arah
+ * ketergantungan tanpa menyalin definisinya ke dua tempat.
+ */
+export type {
+  AuthorizationDecision,
+  AuthorizationDenial,
+  ErrorEnvelope,
+  TenantPlan,
+} from '#domain/identity/authorization'
+export { toErrorEnvelope } from '#domain/identity/authorization'
+
+/**
  * Resolusi izin efektif dan penurunannya menjadi filter baris.
  *
  * Dua hal yang dijaga di sini:
@@ -45,14 +60,31 @@ interface CacheEntry {
   readonly expiresAt: number
 }
 
+/**
+ * Cache dibagikan antar permintaan.
+ *
+ * Layanan ini dirakit ulang setiap permintaan karena repository-nya terikat
+ * pada transaksi permintaan itu. Bila cache-nya ikut lahir dan mati bersama
+ * layanan, ia tidak pernah menolong siapa pun — padahal resolusi izin dipanggil
+ * di setiap permintaan dan Modul 02 §5 menargetkan di bawah 5ms.
+ */
+export type PermissionCache = Map<string, CacheEntry>
+
+export function createPermissionCache(): PermissionCache {
+  return new Map()
+}
+
 export class AuthorizationService {
-  private readonly cache = new Map<string, CacheEntry>()
+  private readonly cache: PermissionCache
 
   constructor(
     private readonly repository: AuthorizationRepository,
     private readonly now: () => Date = () => new Date(),
     private readonly ttlMs: number = DEFAULT_TTL_MS,
-  ) {}
+    cache: PermissionCache = new Map(),
+  ) {
+    this.cache = cache
+  }
 
   /**
    * Izin efektif pengguna di satu company, atau null bila ia tidak punya akses
