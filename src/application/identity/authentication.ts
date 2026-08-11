@@ -63,6 +63,7 @@ export class AuthenticationService {
         type: 'register.duplicate_email',
         ip: context.ip,
         userAgent: context.userAgent,
+        requestId: context.requestId ?? null,
         metadata: {},
       })
       await mailer.sendAccountAlreadyExists(email)
@@ -92,6 +93,7 @@ export class AuthenticationService {
       type: 'register.created',
       ip: context.ip,
       userAgent: context.userAgent,
+        requestId: context.requestId ?? null,
       metadata: {},
     })
 
@@ -116,6 +118,7 @@ export class AuthenticationService {
       type: 'email.verified',
       ip: null,
       userAgent: null,
+      requestId: null,
       metadata: {},
     })
     return true
@@ -142,6 +145,7 @@ export class AuthenticationService {
           type: 'login.blocked_ip',
           ip: context.ip,
           userAgent: context.userAgent,
+        requestId: context.requestId ?? null,
           metadata: { recentFailures: kegagalan },
         })
         return { kind: 'invalid_credentials' }
@@ -165,6 +169,7 @@ export class AuthenticationService {
         type: 'login.failed',
         ip: context.ip,
         userAgent: context.userAgent,
+        requestId: context.requestId ?? null,
         metadata: { reason: 'unknown_email' },
       })
       return { kind: 'invalid_credentials' }
@@ -179,6 +184,7 @@ export class AuthenticationService {
         type: 'login.failed',
         ip: context.ip,
         userAgent: context.userAgent,
+        requestId: context.requestId ?? null,
         metadata: { reason: 'no_credential' },
       })
       return { kind: 'invalid_credentials' }
@@ -194,6 +200,7 @@ export class AuthenticationService {
         type: 'login.blocked_locked',
         ip: context.ip,
         userAgent: context.userAgent,
+        requestId: context.requestId ?? null,
         metadata: { lockedUntil: credential.lockedUntil?.toISOString() ?? null },
       })
       return { kind: 'invalid_credentials' }
@@ -209,6 +216,7 @@ export class AuthenticationService {
         type: 'login.failed',
         ip: context.ip,
         userAgent: context.userAgent,
+        requestId: context.requestId ?? null,
         metadata: { failedAttempts: next.failedAttempts },
       })
       return { kind: 'invalid_credentials' }
@@ -223,6 +231,7 @@ export class AuthenticationService {
         type: 'login.blocked_status',
         ip: context.ip,
         userAgent: context.userAgent,
+        requestId: context.requestId ?? null,
         metadata: { status: user.status },
       })
       return { kind: 'invalid_credentials' }
@@ -266,6 +275,7 @@ export class AuthenticationService {
           type: 'mfa.replay_rejected',
           ip: context.ip,
           userAgent: context.userAgent,
+        requestId: context.requestId ?? null,
           metadata: {},
         })
         return { kind: 'invalid_credentials' }
@@ -282,6 +292,7 @@ export class AuthenticationService {
         type: 'mfa.recovery_code_used',
         ip: context.ip,
         userAgent: context.userAgent,
+        requestId: context.requestId ?? null,
         metadata: {},
       })
       return this.startSession(user, context)
@@ -293,6 +304,7 @@ export class AuthenticationService {
       type: 'mfa.failed',
       ip: context.ip,
       userAgent: context.userAgent,
+        requestId: context.requestId ?? null,
       metadata: {},
     })
     return { kind: 'invalid_credentials' }
@@ -381,6 +393,7 @@ export class AuthenticationService {
       type: 'password.changed',
       ip: context.ip,
       userAgent: context.userAgent,
+        requestId: context.requestId ?? null,
       metadata: { revokedSessions: revoked },
     })
 
@@ -417,6 +430,7 @@ export class AuthenticationService {
       type: 'login.succeeded',
       ip: context.ip,
       userAgent: context.userAgent,
+        requestId: context.requestId ?? null,
       metadata: { sessionId: session.id, accessTokenTtlMs: ACCESS_TOKEN_TTL_MS },
     })
 

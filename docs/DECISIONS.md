@@ -692,6 +692,27 @@ Format nomor: `D-nnn`. Status: `Berlaku` · `Direvisi oleh D-nnn` · `Dicabut`.
 
 ---
 
+## Observabilitas
+
+### D-106 · Penulisan pada tabel append-only dideteksi di kode, bukan hanya ditolak saat berjalan
+**Status:** Berlaku · **Sumber:** Resilience §6
+**Konteks.** D-005 mencabut hak `UPDATE` dan `DELETE` dari peran aplikasi, sehingga penulisan terlarang gagal saat berjalan. Tetapi kegagalan runtime pada jalur yang jarang dilewati bisa berbulan-bulan tidak ketahuan.
+**Keputusan.** `npm run check:append-only` memindai seluruh `src/` dan menolak `UPDATE`, `DELETE`, maupun `TRUNCATE` pada tabel di `src/db/append-only-tables.ts` — termasuk SQL yang menyeberang baris di dalam template literal. Berjalan di lint, hook pre-commit, dan CI.
+**Konsekuensi.** Satu daftar dibaca empat pihak: migrasi, test invarian, pemeriksa ini, dan kode aplikasi. Pintu daruratnya `-- paadu:allow-append-only-write`, sengaja panjang supaya terlihat di tinjauan.
+
+### D-107 · Pelanggaran invarian tidak dapat diturunkan menjadi peringatan
+**Status:** Berlaku · **Sumber:** Resilience §7
+**Keputusan.** `Telemetry.invariant()` tidak menerima parameter severity. Invarian yang gagal selalu `incident`.
+**Konsekuensi.** "Belum ada pengguna yang mengeluh" bukan alasan menurunkan tingkatnya — ia berarti data sedang salah dan belum ada yang menyadarinya. Ketiga lapis melewati satu jalur yang sama, karena tiga jalur terpisah berarti hanya dua di antaranya yang benar-benar dipantau. Empat pemeriksaan berkala hidup sebagai data di `INVARIANT_CHECKS`, sehingga menambah invarian berarti menambah satu baris.
+
+### D-108 · `X-Request-Id` turun sampai ke audit trail
+**Status:** Berlaku · **Sumber:** Resilience §7, Module 17
+**Temuan.** `audit_log` membawa `request_id` sejak migrasi `0005`, tetapi `auth_events` tidak — sehingga satu insiden autentikasi tidak dapat ditelusuri dari log ke jejak ke catatan. Justru peristiwa autentikasi yang paling sering perlu ditelusuri saat insiden keamanan.
+**Keputusan.** Kolom ditambahkan lewat migrasi `0017`, dan id permintaan diteruskan dari lapisan HTTP melalui `RequestContext` sampai ke penulisan peristiwa.
+**Konsekuensi.** Nullable dengan sengaja: peristiwa yang lahir di luar permintaan HTTP — pekerjaan terjadwal, relay outbox — tidak punya id permintaan, dan nilai palsu di sana akan membuat penelusuran menunjuk ke tempat yang salah.
+
+---
+
 ## Sengaja Ditunda
 
 Bukan kelalaian. Setiap butir punya syarat kapan ia layak diputuskan.

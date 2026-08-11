@@ -18,3 +18,4 @@
 0014_inventory.sql 6dfc84e0d7a2bc54
 0015_sales.sql 787f32d6f33ba775
 0016_stock_sequence.sql 486a688d67b8eeb6
+0017_auth_events_request_id.sql 43e5897c469a90a7

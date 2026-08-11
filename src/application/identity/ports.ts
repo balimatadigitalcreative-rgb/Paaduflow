@@ -76,6 +76,11 @@ export interface AuthEvent {
   readonly type: string
   readonly ip: string | null
   readonly userAgent: string | null
+  /**
+   * `X-Request-Id`. Ia yang menyambungkan log, jejak, dan audit trail menjadi
+   * satu rangkaian yang dapat ditelusuri — Resilience §7.
+   */
+  readonly requestId: string | null
   readonly metadata: Record<string, unknown>
 }
 
@@ -219,6 +224,12 @@ export interface RequestContext {
   readonly ip: string | null
   readonly userAgent: string | null
   readonly device: string | null
+  readonly requestId?: string | null
 }
 
-export const ANONYMOUS_CONTEXT: RequestContext = { ip: null, userAgent: null, device: null }
+export const ANONYMOUS_CONTEXT: RequestContext = {
+  ip: null,
+  userAgent: null,
+  device: null,
+  requestId: null,
+}

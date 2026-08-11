@@ -48,6 +48,7 @@ export class SessionService {
         type: 'session.reuse_detected',
         ip: context.ip,
         userAgent: context.userAgent,
+        requestId: context.requestId ?? null,
         metadata: { familyId: session.familyId, revokedSessions: revoked },
       })
       return { kind: 'reuse_detected', revokedSessions: revoked }
@@ -115,6 +116,7 @@ export class SessionService {
       type: 'session.logout',
       ip: context.ip,
       userAgent: context.userAgent,
+        requestId: context.requestId ?? null,
       metadata: { sessionId: session.id },
     })
     return true
@@ -159,6 +161,7 @@ export class SessionService {
       type: 'session.revoked',
       ip: context.ip,
       userAgent: context.userAgent,
+        requestId: context.requestId ?? null,
       metadata: { sessionId },
     })
     return true

@@ -376,8 +376,10 @@ export class PostgresIdentityRepository implements IdentityRepository {
 
   async appendAuthEvent(event: AuthEvent): Promise<void> {
     await this.db.query(
-      `INSERT INTO auth_events (id, user_id, tenant_id, type, ip, user_agent, metadata)
-       VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6)`,
+      // `request_id` menyambungkan baris ini dengan log dan jejak permintaan
+      // yang sama — Resilience §7.
+      `INSERT INTO auth_events (id, user_id, tenant_id, type, ip, user_agent, metadata, request_id)
+       VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7)`,
       [
         event.userId,
         event.tenantId,
@@ -385,6 +387,7 @@ export class PostgresIdentityRepository implements IdentityRepository {
         event.ip,
         event.userAgent,
         JSON.stringify(event.metadata),
+        event.requestId,
       ],
     )
   }

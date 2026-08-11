@@ -20,6 +20,12 @@ if ! npm run --silent lint; then
   exit 1
 fi
 
+if ! npm run --silent check:append-only; then
+  echo ""
+  echo "Commit ditolak: penulisan terlarang pada tabel append-only."
+  exit 1
+fi
+
 if ! npm run --silent check:migrations; then
   echo ""
   echo "Commit ditolak karena migrasi. Rujukan: docs/DECISIONS.md D-033."

@@ -19,10 +19,13 @@ const KonteksPermintaan = Type.Object({
 })
 
 export function registerIdentityRoutes(app: PaaduServer, services: AppServices): void {
-  const konteks = (request: { ip: string; headers: Record<string, unknown> }) => ({
+  const konteks = (request: { ip: string; id: string; headers: Record<string, unknown> }) => ({
     ip: request.ip,
     userAgent: typeof request.headers['user-agent'] === 'string' ? request.headers['user-agent'] : null,
     device: null,
+    // Id permintaan ikut turun sampai ke audit trail, sehingga satu insiden
+    // dapat ditelusuri dari log ke jejak ke catatan audit — Resilience §7.
+    requestId: request.id,
   })
 
   app.post(
