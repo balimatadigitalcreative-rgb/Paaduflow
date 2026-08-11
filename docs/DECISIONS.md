@@ -713,6 +713,40 @@ Format nomor: `D-nnn`. Status: `Berlaku` · `Direvisi oleh D-nnn` · `Dicabut`.
 
 ---
 
+## Koreksi Gerbang D4
+
+*Ditulis saat menjawab ulang dua pertanyaan gerbang. Empat hal di bawah tidak tercatat sebelumnya, dan tiga di antaranya membuat D-102 terbaca lebih kuat daripada kenyataannya.*
+
+### D-109 · D-102 dikoreksi: design system belum terbukti, ia baru belum terbantah
+**Status:** Berlaku · **Mengoreksi:** D-102
+**Temuan.** D-102 menyatakan modul referensi tidak memerlukan komponen UI baru. Secara teknis benar, tetapi **modul Penjualan tidak memiliki satu layar pun** — `src/interface/web/modules/` tidak ada, dan tiga komponen Form Layout yang dibangun di D3 tidak dipakai di berkas mana pun.
+**Koreksi.** Gerbang D4 ada untuk menguji apakah design system bertahan saat dipakai modul nyata. Modul nyata belum memakainya. Jawaban "tidak ada komponen baru" karena itu lolos tanpa ada yang diuji.
+**Konsekuensi.** Hal-hal yang biasanya baru ketahuan saat membangun layar belum tersentuh: simpan otomatis per field pada dokumen draf, navigasi sebelumnya/berikutnya yang mempertahankan filter daftar asal, dan tab bar. Gerbang wajib diulang setelah layar pertama ada.
+
+### D-110 · Penjaga periode fiskal tidak menjaga apa pun
+**Status:** Terbuka, blocking · **Sumber:** Module 04 §12
+**Temuan.** Transisi `approved → posted` mensyaratkan `fiscal_period_open`, dan adapternya mengembalikan `true` tanpa syarat. Tabel `fiscal_periods` tidak pernah dibuat, padahal rencana Sesi D1 mencantumkannya di dalam cakupan.
+**Akibat.** "Posting ke periode tertutup ditolak" — test negatif wajib di Modul 04 §12 — saat ini **tidak mungkin lulus maupun gagal**, karena tidak ada periode yang dapat ditutup.
+**Konsekuensi.** Dicatat sebagai utang blocking, bukan sebagai detail. Syarat yang selalu terpenuhi lebih berbahaya daripada syarat yang tidak ada: ia terbaca seperti perlindungan.
+
+### D-111 · Konversi dokumen ada di domain, tidak pernah dijalankan
+**Status:** Terbuka · **Sumber:** Flow_Archetypes §3
+**Temuan.** `evaluateConversion` teruji tujuh kasus dan tidak dipanggil satu layanan pun. Tidak ada yang memperbarui `qty_invoiced`, dan `converted_from_id` tidak pernah diisi.
+**Konsekuensi.** Archetype 3 seluruhnya masih berupa niat: penjagaan konversi berlebih, jejak dua arah, dan penandaan perubahan harga saat konversi belum berjalan. Kolom dan constraint-nya sudah ada, jadi menyalakannya kelak bersifat menambah.
+
+### D-112 · Mesin status Penjualan kehilangan empat perpindahan Archetype 2
+**Status:** Diperbaiki · **Melengkapi:** D-094
+**Temuan.** Tabel transisi di migrasi `0015` kehilangan `rejected → draft` untuk faktur — sehingga faktur yang ditolak terkunci selamanya — serta pembatalan dari `submitted` dan `approved`, dan penarikan kembali `submitted → draft`.
+**Perbaikan.** Migrasi `0018` melengkapinya, dan `tests/invariants/mesin-status.test.ts` kini memeriksa kelengkapannya terhadap Archetype 2 alih-alih mempercayakannya pada mata.
+**Konsekuensi.** Ini modul referensi. Mesin status yang bolong di sini akan disalin ke dua puluh modul berikutnya beserta bolongnya — dan test kelengkapan itulah yang mencegahnya.
+
+### D-113 · Persetujuan berambang nilai belum ada
+**Status:** Terbuka · **Sumber:** Flow_Archetypes §2
+**Temuan.** Archetype 2 menetapkan alur persetujuan per company, per jenis dokumen, **per ambang nilai**, beserta rantai berurutan atau paralel, delegasi, eskalasi, dan alasan penolakan yang wajib. Yang terbangun hanya "pengaju bukan penyetuju".
+**Konsekuensi.** Alasan penolakan bahkan belum punya kolom, padahal Archetype 2 mewajibkannya tampil di halaman detail. Ini sejalan dengan "mesin alur persetujuan" yang sudah tercatat sebagai keputusan arsitektur tertunda sejak Design_Handoff §10.
+
+---
+
 ## Sengaja Ditunda
 
 Bukan kelalaian. Setiap butir punya syarat kapan ia layak diputuskan.
