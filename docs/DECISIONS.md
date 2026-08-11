@@ -595,6 +595,23 @@ Format nomor: `D-nnn`. Status: `Berlaku` · `Direvisi oleh D-nnn` · `Dicabut`.
 **Keputusan.** `chart_templates` dan `chart_template_accounts` — template per negara sebagai data, mengikuti pola katalog izin. Sesi D1 membangun mekanismenya saja.
 **Konsekuensi.** Isi template konkret memerlukan akuntan, sama seperti V-01 memerlukan konsultan pajak. Sampai ada, company baru mulai dengan bagan kosong.
 
+### D-091 · `qty_available` adalah kolom terhitung, bukan kolom yang diisi
+**Status:** Berlaku · **Melaksanakan:** D-014
+**Konteks.** D-014 menyatakan `qty_available` tidak disimpan. Menyimpannya sebagai kolom biasa yang "dijaga aplikasi" berarti ia akan menyimpang, dan penyimpangannya baru terlihat saat barang yang dijanjikan ternyata tidak ada.
+**Keputusan.** `GENERATED ALWAYS AS (qty_on_hand - qty_reserved) STORED`. Ia tetap terindeks dan dapat difilter, tetapi tidak dapat ditulis.
+**Konsekuensi.** Percobaan menulisnya ditolak `428C9` oleh Postgres, dan ada test yang membuktikannya. Definisi yang sama juga hidup sebagai fungsi domain, supaya lapisan aplikasi tidak menghitungnya dengan cara berbeda.
+
+### D-092 · Reservasi memakai penguncian baris, dan itu diuji seratus kali
+**Status:** Berlaku · **Sumber:** Module 05 §12
+**Keputusan.** `SELECT … FOR UPDATE` atas baris saldo sebelum memeriksa ketersediaan. Port repository sengaja menamainya `lockBalance` dan tidak menyediakan pembacaan saldo tanpa kunci — layanan tidak punya jalan membaca tanpa mengunci.
+**Konsekuensi.** Dua pesanan bersamaan atas sisa terakhir menghasilkan tepat satu keberhasilan. Diuji seratus putaran dengan dua transaksi sungguhan yang berjalan bersamaan di koneksi berbeda; periksa-lalu-tulis akan meloloskan keduanya.
+
+### D-093 · Nomor urut mutasi diambil di dalam pernyataan penyisipannya
+**Status:** Berlaku
+**Konteks.** `stock_movements.sequence` harus urut per company dan tanpa duplikat, sedangkan mutasi ditulis dari banyak transaksi bersamaan.
+**Keputusan.** Nomor diambil lewat `SELECT max(sequence) + 1` **di dalam** `INSERT … SELECT` yang sama, bukan lewat pembacaan terpisah lalu penyisipan.
+**Konsekuensi.** Kekangan unik atas `(tenant_id, company_id, sequence)` menjadi jaring terakhir: dua mutasi yang tetap memperoleh nomor sama akan ditolak, bukan tersimpan diam-diam.
+
 ---
 
 ## Sengaja Ditunda

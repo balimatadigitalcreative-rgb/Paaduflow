@@ -15,3 +15,4 @@
 0011_authorization.sql d38854fd48f2a337
 0012_accounts.sql 676249832b6e4b65
 0013_account_determination.sql e81ade2c330f2e50
+0014_inventory.sql 6dfc84e0d7a2bc54
