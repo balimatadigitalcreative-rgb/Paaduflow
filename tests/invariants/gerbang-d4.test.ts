@@ -227,21 +227,26 @@ test('invarian 3 — akun persediaan sama dengan nilai persediaan', async () => 
     [tenant.tenantId, akun.persediaan],
   )
 
-  // Penerimaan tidak menjurnal persediaan di alur ini — hanya pengeluaran yang
-  // menjurnalnya — sehingga buku besar bernilai negatif sebesar harga pokok
-  // yang sudah keluar, dan nilai stok adalah sisa yang belum keluar.
-  const keluar = -Number(rows[0]?.buku_besar)
-  expect(keluar).toBeGreaterThan(0)
+  // Versi pertama test ini membandingkan nilai stok dengan jumlah mutasi
+  // bernilai — dan itu hanya mengulang invarian keempat dengan nama yang
+  // berbeda. Ia lolos tanpa pernah menyentuh buku besar sama sekali.
+  //
+  // Yang benar-benar mengikat keduanya: penerimaan menambah nilai stok tanpa
+  // menjurnal, pengeluaran mengurangi nilai stok DAN mengkredit akun
+  // persediaan. Karena itu nilai stok dikurangi saldo buku besar harus sama
+  // dengan seluruh nilai yang pernah diterima.
+  const bukuBesar = Number(rows[0]?.buku_besar)
+  const stok = Number(rows[0]?.stok)
 
-  const { rows: masuk } = await admin.query<{ nilai: string }>(
+  expect(bukuBesar).toBeLessThan(0)
+
+  const { rows: diterima } = await admin.query<{ nilai: string }>(
     `SELECT COALESCE(sum(qty_base * unit_cost), 0) AS nilai
-       FROM stock_movements WHERE tenant_id = $1`,
+       FROM stock_movements WHERE tenant_id = $1 AND qty_base > 0`,
     [tenant.tenantId],
   )
 
-  // Sisa persediaan = seluruh mutasi bernilai. Bukti bahwa harga pokok yang
-  // dikeluarkan sama dengan yang dikurangkan dari nilai stok.
-  expect(Number(rows[0]?.stok)).toBe(Number(masuk[0]?.nilai))
+  expect(stok - bukuBesar).toBeCloseTo(Number(diterima[0]?.nilai), 2)
 })
 
 test('invarian 4 — saldo stok dari proyeksi sama dengan jumlah mutasi', async () => {

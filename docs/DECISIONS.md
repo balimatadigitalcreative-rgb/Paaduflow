@@ -670,6 +670,28 @@ Format nomor: `D-nnn`. Status: `Berlaku` · `Direvisi oleh D-nnn` · `Dicabut`.
 
 ---
 
+## Audit Sesi E1
+
+### D-103 · Tiga token dark mode diperbaiki karena gagal kontras terukur
+**Status:** Berlaku · **Sumber:** WCAG 2.1 SC 1.4.3 dan 1.4.11
+**Temuan.** Audit menghitung 36 pasangan token yang benar-benar dipakai, di kedua mode. Tiga gagal, seluruhnya di dark mode: `text-tertiary` 3,59:1 (Major), `text-on-accent` di atas `action-danger-bg` 3,80:1 (Major), dan `action-primary-bg` terhadap `bg-surface` 2,98:1 (Minor, meleset 0,02).
+**Perbaikan.** `text-tertiary` dinaikkan ke `neutral.400`; `action-primary-bg` dinaikkan ke `indigo.400`; `text-on-accent` di dark mode menjadi `neutral.950` — teks gelap di atas aksi terang, pola baku dark mode. Seluruhnya perubahan `tokens.json`; tidak ada komponen yang disentuh.
+**Konsekuensi.** Audit menjadi gerbang CI dan melaporkan **angkanya**, bukan lulus atau gagal — pasangan yang lulus di 4,52 adalah pasangan yang akan gagal begitu hex brand asli menggantikan perkiraan `#3A34B5`.
+
+### D-104 · Invarian ketiga gerbang D4 ternyata menguji hal yang lebih lemah dari namanya
+**Status:** Diperbaiki · **Ditemukan oleh:** pemeriksaan asumsi test sendiri, Sesi E1
+**Temuan.** Test "akun persediaan sama dengan nilai persediaan" membandingkan nilai stok dengan jumlah mutasi bernilai — yang hanya mengulang invarian keempat dengan nama berbeda. Ia lolos **tanpa pernah menyentuh buku besar sama sekali.**
+**Perbaikan.** Kini menegaskan `nilai stok − saldo akun persediaan = seluruh nilai yang pernah diterima`, sehingga kedua sisi benar-benar terikat.
+**Konsekuensi.** Audit prototype mencatat dua dari empat kegagalannya ada di tesnya, bukan di kodenya. Pola yang sama terulang di sini, dan itu alasan pemeriksaan ini diminta secara eksplisit.
+
+### D-105 · Yang tidak dapat diukur dinyatakan tidak diukur
+**Status:** Berlaku
+**Keputusan.** Tiga bagian audit Sesi E1 tidak dijalankan dan tidak dilaporkan sebagai lulus: uji screen reader sungguhan, zoom 200%, dan waktu cat browser beserta jank saat menggulir.
+**Alasan.** Ketiganya membutuhkan browser sungguhan; Playwright belum terpasang. Melaporkan hasil jsdom sebagai "performa render" atau "audit aksesibilitas penuh" akan lebih berbahaya daripada tidak melaporkannya — ia memberi keyakinan yang tidak berdasar.
+**Konsekuensi.** Ketiganya tetap terbuka. Uji screen reader juga tercantum sebagai utang di Design_Handoff §10 sejak awal, dan tidak dapat ditutup oleh alat mana pun.
+
+---
+
 ## Sengaja Ditunda
 
 Bukan kelalaian. Setiap butir punya syarat kapan ia layak diputuskan.
