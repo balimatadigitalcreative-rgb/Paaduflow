@@ -1,0 +1,15 @@
+# Sidik jari migrasi yang sudah tercatat.
+# Mengubah migrasi yang sudah diterapkan berarti skema produksi dan berkas
+# di repo diam-diam berbeda. Perbaikan dilakukan lewat migrasi baru.
+# Perbarui dengan: npm run check:migrations -- --update
+0001_roles_extensions.sql 75f9f0a8fd4c77b9
+0002_conventions.sql 15cfac4b61219dc3
+0003_identity.sql 120d00b60c684d45
+0004_tenants_companies.sql 252346c7561791af
+0005_ledger.sql bd38d0c801134ee4
+0006_document_numbering.sql e6c15271c5921f47
+0007_platform_tables.sql 8ae15971fed264a3
+0008_outbox.sql 33a093ba5df0f2c3
+0009_authentication.sql c70c0ebbb75c363e
+0010_auth_ip_throttle.sql 52806f7b6913e6a3
+0011_authorization.sql d38854fd48f2a337

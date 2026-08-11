@@ -1,0 +1,76 @@
+name: CI
+
+# Hook pre-commit dapat dilewati dengan --no-verify, dan itu memang gunanya.
+# Yang tidak dapat dilewati adalah ini.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  periksa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        # Versi mayor disamakan dengan yang dipakai uji lokal — D-071.
+        # Selisih mayor antara uji dan produksi adalah kelas kesalahan yang
+        # tidak akan tertangkap satu test pun.
+        image: postgres:18
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: paadu_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      # Terpasang, sehingga test memakai Postgres layanan ini dan tidak
+      # menyalakan instans tertanam — D-054.
+      TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/paadu_test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Basis data uji ber-encoding UTF8
+        run: |
+          encoding=$(psql "$TEST_DATABASE_URL" -tAc "SHOW server_encoding")
+          echo "server_encoding=$encoding"
+          test "$encoding" = "UTF8"
+
+      - name: Migrasi hanya menambah
+        run: npm run check:migrations
+
+      - name: Token dibangkitkan dari sumbernya
+        run: npm run tokens:build
+
+      - name: Berkas bangkitan tidak menyimpang dari sumbernya
+        # Bila tokens.css hasil build berbeda dari yang seharusnya, sesuatu
+        # mengedit berkas bangkitan dengan tangan.
+        run: git diff --exit-code -- ':!migrations/CHECKSUMS.txt'
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        run: npm test

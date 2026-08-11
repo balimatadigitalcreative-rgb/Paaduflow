@@ -12,6 +12,7 @@
     "prepare": "node tools/git-hooks/install.js",
     "tokens:build": "node tools/style-dictionary/build.js",
     "migrate": "node tools/db/migrate.js",
+    "check:migrations": "node tools/db/check-migrations.js",
     "lint": "npm run lint:js && npm run lint:css",
     "lint:js": "eslint .",
     "lint:css": "stylelint \"src/**/*.css\" --allow-empty-input",

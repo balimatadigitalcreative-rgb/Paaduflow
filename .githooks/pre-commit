@@ -11,12 +11,18 @@
 
 set -e
 
-echo "pre-commit: memeriksa token dan batas arsitektur…"
+echo "pre-commit: memeriksa token, batas arsitektur, dan migrasi…"
 
 if ! npm run --silent lint; then
   echo ""
   echo "Commit ditolak. Perbaiki pelanggaran di atas lalu commit ulang."
   echo "Rujukan: docs/Design_Tokens.md §11 · docs/DECISIONS.md D-040, D-046"
+  exit 1
+fi
+
+if ! npm run --silent check:migrations; then
+  echo ""
+  echo "Commit ditolak karena migrasi. Rujukan: docs/DECISIONS.md D-033."
   exit 1
 fi
 

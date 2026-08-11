@@ -457,6 +457,22 @@ Format nomor: `D-nnn`. Status: `Berlaku` · `Direvisi oleh D-nnn` · `Dicabut`.
 
 ---
 
+## Integrasi Berkelanjutan
+
+### D-071 · Versi mayor PostgreSQL dipatok 18 di uji, CI, dan produksi
+**Status:** Berlaku · **Menutup item terbuka di:** D-054 · **Menyempurnakan:** D-029
+**Konteks.** D-029 menetapkan 16 sebagai batas bawah, dan D-054 mencatat bahwa selisih mayor antara lingkungan uji dan produksi adalah kelas kesalahan yang tidak tertangkap satu test pun. Instans tertanam yang dipakai uji lokal adalah 18.
+**Keputusan.** Ketiganya memakai mayor yang sama: 18. CI menjalankan `postgres:18` sebagai service container, dan produksi wajib mengikuti.
+**Konsekuensi.** Menaikkan versi mayor kelak adalah satu perubahan yang menyentuh ketiganya sekaligus, bukan perubahan diam-diam di salah satunya. CI juga memverifikasi `server_encoding` adalah UTF8 sebelum menjalankan apa pun (D-053).
+
+### D-072 · Migrasi yang sudah tercatat dijaga sidik jarinya
+**Status:** Berlaku · **Melengkapi:** D-033
+**Konteks.** D-033 menjanjikan pemeriksa additive-only di CI. Janji itu tercatat sejak Sesi A1 dan pemeriksanya baru ada sekarang — dokumen sempat lebih maju daripada kode.
+**Keputusan.** `npm run check:migrations` menegakkan tiga hal: pola yang merusak ditolak, nomor berurutan tanpa celah maupun duplikat, dan berkas yang sudah tercatat di `migrations/CHECKSUMS.txt` tidak boleh berubah isinya. Berjalan di hook pre-commit dan di CI.
+**Konsekuensi.** Mengubah migrasi yang sudah diterapkan tertangkap sebelum ia sampai ke basis data mana pun — skema produksi tidak dapat diam-diam berbeda dari berkas di repo. Pintu daruratnya `-- paadu:allow-breaking <alasan>`, sengaja jelek dibaca supaya ikut terlihat di tinjauan kode. Setiap aturan punya fixture yang melanggar, seperti aturan lint token.
+
+---
+
 ## Sengaja Ditunda
 
 Bukan kelalaian. Setiap butir punya syarat kapan ia layak diputuskan.

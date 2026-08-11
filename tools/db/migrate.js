@@ -51,9 +51,10 @@ export async function migrate(databaseUrl, options = {}) {
     dir: MIGRATIONS_DIR,
     direction: 'up',
     migrationsTable: 'paadu_migrations',
-    // Folder migrasi juga memuat README-nya. Tanpa ini, pemindai berhenti pada
-    // berkas pertama yang tidak berawalan angka.
-    ignorePattern: '(\\..*|.*\\.md)',
+    // Daftar putih, bukan daftar hitam: apa pun yang bukan `0001_nama.sql`
+    // diabaikan. Folder migrasi juga memuat README dan berkas sidik jari, dan
+    // daftar hitam akan tertinggal setiap kali ada berkas pendamping baru.
+    ignorePattern: '^(?!\\d{4}_.*\\.sql$).*',
     // Seluruh migrasi dalam satu transaksi: bila salah satu gagal, tidak ada
     // yang setengah diterapkan. Postgres mendukung DDL transaksional, jadi ini
     // gratis — dan tanpanya, migrasi gagal meninggalkan skema yang tidak dapat
