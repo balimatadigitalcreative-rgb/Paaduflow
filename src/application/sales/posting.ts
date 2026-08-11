@@ -63,11 +63,17 @@ export interface LedgerPort {
 
 /** Mengurangi stok. Diimplementasikan modul Persediaan. */
 export interface StockPort {
+  /**
+   * Harga pokok satuan pada saat ini. Dibaca sebelum stok berkurang, karena
+   * setelah berkurang angkanya sudah bukan angka yang dipakai mengeluarkan.
+   */
+  unitCost(itemId: string, warehouseId: string): Promise<number>
   ship(input: {
     companyId: string
     itemId: string
     warehouseId: string
     qty: number
+    unitCost: number
     sourceType: string
     sourceId: string
   }): Promise<void>
@@ -159,6 +165,39 @@ export class PostInvoiceService {
       barisJurnal.push({ accountId: pajak.accountId, debit: 0, credit: dokumen.taxTotal })
     }
 
+    // ── Persediaan dan harga pokok ────────────────────────────────────────
+    // Tanpa dua baris ini, saldo akun persediaan tidak akan pernah sama dengan
+    // nilai persediaan — invarian ketiga di gerbang Sesi D4.
+    let hargaPokok = 0
+    const biayaBaris: { itemId: string; warehouseId: string; qty: number; unitCost: number }[] = []
+
+    for (const baris of dokumen.lines) {
+      if (baris.itemId === null || baris.warehouseId === null || baris.qty <= 0) continue
+      const satuan = await this.stock.unitCost(baris.itemId, baris.warehouseId)
+      const nilai = Math.round(satuan * baris.qty * 100) / 100
+      hargaPokok += nilai
+      biayaBaris.push({
+        itemId: baris.itemId,
+        warehouseId: baris.warehouseId,
+        qty: baris.qty,
+        unitCost: satuan,
+      })
+    }
+
+    if (hargaPokok > 0) {
+      const hpp = await this.accounts.resolve({ transactionType: 'sales.invoice.cogs' })
+      if (hpp.kind === 'unresolved') {
+        return { kind: 'account_unresolved', reason: hpp.reason }
+      }
+      const persediaan = await this.accounts.resolve({ transactionType: 'inventory.shipment.stock' })
+      if (persediaan.kind === 'unresolved') {
+        return { kind: 'account_unresolved', reason: persediaan.reason }
+      }
+
+      barisJurnal.push({ accountId: hpp.accountId, debit: hargaPokok, credit: 0 })
+      barisJurnal.push({ accountId: persediaan.accountId, debit: 0, credit: hargaPokok })
+    }
+
     const jurnal = await this.ledger.postJournal({
       companyId: dokumen.companyId,
       journalDate: this.now(),
@@ -176,13 +215,13 @@ export class PostInvoiceService {
       return { kind: 'ledger_rejected', reason: jurnal.reason }
     }
 
-    for (const baris of dokumen.lines) {
-      if (baris.itemId === null || baris.warehouseId === null || baris.qty <= 0) continue
+    for (const baris of biayaBaris) {
       await this.stock.ship({
         companyId: dokumen.companyId,
         itemId: baris.itemId,
         warehouseId: baris.warehouseId,
         qty: baris.qty,
+        unitCost: baris.unitCost,
         sourceType: 'sales_document',
         sourceId: dokumen.id,
       })

@@ -1,5 +1,6 @@
 import { PostingService } from '#application/accounting/posting'
 import { StockService } from '#application/inventory/stock'
+import { SalesDocumentService } from '#application/sales/documents'
 import {
   PostInvoiceService,
   type AccountResolverPort,
@@ -24,6 +25,13 @@ import { uuidv7 } from '#shared/uuid'
  * Mengangkat salah satu modul menjadi layanan terpisah kelak berarti mengganti
  * adapter di berkas ini, bukan membongkar kode modul.
  */
+export function createSalesDocuments(db: Queryable, tenantId: string): SalesDocumentService {
+  return new SalesDocumentService(
+    new PostgresSalesDocumentRepository(db, tenantId),
+    () => uuidv7(),
+  )
+}
+
 export function createSalesPosting(db: Queryable, tenantId: string): PostInvoiceService {
   const documents = new PostgresSalesDocumentRepository(db, tenantId)
 
@@ -105,6 +113,26 @@ export function createSalesPosting(db: Queryable, tenantId: string): PostInvoice
   }
 
   const stock: StockPort = {
+    /**
+     * Rata-rata tertimbang dari proyeksi saldo: nilai dibagi kuantitas.
+     *
+     * Lapisan biaya FIFO sudah ada tabelnya sejak Sesi D2 tetapi belum ada yang
+     * mengonsumsinya. Sampai itu dibangun, metode biaya yang benar-benar
+     * berlaku adalah rata-rata tertimbang — dan itu dinyatakan di sini alih-alih
+     * disembunyikan sebagai angka yang muncul entah dari mana.
+     */
+    async unitCost(itemId, warehouseId) {
+      const { rows } = await db.query<{ qty_on_hand: string; value: string }>(
+        `SELECT qty_on_hand, value FROM stock_balances
+          WHERE tenant_id = $1 AND item_id = $2 AND warehouse_id = $3`,
+        [tenantId, itemId, warehouseId],
+      )
+      const row = rows[0]
+      if (row === undefined) return 0
+      const qty = Number(row.qty_on_hand)
+      return qty === 0 ? 0 : Math.round((Number(row.value) / qty) * 10_000) / 10_000
+    },
+
     async ship(input) {
       const service = new StockService(new PostgresStockRepository(db, tenantId), () => uuidv7())
       await service.move({
@@ -115,6 +143,7 @@ export function createSalesPosting(db: Queryable, tenantId: string): PostInvoice
         // Keluar bernilai negatif — buku besar stok memakai satu kolom bertanda,
         // bukan dua kolom masuk dan keluar.
         qtyBase: -input.qty,
+        unitCost: input.unitCost,
         sourceType: input.sourceType,
         sourceId: input.sourceId,
       })

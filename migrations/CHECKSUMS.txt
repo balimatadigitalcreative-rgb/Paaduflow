@@ -17,3 +17,4 @@
 0013_account_determination.sql e81ade2c330f2e50
 0014_inventory.sql 6dfc84e0d7a2bc54
 0015_sales.sql 787f32d6f33ba775
+0016_stock_sequence.sql 486a688d67b8eeb6

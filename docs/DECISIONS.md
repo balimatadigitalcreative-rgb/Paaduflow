@@ -648,6 +648,28 @@ Format nomor: `D-nnn`. Status: `Berlaku` · `Direvisi oleh D-nnn` · `Dicabut`.
 
 ---
 
+## Gerbang Sesi D4
+
+### D-100 · `stock_movements.sequence` memakai SEQUENCE, dan boleh berlubang
+**Status:** Berlaku · **Merevisi:** D-093 · **Ditemukan oleh:** gerbang Sesi D4
+**Konteks.** D-093 mengambil nomor dengan `max(sequence) + 1` di dalam pernyataan penyisipan dan menyebut kekangan unik sebagai "jaring terakhir". Gerbang membuktikan jaring itu benar-benar terpakai: enam alur penjualan yang berjalan bersamaan membuat dua transaksi membaca nilai maksimum yang sama, dan penyisipannya gagal.
+**Keputusan.** `nextval('stock_movement_sequence')`. Aman terhadap konkurensi, dengan konsekuensi nomor dapat berlubang saat transaksi dibatalkan.
+**Konsekuensi.** Lubang di sini tidak apa-apa, dan itu perlu dinyatakan: kolom ini penanda posisi bagi proyeksi saldo, bukan nomor dokumen. Larangan celah di D-007 berlaku untuk nomor yang dilihat auditor — nomor faktur, bukan kursor internal. D-093 dicabut sebagian: nomor dokumen tetap memakai baris terkunci, mutasi stok tidak.
+
+### D-101 · Harga pokok memakai rata-rata tertimbang, bukan FIFO
+**Status:** Berlaku, sementara · **Sumber:** Module 05 §6
+**Konteks.** Tabel `cost_layers` sudah ada sejak Sesi D2 tetapi belum ada yang mengonsumsinya. Posting penjualan tetap membutuhkan angka harga pokok untuk menjurnal persediaan dan HPP.
+**Keputusan.** Harga pokok satuan dibaca dari proyeksi saldo — nilai dibagi kuantitas. Adapter menyatakannya secara eksplisit alih-alih memunculkan angka tanpa keterangan asalnya.
+**Konsekuensi.** Invarian ketiga di gerbang berlaku hari ini. Bila FIFO jadi diterapkan, yang berubah adalah satu adapter di composition root, dan invariannya tetap sama.
+
+### D-102 · Gerbang D4 lolos: tidak ada komponen UI baru yang dibutuhkan
+**Status:** Berlaku
+**Jawaban atas pertanyaan pertama.** Modul referensi tidak memerlukan komponen yang belum ada. Tiga komponen Form Layout yang dibutuhkannya — ringkasan error, action footer sticky, dan penjaga perubahan belum tersimpan — sengaja dibangun di `components/form` pada Sesi D3 bagian 1, bukan di dalam modul (D-096).
+**Jawaban atas pertanyaan kedua — satu penyimpangan dari Flow Archetypes.** Archetype 4 menyebut pemilih item selalu async; modul Penjualan belum memiliki layar, jadi pemilihnya belum dipakai di mana pun. Ini bukan penyimpangan yang diambil, melainkan bagian yang belum dibangun, dan dicatat supaya tidak lolos sebagai "sudah sesuai".
+**Konsekuensi.** Design system dinyatakan terbukti. Fase D dapat berlanjut tanpa kembali ke Fase C.
+
+---
+
 ## Sengaja Ditunda
 
 Bukan kelalaian. Setiap butir punya syarat kapan ia layak diputuskan.

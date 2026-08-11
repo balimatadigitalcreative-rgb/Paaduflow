@@ -30,17 +30,19 @@ export class PostgresStockRepository implements StockRepository {
   }
 
   async appendMovement(movement: MovementInput & { id: string }): Promise<void> {
-    // Nomor urut diambil di dalam pernyataan yang sama, sehingga dua mutasi
-    // bersamaan tidak dapat memperoleh nomor yang sama.
+    // `nextval`, bukan `max(sequence) + 1`. Yang kedua membuat dua mutasi
+    // bersamaan membaca nilai maksimum yang sama dan bertabrakan di kekangan
+    // unik — cacat yang ditemukan gerbang Sesi D4.
+    //
+    // Nomor boleh berlubang: kolom ini penanda posisi bagi proyeksi saldo,
+    // bukan nomor dokumen yang dilihat auditor.
     await this.db.query(
       `INSERT INTO stock_movements
          (id, tenant_id, company_id, item_id, warehouse_id, sequence, type, qty_base,
           unit_cost, source_type, source_id)
-       SELECT $1, $2, $3, $4, $5,
-              COALESCE(max(m.sequence), 0) + 1,
-              $6::stock_movement_type, $7, $8, $9, $10
-         FROM stock_movements m
-        WHERE m.tenant_id = $2 AND m.company_id = $3`,
+       VALUES ($1, $2, $3, $4, $5,
+               nextval('stock_movement_sequence'),
+               $6::stock_movement_type, $7, $8, $9, $10)`,
       [
         movement.id,
         this.tenantId,

@@ -1,3 +1,4 @@
+import type { DraftLine, SalesWritePort } from '#application/sales/documents'
 import type {
   PostingDocument,
   PostingLine,
@@ -6,7 +7,7 @@ import type {
 import type { LifecycleStatus, Transition } from '#domain/sales/transitions'
 import type { Queryable } from '#infrastructure/db/queryable'
 
-export class PostgresSalesDocumentRepository implements SalesDocumentPort {
+export class PostgresSalesDocumentRepository implements SalesDocumentPort, SalesWritePort {
   constructor(
     private readonly db: Queryable,
     private readonly tenantId: string,
@@ -107,6 +108,100 @@ export class PostgresSalesDocumentRepository implements SalesDocumentPort {
    */
   async isFiscalPeriodOpen(): Promise<boolean> {
     return true
+  }
+
+  async insertDocument(document: Parameters<SalesWritePort['insertDocument']>[0]): Promise<void> {
+    await this.db.query(
+      `INSERT INTO sales_documents
+         (id, tenant_id, company_id, doc_type, customer_id, document_date, currency,
+          subtotal, document_discount, tax_base, tax_total, total)
+       VALUES ($1, $2, $3, 'invoice', $4, $5, $6, $7, $8, $9, $10, $11)`,
+      [
+        document.id,
+        this.tenantId,
+        document.companyId,
+        document.customerId,
+        document.documentDate,
+        document.currency,
+        document.subtotal,
+        document.documentDiscount,
+        document.taxBase,
+        document.taxTotal,
+        document.total,
+      ],
+    )
+  }
+
+  async insertLines(
+    documentId: string,
+    companyId: string,
+    lines: readonly (DraftLine & {
+      id: string
+      lineNo: number
+      netAmount: number
+      taxAmount: number
+      allocatedDocDiscount: number
+    })[],
+  ): Promise<void> {
+    for (const line of lines) {
+      await this.db.query(
+        `INSERT INTO sales_document_lines
+           (id, tenant_id, company_id, document_id, line_no, item_id, description, qty, uom,
+            unit_price, discount_pct, allocated_doc_discount, net_amount, tax_code_id,
+            tax_rate_pct, tax_amount, warehouse_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)`,
+        [
+          line.id,
+          this.tenantId,
+          companyId,
+          documentId,
+          line.lineNo,
+          line.itemId,
+          line.description,
+          line.qty,
+          line.uom,
+          line.unitPrice,
+          line.discountPercent ?? 0,
+          line.allocatedDocDiscount,
+          line.netAmount,
+          line.taxCodeId ?? null,
+          line.taxRatePercent,
+          line.taxAmount,
+          line.warehouseId,
+        ],
+      )
+    }
+  }
+
+  /** Nomor diambil dan status berpindah dalam satu langkah — D-007. */
+  async submit(
+    documentId: string,
+    companyId: string,
+    periodKey: string,
+    by: string,
+  ): Promise<string> {
+    const { rows } = await this.db.query<{ nomor: string }>(
+      'SELECT paadu.next_document_number($1, $2, $3) AS nomor',
+      [companyId, 'inv', periodKey],
+    )
+    const nomor = rows[0]!.nomor
+
+    await this.db.query(
+      `UPDATE sales_documents
+          SET number = $3, lifecycle_status = 'submitted', submitted_at = now(), submitted_by = $4
+        WHERE tenant_id = $1 AND id = $2`,
+      [this.tenantId, documentId, nomor, by],
+    )
+    return nomor
+  }
+
+  async approve(documentId: string, by: string): Promise<void> {
+    await this.db.query(
+      `UPDATE sales_documents
+          SET lifecycle_status = 'approved', approved_at = now(), approved_by = $3
+        WHERE tenant_id = $1 AND id = $2`,
+      [this.tenantId, documentId, by],
+    )
   }
 
   async markPosted(documentId: string, postedBy: string, at: Date): Promise<void> {
