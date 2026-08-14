@@ -813,6 +813,118 @@ Format nomor: `D-nnn`. Status: `Berlaku` · `Direvisi oleh D-nnn` · `Dicabut`.
 
 ---
 
+## Modul 08 · Pajak
+
+*Modul ketiga. Di sini pola "modul referensi" akhirnya menunjukkan batasnya: dua dari tiga penyimpangan di bawah muncul karena pola yang benar untuk data tak-bertanggal tidak benar untuk data bertanggal berlaku.*
+
+### D-124 · Tarif tidak dapat diubah — selalu, bukan hanya setelah dipakai
+**Status:** Berlaku · **Sumber:** Module 08 §11
+**Keputusan.** Trigger `t40_rate_immutable` menolak UPDATE pada `rate`, `tax_type`, `calculation_base`, `valid_from`, `is_creditable`, dan `gl_account_id` di `tax_codes` — pada baris mana pun, kapan pun. Yang boleh berubah hanya `valid_to`, `status`, dan `name`. Tidak ada endpoint `PATCH` untuk tarif, dan itu bukan kelalaian: rute yang tidak ada tidak dapat dipanggil.
+**Menyimpang dari dokumen,** yang menuliskan "`PATCH` tarif pada kode yang **sudah dipakai** ditolak". "Sudah dipakai" adalah keadaan yang berubah, dan kontrol yang bergantung pada keadaan punya jendela di mana ia belum berlaku. Kode yang salah dan belum masuk buku pajak tetap dapat **dihapus**; yang sudah masuk tidak dapat dihapus (trigger `t40_used_code_undeletable`) maupun diubah.
+**Konsekuensi.** Salah ketik tarif pada kode baru diperbaiki dengan hapus-dan-buat-ulang, bukan dengan sunting. Ditukar sadar dengan jaminan bahwa dokumen lama tidak pernah terhitung ulang.
+
+### D-125 · Aturan penentuan pajak menunjuk KODE, bukan baris kode pajak
+**Status:** Berlaku · **Menyimpang dari:** pola D-011
+**Temuan.** `account_determination_rules.account_id` menunjuk baris `accounts` karena akun tidak bertanggal. Kode pajak bertanggal: setiap perubahan tarif melahirkan baris baru.
+**Keputusan.** `tax_determination_rules.tax_code` menyimpan **teks** (`PPN-OUT`). Resolusi berjalan dua langkah: aturan menjawab kode, lalu kode ditambah tanggal dokumen menjawab versinya.
+**Alasan.** Kalau aturan menunjuk baris, setiap perubahan tarif memaksa seluruh aturan penentuan ditulis ulang — dan aturan yang harus ditulis ulang setiap kali tarif berubah adalah aturan yang akan tertinggal.
+**Konsekuensi.** Kehilangan foreign key ke `tax_codes`: kode yang salah ketik di aturan baru ketahuan saat resolve, sebagai `no_rate_on_date`. Ditukar sadar; alternatifnya adalah masalah yang lebih buruk dan lebih sunyi.
+
+### D-126 · Tepat satu tarif berlaku pada satu tanggal, dijamin basis data
+**Status:** Berlaku · **Sumber:** Module 08 §5
+**Keputusan.** `EXCLUDE USING gist` atas `(tenant_id, company_id, code, daterange(valid_from, valid_to, '[)'))` dengan ekstensi `btree_gist`. Rentangnya setengah terbuka, sehingga `valid_to` satu versi boleh sama persis dengan `valid_from` versi berikutnya tanpa hari yang bertarif ganda.
+**Alasan.** "Tarif mana yang berlaku pada tanggal ini" harus punya tepat satu jawaban. Jawaban ganda pada pajak berarti dua angka yang sama-sama dapat dibenarkan di depan pemeriksa.
+**Konsekuensi.** `versionOn` di domain tetap menangani kasus `overlapping` meski basis data melarangnya — kalau ia sampai terjadi, yang rusak adalah penjaganya, dan itu harus berisik alih-alih diam-diam memilih satu baris.
+
+### D-127 · Faktur pajak tidak memakai `lifecycle_status` maupun `document_transitions`
+**Status:** Berlaku · **Menyimpang dari:** Flow Archetypes §2
+**Keputusan.** `output_tax_invoices.status` adalah enum tersendiri: `draft → issued → cancelled | replaced`.
+**Alasan.** Faktur pajak tidak pernah disetujui dan tidak pernah diposting ke buku besar. Memaksakannya ke Archetype 2 berarti memetakan `issued` ke `posted` dan `replaced` ke `void` — dua kebohongan kecil yang akan dibaca orang berikutnya sebagai kebenaran. Alternatif `ALTER TYPE lifecycle_status ADD VALUE` bermasalah di dalam transaksi migrasi.
+**Konsekuensi.** Modul ini tidak ikut terjaga oleh invarian mesin status di `tests/invariants/mesin-status.test.ts`. Penjagaannya berpindah ke constraint (`output_issued_has_serial`) dan ke test integrasi.
+
+### D-128 · Nomor seri dimaterialisasi per baris, dan diambil dengan kunci yang memblokir
+**Status:** Berlaku · **Sumber:** Module 08 §4 dan §5
+**Keputusan.** Alokasi menulis satu baris `tax_serial_usage` per nomor. Penerbitan mengambil nomor `available` terendah dengan `ORDER BY … LIMIT 1 FOR UPDATE` — **memblokir, bukan `SKIP LOCKED`**.
+**Alasan.** `SKIP LOCKED` membuat penerbitan bersamaan melompati nomor yang sedang dipegang yang lain, dan lompatan pada nomor seri faktur pajak adalah temuan pemeriksaan. Materialisasi membuat "terpakai + batal + kedaluwarsa + tersisa = total dialokasikan" berlaku menurut konstruksi, bukan menurut harapan.
+**Konsekuensi.** Penerbitan serial per company — pertukaran yang sama dengan D-007. Diuji: sepuluh penerbitan bersamaan menghasilkan nomor 1–10 berurutan.
+
+### D-129 · Constraint nomor seri dikoreksi: nomor batal tetap menunjuk fakturnya
+**Status:** Berlaku · **Temuan test**
+**Temuan.** `CHECK ((status = 'used') = (output_tax_invoice_id IS NOT NULL))` membuat pembatalan mustahil: status berubah menjadi `cancelled`, `output_tax_invoice_id` tetap terisi, constraint pecah. Ditemukan `tests/invariants/nomor-seri-pajak.test.ts`, bukan oleh pembacaan ulang.
+**Koreksi.** Dipecah menjadi dua: `available` tidak boleh menunjuk faktur; `used` wajib menunjuk faktur. `cancelled` sengaja tidak dibatasi — ia justru **harus** tetap menunjuk faktur yang dulu memakainya. "Nomor ini dibatalkan" tanpa "dibatalkan dari faktur mana" tidak menjawab pertanyaan yang ditanyakan pemeriksa.
+
+### D-130 · Tanggal keluar dari repository sebagai teks, bukan `Date`
+**Status:** Berlaku · **Sumber:** Module 08 §5
+**Keputusan.** Kolom `date` dipetakan ke `YYYY-MM-DD` sebagai string di seluruh modul Pajak; `IsoDate` dibandingkan sebagai string karena ISO 8601 urut secara leksikografis.
+**Alasan.** Kolom `date` di Postgres tidak punya zona waktu. Membungkusnya menjadi `Date` di Node menempelkan zona waktu server, dan dokumen tanggal 1 April di server UTC+7 berubah menjadi 31 Maret saat dibandingkan. Di modul yang seluruh kebenarannya bergantung pada "tarif mana yang berlaku pada tanggal dokumen", itu bukan detail.
+
+### D-131 · Tidak ada satu pun angka tarif di kode
+**Status:** Berlaku · **Sumber:** Module 08 peringatan pembuka
+**Keputusan.** `src/domain/tax/` dan `src/application/tax/` tidak memuat satu pun tarif; angka yang ada hanyalah 100 (pembagi persen) dan bobot spesifisitas. Kolom `tax_codes.rate` **tanpa DEFAULT**. Nilai pengembangan hidup di `tools/seed/pajak-pengembangan.js`, yang bukan migrasi dan karena itu tidak pernah ikut ke produksi; ia berteriak di konsol setiap kali dijalankan.
+**Menyimpang dari rencana sesi:** seed direncanakan sebagai `.sql` berparameter `psql`. Diubah menjadi skrip Node karena `psql` tidak terpasang di mesin ini, sehingga berkas `.sql` itu tidak dapat dijalankan siapa pun yang mengikuti README.
+**Konsekuensi.** Test menyeed tarifnya sendiri lewat `tests/invariants/tax-fixture.ts`. Kalau suatu hari sebuah test pajak lulus tanpa memanggil `seedTaxCode`, itu berarti ada tarif yang menyelinap masuk ke kode.
+
+### D-132 · Gerbang Pajak: tidak ada komponen UI baru, dan alasannya masih sama
+**Status:** Terbuka · **Melanjutkan:** D-109, D-123
+**Komponen UI baru?** Nol, dan bukan karena design system terbukti: `src/interface/web/modules/` masih tidak ada. Modul 08 §8 menuntut empat layar yang belum punya padanan komponen — pratinjau dampak saat membuat versi tarif (Archetype 7), indikator sisa alokasi nomor seri dengan peringatan menipis, daftar faktur masukan yang menampilkan **apa yang kurang** per baris, dan tampilan rekonsiliasi berdampingan. Ketiga modul terakhir menumpuk utang yang sama; gerbang UI wajib diulang setelah layar pertama ada.
+**Penyimpangan dari pola yang ada?** Tiga, seluruhnya tercatat: D-125 (aturan menunjuk kode, bukan baris), D-127 (siklus hidup sendiri), D-130 (tanggal sebagai teks). Yang **tidak** menyimpang: struktur penentuan (matriks + spesifisitas berjenjang + tolak bila tidak ditemukan) identik dengan D-011, termasuk bobot yang kembar antara TypeScript dan kolom terhitung basis data.
+**Yang belum dibangun sesuai cakupan sesi:** bukti potong PPh dan laporan masa. Konsekuensi yang perlu diketahui: aturan "transaksi tidak dapat diposting ke masa yang laporannya sudah dibekukan" (Module 08 §11) **ikut tertunda**, karena belum ada yang membekukan. Ia bukan terlewat, ia menunggu `tax_returns`.
+
+---
+
+## Sesi Antarmuka · Layar pertama yang tersambung
+
+*Sesi ini seharusnya hanya merangkai layar di atas API yang sudah ada. Yang ditemukannya adalah bahwa API itu belum ada — dan dua cacat yang hanya dapat terlihat lewat mata, bukan lewat `expect`.*
+
+### D-133 · Jalur baca tidak pernah dibangun, dan Penjualan tidak punya satu rute pun
+**Status:** Berlaku · **Temuan**
+**Temuan.** Sebelum sesi ini: modul Penjualan punya layanan lengkap dan **nol rute HTTP** — `src/interface/http/modules/sales/` tidak ada. Pembelian punya enam POST tanpa satu pun GET. Akuntansi tidak punya rute sama sekali. Dan tidak ada cara memperoleh daftar company yang dapat diakses, padahal konteks company datang dari path (D-002), sehingga layar tidak punya id untuk dimasukkan ke URL mana pun.
+**Sebabnya.** Seluruh gerbang dilewati oleh test yang memanggil layanan langsung. "Modul selesai" karena itu berarti "logikanya benar", bukan "ada yang dapat memakainya".
+**Yang dibangun.** Sebelas endpoint baru: daftar dan detail Penjualan beserta submit/approve/post, daftar dan detail Pembelian beserta panel pencocokan dan daftar penerimaan, bagan akun dan buku besar, data induk, dan `GET /v1/me/companies`. Port bacanya dikumpulkan di `src/application/queries.ts` — berbeda dengan port tulis yang dideklarasikan tiap modul (D-097), karena yang ini kontrak antara interface dan infrastruktur, bukan antar modul.
+**Konsekuensi.** Gerbang modul berikutnya harus menuntut satu alur lewat `app.inject()` sebelum modul dinyatakan selesai.
+
+### D-134 · Server API belum pernah dijalankan; `npm run dev` menyalakan semuanya
+**Status:** Berlaku · **Temuan**
+**Temuan.** Tidak ada skrip yang menjalankan server, dan ia memang tidak dapat dijalankan: alias `#` hanya ada di `tsconfig.json`, tidak di `package.json` `imports`, sehingga Node tidak dapat menyelesaikannya saat berjalan.
+**Keputusan.** `tools/dev/start.js` memuat kode server lewat `ssrLoadModule` milik Vite, dengan konfigurasi yang sama dengan yang dipakai web — satu resolusi, bukan dua yang dapat menyimpang. Ia juga menyalakan PostgreSQL sementara persisten di `.paadu-dev/`, menjalankan migrasi, dan menyeed bila kosong.
+**Alasan.** Menyuruh orang memasang PostgreSQL sendiri sebelum dapat melihat satu layar pun adalah cara paling pasti membuat layar itu tidak pernah dilihat. Proyek ini sudah menolak Docker sejak Sesi A3; ini konsekuensinya yang wajar.
+**Konsekuensi.** Jalur produksi tetap menunggu bundel server sungguhan. `npm run dev` bukan jalur rilis, dan tidak berpura-pura menjadi itu.
+
+### D-136 · Penentuan akun tidak menyaring company — cacat yang butuh tenant dua company
+**Status:** Berlaku · **Koreksi**
+**Temuan.** `createAccountResolver` di `composition/sales.ts` dan `composition/purchasing.ts` menyaring `WHERE tenant_id = $1 AND transaction_type = $2` — **tanpa `company_id`**. Seluruh tenant uji hanya punya satu company, jadi selama lima modul cacat ini tidak pernah terlihat. Seed dua company menampakkannya dalam satu percobaan: posting faktur ditolak `ambiguous`, karena dua aturan identik dari dua company sama-sama paling spesifik.
+**Koreksi.** `companyId` menjadi bagian wajib konteks `AccountResolverPort`, dan kueri menyaringnya. Diterapkan di Penjualan dan Pembelian; modul Pajak sudah benar sejak awal karena `listRules` memang menerima `companyId`.
+**Konsekuensi.** Seluruh test invarian yang ada tetap lulus — ia lulus juga sebelumnya, dan itulah masalahnya. **Fixture uji harus menyeed dua company**, bukan satu, supaya kelas cacat ini tidak lolos lagi. Dicatat sebagai pekerjaan berikutnya, bukan sudah selesai.
+
+### D-135 · Batas yang diketahui pada antarmuka minimal ini
+**Status:** Terbuka
+Enam hal yang **belum benar**, dicatat supaya tidak disangka selesai:
+
+1. **Sidebar tidak disaring izin.** Seluruh item `permitted: true` karena izin efektif belum diambil ke sisi web. Server tetap menolak yang tidak boleh — jadi ini kebocoran informasi navigasi, bukan kebocoran data — tetapi Information Architecture §5 menuntut yang tidak boleh dilihat tidak diakui keberadaannya.
+2. **Formulir faktur membuat baris tanpa item.** `LineItemEditor` dari C3 tidak punya pemilih barang, dan sesi ini tidak membuat komponen baru. Akibatnya faktur dari layar tidak menghasilkan harga pokok maupun mutasi stok — jurnalnya hanya piutang, pendapatan, dan PPN. Alur "posting mengurangi persediaan" belum dapat dilihat dari layar.
+3. **Router berbasis hash, bukan TanStack Router** (D-037 tetap tujuannya). Konsekuensinya: keadaan filter daftar tidak ada di URL, sehingga "kembali ke daftar" kehilangan filternya — persis utang yang sudah dicatat D-109.
+4. **Mata uang company tidak dikirim `/v1/me/companies`**, dan layar memakai `IDR` untuk semuanya. Benar untuk data contoh, salah untuk company bermata uang lain.
+5. **Tidak ada penyegaran token.** Access token kedaluwarsa membuat layar kembali ke halaman masuk alih-alih memakai refresh token yang sudah tersimpan.
+6. **Tidak ada test UI untuk halaman baru.** Kesebelas test shell diarahkan ke `ShellDemo` supaya tetap menguji shell (App kini gerbang autentikasi); halaman Penjualan, Pembelian, dan Akuntansi sendiri belum punya test.
+
+### D-137 · `TextField` menerima `type="password"`
+**Status:** Berlaku
+Satu-satunya perubahan pada pustaka komponen di sesi ini. Halaman masuk tidak dapat menampilkan kata sandi apa adanya, dan komponen kedua hanya untuk satu atribut akan menggandakan seluruh perilaku label, galat, dan fokus. Tidak ada komponen baru yang dibuat; berkas `pages/pages.module.css` hanya menempatkan komponen yang sudah ada — jarak dan kolom — dan seluruh nilainya lewat token.
+
+### D-138 · Teardown test menghabisi sisa proses klaster sendiri, dan memegang sendiri direktorinya
+**Status:** Berlaku
+Kira-kira sekali per tiga jalan, `npm test` lulus seluruhnya lalu menggantung: `close timed out after 10000ms`. Sebabnya bukan pool yang lupa ditutup dan bukan timer — `--reporter=hanging-process` menunjukkan yang tersisa hanya `PipeWrap`, tidak satu pun `TCPWRAP`.
+
+`embedded-postgres` menembak `taskkill /f /t` tanpa menunggunya, lalu menganggap tugasnya selesai begitu postmaster keluar. Bila postmaster mati lebih dulu daripada taskkill sempat mendata anaknya, satu proses `io_worker` milik PostgreSQL 18 tertinggal sebagai yatim. Proses itu mewarisi stdout dan stderr postmaster — dua pipa yang dibuat Node saat men-spawn — sehingga ujung tulisnya tidak pernah tertutup, Node tidak pernah menerima EOF, dan event loop tidak pernah kosong. Probe minimal memastikannya: tanpa anak yatim proses keluar dalam 1 ms, dengan satu anak yatim ia masih hidup setelah 82 detik.
+
+Karena itu `teardown` global mendata anak yang tertinggal lewat `ParentProcessId` — nomor itu tetap tercatat meski induknya sudah mati — dan menghabisinya sambil menunggu. Penyaringan `Name='postgres.exe'` menjaga agar PID yang kebetulan dipakai ulang sistem tidak ikut terbunuh. Hanya Windows: di tempat lain postmaster menerima SIGINT dan menutup anaknya sendiri.
+
+`persistent` sekaligus dipindah ke `true`. Bukan karena klaster uji jadi permanen, melainkan karena dengan `false` pustakalah yang menghapus direktori di dalam `stop()`, tanpa coba ulang, tepat ketika proses yatim masih menguncinya — `stop()` gagal dengan EBUSY sebelum pembersihan sempat berjalan. Penghapusan kini sepenuhnya milik teardown, yang memang sudah punya coba ulang.
+
+Tidak dipakai: `process.exit`, `dangerouslyIgnoreUnhandledErrors`, maupun opsi apa pun yang menyembunyikan peringatan. Peringatannya benar — ada proses yang benar-benar tertinggal, dan sebelum ini ia menumpuk diam-diam di mesin pengembang.
+
+---
+
 ## Sengaja Ditunda
 
 Bukan kelalaian. Setiap butir punya syarat kapan ia layak diputuskan.
@@ -843,5 +955,8 @@ Keputusan berikut **belum final** dan menunggu konfirmasi dari luar tim.
 | V-04 | Metode pengakuan pendapatan proyek | Akuntan |
 | V-05 | Retensi dokumen dan audit log | Penasihat hukum |
 | V-06 | Sasaran ketersediaan per tier | Keputusan komersial |
+| V-07 | Seluruh konfigurasi modul Pajak: tarif PPN dan tanggal berlakunya · syarat formal faktur pajak agar dapat dikreditkan · batas waktu pengkreditan pajak masukan · tarif dan kategori PPh potong pungut · tarif untuk partner tanpa NPWP · tenggat setor dan lapor · aturan faktur pajak pengganti · perlakuan pajak masukan yang tidak dapat dikreditkan · format berkas pelaporan | Konsultan pajak |
+
+**V-07 memblokir modul Pajak mencapai produksi.** Mekanismenya lengkap dan teruji; nilainya kosong. Satu-satunya angka yang ada di repo adalah `tools/seed/pajak-pengembangan.js`, yang menandai dirinya sementara dan tidak pernah ikut ke produksi (D-131). Validasi faktur pajak masukan saat ini hanya memeriksa syarat yang dapat diturunkan dari data yang sudah ada — status PKP kedua pihak, NPWP, nomor faktur vendor, dan sifat kode pajaknya. Syarat formal selebihnya menunggu V-07.
 
 **V-01 memblokir modul Penjualan dan Akuntansi mencapai produksi.** Implementasi boleh berjalan dengan asumsi yang tertulis di `docs/Flow_Archetypes.md` §4, tetapi tidak boleh dirilis sebelum divalidasi.
