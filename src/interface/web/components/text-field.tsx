@@ -11,7 +11,12 @@ import styles from './primitives.module.css'
 export interface TextFieldProps extends BaseFieldProps {
   readonly value: string
   readonly placeholder?: string
-  readonly type?: 'text' | 'email' | 'tel' | 'url'
+  /**
+   * `password` ditambahkan di sesi antarmuka: halaman masuk tidak dapat
+   * menampilkan kata sandi apa adanya, dan menambah komponen kedua hanya untuk
+   * satu atribut akan menggandakan seluruh perilaku label, galat, dan fokus.
+   */
+  readonly type?: 'text' | 'email' | 'tel' | 'url' | 'password'
   onChange(value: string): void
 }
 

@@ -1,5 +1,21 @@
 import type { IdempotencyStore } from '#shared/idempotency'
 
+import type {
+  AccessibleCompany,
+  AccountingQueryPort,
+  MasterDataPort,
+  PurchaseQueryPort,
+  SalesQueryPort,
+} from './queries.js'
+import type { SalesDocumentService } from './sales/documents.js'
+import type { PostInvoiceService } from './sales/posting.js'
+
+import type { TaxCodeService } from './tax/codes.js'
+import type { TaxEngineService } from './tax/engine.js'
+import type { InputTaxInvoiceService, OutputTaxInvoiceService } from './tax/invoices.js'
+import type { ReconciliationRow } from './tax/ports.js'
+import type { TaxSerialService } from './tax/serials.js'
+
 import type { OverrideMatchService, PostBillService } from './purchasing/bills.js'
 import type { PurchaseDocumentService } from './purchasing/documents.js'
 import type { PostReceiptService } from './purchasing/receipts.js'
@@ -30,12 +46,58 @@ export interface PurchasingScopedServices {
   readonly receipts: PostReceiptService
   readonly bills: PostBillService
   readonly override: OverrideMatchService
+  readonly queries: PurchaseQueryPort
+}
+
+/**
+ * Modul Penjualan sebagaimana dilihat lapisan HTTP.
+ *
+ * Baru ada di sesi antarmuka. Sebelumnya modul ini punya layanan lengkap dan
+ * nol rute — lihat D-133.
+ */
+export interface SalesScopedServices {
+  readonly documents: SalesDocumentService
+  readonly posting: PostInvoiceService
+  readonly queries: SalesQueryPort
+}
+
+export interface AccountingScopedServices {
+  readonly queries: AccountingQueryPort
+}
+
+/**
+ * Modul Pajak sebagaimana dilihat lapisan HTTP.
+ *
+ * Tidak ada `updateRate` di mana pun, dan itu bukan kelalaian: perubahan tarif
+ * adalah versi baru lewat `codes.addVersion`, tidak pernah pengubahan.
+ */
+export interface TaxScopedServices {
+  readonly engine: TaxEngineService
+  readonly codes: TaxCodeService
+  readonly serials: TaxSerialService
+  readonly outputInvoices: OutputTaxInvoiceService
+  readonly inputInvoices: InputTaxInvoiceService
+  /** Pembacaan yang tidak punya layanan sendiri: profil dan rekonsiliasi. */
+  readonly repository: {
+    loadProfile(companyId: string): Promise<{
+      npwp: string | null
+      isPkp: boolean
+      pkpEffectiveDate: string | null
+      nppkp: string | null
+    } | null>
+    reconcile(companyId: string, period: string): Promise<readonly ReconciliationRow[]>
+  }
 }
 
 export interface CompanyScopedServices {
   readonly authorization: AuthorizationService
   readonly companyAccess: CompanyAccessService
   readonly purchasing: PurchasingScopedServices
+  readonly sales: SalesScopedServices
+  readonly accounting: AccountingScopedServices
+  /** Pelanggan, vendor, barang, gudang — dibutuhkan setiap formulir. */
+  readonly masterData: MasterDataPort
+  readonly tax: TaxScopedServices
 }
 
 export interface TenantContext {
@@ -56,6 +118,15 @@ export interface AppServices {
    * company yang tidak ada maupun company milik tenant lain.
    */
   resolveTenantForCompany(userId: string, companyId: string): Promise<string | null>
+
+  /**
+   * Company yang dapat diakses pengguna, lintas tenant.
+   *
+   * Berjalan tanpa konteks tenant, karena tenant-nya justru yang sedang dicari
+   * — sama seperti `resolveTenantForCompany` (D-064). Tanpa ini, layar tidak
+   * punya cara mengetahui id company mana pun untuk dimasukkan ke path.
+   */
+  listCompaniesForUser(userId: string): Promise<readonly AccessibleCompany[]>
 
   /** Menjalankan sesuatu di dalam transaksi dengan konteks tenant terpasang. */
   withCompanyContext<T>(

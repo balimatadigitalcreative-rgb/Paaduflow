@@ -10,7 +10,13 @@
  * `outbox_messages` sengaja TIDAK ada di sini. Relay harus menandai pesan terkirim
  * dan memangkas yang lama — lihat D-035.
  */
-export const APPEND_ONLY_TABLES = ['audit_log', 'journals', 'journal_lines'] as const
+export const APPEND_ONLY_TABLES = [
+  'audit_log',
+  'journals',
+  'journal_lines',
+  // Dasar laporan masa. Dasar yang dapat disunting bukan dasar — Module 08 §6.
+  'tax_ledger',
+] as const
 
 export type AppendOnlyTable = (typeof APPEND_ONLY_TABLES)[number]
 

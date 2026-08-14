@@ -14,7 +14,17 @@ import { uuidv7 } from '#shared/uuid'
 import type { Pool } from 'pg'
 
 import { createIdentityModule } from './identity.js'
+import {
+  PostgresAccountingQueries,
+  PostgresCompanyDirectory,
+  PostgresMasterData,
+  PostgresPurchaseQueries,
+  PostgresSalesQueries,
+} from '#infrastructure/queries/postgres-queries'
+
 import { createPurchasing } from './purchasing.js'
+import { createSalesDocuments, createSalesPosting } from './sales.js'
+import { createTax } from './tax.js'
 
 export interface AppServicesOptions {
   readonly pool: Pool
@@ -65,6 +75,13 @@ export function createAppServices(options: AppServicesOptions): AppServices {
       })
     },
 
+    async listCompaniesForUser(userId: string) {
+      // Tanpa konteks tenant, alasan yang sama dengan di atas.
+      return unitOfWork.asUser(userId, async (db) =>
+        new PostgresCompanyDirectory(db).listForUser(userId),
+      )
+    },
+
     async withCompanyContext<T>(
       context: TenantContext,
       fn: (services: CompanyScopedServices) => Promise<T>,
@@ -81,7 +98,22 @@ export function createAppServices(options: AppServicesOptions): AppServices {
           authorization,
           () => uuidv7(),
         )
-        return fn({ authorization, companyAccess, purchasing: createPurchasing(db, context.tenantId) })
+        return fn({
+          authorization,
+          companyAccess,
+          purchasing: {
+            ...createPurchasing(db, context.tenantId),
+            queries: new PostgresPurchaseQueries(db, context.tenantId),
+          },
+          sales: {
+            documents: createSalesDocuments(db, context.tenantId),
+            posting: createSalesPosting(db, context.tenantId),
+            queries: new PostgresSalesQueries(db, context.tenantId),
+          },
+          accounting: { queries: new PostgresAccountingQueries(db, context.tenantId) },
+          masterData: new PostgresMasterData(db, context.tenantId),
+          tax: createTax(db, context.tenantId),
+        })
       })
     },
   }

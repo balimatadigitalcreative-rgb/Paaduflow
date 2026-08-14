@@ -40,7 +40,16 @@ export interface PostingDocument {
 
 /** Menerjemahkan konteks menjadi akun. Diimplementasikan modul Akuntansi. */
 export interface AccountResolverPort {
+  /**
+   * `companyId` WAJIB.
+   *
+   * Tanpa ia, kueri aturan hanya menyaring tenant — dan tenant dengan dua
+   * company akan menemukan dua aturan yang sama-sama paling spesifik, lalu
+   * MENOLAK posting sebagai ambigu. Selama seluruh tenant uji hanya punya satu
+   * company, cacat ini tidak pernah terlihat (D-136).
+   */
   resolve(context: {
+    companyId: string
     transactionType: string
     itemCategoryId?: string | null
     taxCodeId?: string | null
@@ -136,7 +145,10 @@ export class PostInvoiceService {
     // Modul ini tidak pernah menyebut nomor akun. Ia mengirim konteks; lapisan
     // penentuan yang menjawab. Aturan yang tidak ditemukan MENOLAK posting —
     // tidak ada akun cadangan (D-011).
-    const piutang = await this.accounts.resolve({ transactionType: 'sales.invoice.receivable' })
+    const piutang = await this.accounts.resolve({
+      companyId: dokumen.companyId,
+      transactionType: 'sales.invoice.receivable',
+    })
     if (piutang.kind === 'unresolved') {
       return { kind: 'account_unresolved', reason: piutang.reason }
     }
@@ -147,6 +159,7 @@ export class PostInvoiceService {
 
     for (const baris of dokumen.lines) {
       const pendapatan = await this.accounts.resolve({
+        companyId: dokumen.companyId,
         transactionType: 'sales.invoice.revenue',
         itemCategoryId: baris.itemCategoryId,
         taxCodeId: baris.taxCodeId,
@@ -158,7 +171,10 @@ export class PostInvoiceService {
     }
 
     if (dokumen.taxTotal > 0) {
-      const pajak = await this.accounts.resolve({ transactionType: 'sales.invoice.tax_output' })
+      const pajak = await this.accounts.resolve({
+        companyId: dokumen.companyId,
+        transactionType: 'sales.invoice.tax_output',
+      })
       if (pajak.kind === 'unresolved') {
         return { kind: 'account_unresolved', reason: pajak.reason }
       }
@@ -185,11 +201,17 @@ export class PostInvoiceService {
     }
 
     if (hargaPokok > 0) {
-      const hpp = await this.accounts.resolve({ transactionType: 'sales.invoice.cogs' })
+      const hpp = await this.accounts.resolve({
+        companyId: dokumen.companyId,
+        transactionType: 'sales.invoice.cogs',
+      })
       if (hpp.kind === 'unresolved') {
         return { kind: 'account_unresolved', reason: hpp.reason }
       }
-      const persediaan = await this.accounts.resolve({ transactionType: 'inventory.shipment.stock' })
+      const persediaan = await this.accounts.resolve({
+        companyId: dokumen.companyId,
+        transactionType: 'inventory.shipment.stock',
+      })
       if (persediaan.kind === 'unresolved') {
         return { kind: 'account_unresolved', reason: persediaan.reason }
       }
