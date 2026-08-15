@@ -46,6 +46,9 @@ Thumbs.db
 .claude/settings.local.json
 
 # Basis data lokal
+# Klaster PostgreSQL sementara milik `npm run dev`. Berisi data contoh, dan
+# ukurannya puluhan megabita — tidak pernah masuk repo.
+.paadu-dev/
 *.sqlite
 *.sqlite3
 pgdata/
