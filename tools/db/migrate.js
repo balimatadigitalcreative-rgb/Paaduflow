@@ -43,8 +43,51 @@ async function assertUtf8(databaseUrl) {
  * @param {string} databaseUrl
  * @param {{ log?: (message: string) => void }} [options]
  */
+/**
+ * Menolak koneksi migrasi yang bukan pemilik basis data.
+ *
+ * Migrasi membuat tabel, kebijakan, dan peran. Koneksi aplikasi tidak berwenang
+ * melakukannya, dan kegagalannya muncul di tengah jalan sebagai "permission
+ * denied for schema public" — pesan yang tidak menyebutkan bahwa yang salah
+ * adalah kredensialnya, bukan migrasinya.
+ *
+ * Diperiksa di muka supaya deploy berhenti sebelum menyentuh apa pun. Superuser
+ * dibolehkan meski bukan pemilik: ia memang dapat melakukan segalanya, dan itu
+ * jalur yang dipakai pengembangan lokal.
+ */
+async function assertOwner(databaseUrl) {
+  const client = new pg.Client({ connectionString: databaseUrl })
+  await client.connect()
+  try {
+    const { rows } = await client.query(
+      `SELECT current_user AS peran,
+              current_database() AS basis,
+              pg_get_userbyid(d.datdba) AS pemilik,
+              (SELECT rolsuper FROM pg_roles WHERE rolname = current_user) AS superuser
+         FROM pg_database d
+        WHERE d.datname = current_database()`,
+    )
+    const { peran, basis, pemilik, superuser } = rows[0]
+
+    if (superuser === true || peran === pemilik) return
+
+    throw new Error(
+      [
+        `Koneksi migrasi memakai peran "${peran}", sedangkan pemilik basis data "${basis}" adalah "${pemilik}".`,
+        '',
+        'Migrasi membuat tabel, kebijakan, dan peran — koneksi aplikasi tidak berwenang.',
+        'Pasang MIGRATION_DATABASE_URL dengan kredensial pemilik (paadu_owner),',
+        'lalu jalankan ulang. Jangan sertakan variabel itu di lingkungan runtime.',
+      ].join('\n'),
+    )
+  } finally {
+    await client.end()
+  }
+}
+
 export async function migrate(databaseUrl, options = {}) {
   await assertUtf8(databaseUrl)
+  await assertOwner(databaseUrl)
 
   const applied = await runner({
     databaseUrl,

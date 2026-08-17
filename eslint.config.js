@@ -27,6 +27,12 @@ export default tseslint.config(
     },
   },
   {
+    // PM2 memuat berkas ekosistem sebagai CommonJS, sehingga `module` di sana
+    // memang ada — berbeda dengan sisa repo yang seluruhnya ESM.
+    files: ['**/*.cjs'],
+    languageOptions: { sourceType: 'commonjs', globals: { module: 'writable' } },
+  },
+  {
     files: ['src/**/*.{ts,tsx}'],
     plugins: { arsitektur },
     rules: {

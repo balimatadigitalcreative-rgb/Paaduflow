@@ -965,6 +965,30 @@ Melonggarkan WITH CHECK saja akan membuka pintu lain: `paadu_app` dapat menyisip
 
 **Terkait.** Kredensial migrasi kini terpisah dari kredensial runtime lewat `MIGRATION_DATABASE_URL`, didokumentasikan di `.env.example` dan README. Sebelumnya `npm run migrate` hanya membaca `DATABASE_URL`, sehingga satu-satunya kredensial yang tersedia bagi proses runtime adalah kredensial yang dapat membongkar seluruh skema.
 
+### D-142 · Jalur pengembangan dan jalur produksi dipisah, dan `npm run dev` tidak boleh menyentuh server
+**Status:** Berlaku
+Ditemukan saat PM2 di VPS menjalankan `npm run dev` dan gagal berulang: migrasinya dijalankan dengan koneksi aplikasi, yang memang tidak berwenang membuat tabel.
+
+**Kenapa `npm run dev` benar di laptop dan salah di server.** Ia melakukan tiga hal yang seluruhnya tepat saat mengembangkan dan seluruhnya berbahaya di produksi:
+
+| Yang dilakukan `npm run dev` | Kenapa salah di server |
+|---|---|
+| Menyalakan PostgreSQL sementara di `.paadu-dev/` | Basis data produksi berumur lebih panjang daripada proses yang memakainya |
+| Menjalankan migrasi saat menyala | Perubahan skema adalah langkah deploy yang diawasi, bukan efek samping dari restart. Koneksi runtime pun tidak berwenang melakukannya (D-141) |
+| Menjalankan Vite | Hot reload menuntut sumber, kompilator, dan port kedua yang tidak ada gunanya di server |
+
+Yang membuatnya berbahaya bukan sekadar tidak efisien: proses yang bermigrasi saat menyala akan **bermigrasi setiap kali PM2 memulihkannya**. Restart karena kehabisan memori berubah menjadi perubahan skema yang tidak diminta siapa pun.
+
+**Jalur produksinya.** `npm start` hanya menyalakan server HTTP. Ia membaca `DATABASE_URL`, `PORT`, `TOKEN_SIGNING_SECRET`, dan `MFA_ENCRYPTION_KEY`, lalu berhenti dengan menyebutkan yang kurang bila salah satunya kosong — sebelum menyentuh basis data. Antarmuka disajikan sebagai berkas statis hasil `npm run build:web`, dengan rute non-API diarahkan ke `index.html`. `/v1` dan `/openapi.json` sengaja tidak ikut diarahkan: API yang menjawab HTML berstatus 200 saat rutenya salah menyembunyikan kesalahan pemanggilnya.
+
+**Server ikut dibangun.** Servernya TypeScript dan memakai alias `#`; saat pengembangan Vite yang menyelesaikan keduanya lewat `ssrLoadModule` (D-134). Produksi tidak boleh menjalankan Vite, jadi hal yang sama diselesaikan sekali di muka menjadi `dist/server/main.js` lewat `vite.server.config.ts`. Dependensi runtime dibiarkan eksternal — membundel `node_modules` hanya membuatnya lebih sulit ditambal saat ada CVE.
+
+**Pemuatan `.env`.** Dilakukan di titik masuk dengan `process.loadEnvFile`, yang **tidak menimpa** variabel yang sudah ada di lingkungan. Itu perilaku bawaan Node, dan itu yang benar di server: nilainya sering diberikan systemd, PM2, atau manajer rahasia, dan berkas `.env` yang tertinggal dari penyiapan pertama tidak boleh diam-diam mengalahkannya.
+
+**Migrasi tetap terpisah**, dan kini menolak lebih awal bila koneksinya bukan pemilik basis data — dengan pesan yang menyebutkan bahwa yang salah adalah kredensialnya, bukan migrasinya. Sebelumnya kegagalan itu muncul di tengah jalan sebagai `permission denied for schema public`, persis yang terlihat di VPS.
+
+`ecosystem.config.cjs` menjalankan `npm start` dengan `max_restarts` dan `min_uptime`. Tanpa keduanya, konfigurasi yang salah berubah menjadi proses yang menyala dan mati ribuan kali semalaman, dan lognya menjadi tidak terbaca justru saat paling dibutuhkan.
+
 ---
 
 ## Sengaja Ditunda

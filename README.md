@@ -75,6 +75,60 @@ DATABASE_URL=postgresql://user:sandi@localhost:5432/paadu npm run dev
 
 Basis datanya harus ber-encoding UTF8 — `npm run migrate` menolak yang bukan, dengan pesan yang menyebutkan sebabnya.
 
+---
+
+## Menjalankan di server
+
+`npm run dev` **tidak boleh dipakai di server.** Ia menyalakan PostgreSQL sementara, menjalankan migrasi, dan menjalankan Vite — ketiganya benar di laptop dan salah di produksi. Alasannya di D-142.
+
+Yang dipakai di server hanya dua perintah: `npm run build` lalu `npm start`. `npm start` **hanya** menyalakan server HTTP. Ia tidak menyentuh skema, tidak menyalakan basis data, dan menyajikan antarmuka sebagai berkas statis.
+
+### Penyiapan sekali
+
+```bash
+sudo mkdir -p /srv/paadu /var/log/paadu
+git clone <repo> /srv/paadu && cd /srv/paadu
+cp .env.example .env      # isi DATABASE_URL, PORT, TOKEN_SIGNING_SECRET, MFA_ENCRYPTION_KEY
+npm ci
+
+# Migrasi dijalankan sendiri, dengan kredensial pemilik — sekali di awal
+MIGRATION_DATABASE_URL=postgresql://paadu_owner:...@localhost:5432/paadu npm run migrate
+
+npm run build
+pm2 start ecosystem.config.cjs
+pm2 save
+```
+
+### Setiap deploy
+
+```bash
+cd /srv/paadu
+git pull
+npm ci
+
+# Hanya bila ada migrasi baru. Berhenti sendiri bila kredensialnya bukan pemilik.
+MIGRATION_DATABASE_URL=postgresql://paadu_owner:...@localhost:5432/paadu npm run migrate
+
+npm run build
+pm2 restart paadu-api
+pm2 logs paadu-api --lines 50
+```
+
+Urutannya disengaja: **migrasi sebelum build dan restart.** Skema yang tertinggal di belakang kode adalah kegagalan saat permintaan pertama masuk; kode yang tertinggal di belakang skema biasanya masih berjalan.
+
+`MIGRATION_DATABASE_URL` diberikan **di baris perintah itu saja**, tidak di `.env`. Bila lupa, `npm run migrate` jatuh ke `DATABASE_URL`, mendeteksi bahwa perannya bukan pemilik basis data, lalu berhenti dengan pesan yang menyebutkan sebabnya — sebelum menyentuh apa pun.
+
+### Bila `npm start` menolak menyala
+
+Ia gagal cepat dan menyebutkan apa yang kurang:
+
+| Pesan | Artinya |
+|---|---|
+| `n variabel lingkungan belum dipasang` | `.env` belum lengkap, atau tidak terbaca dari `cwd` PM2 |
+| `dist/web tidak memuat index.html` | `npm run build` belum dijalankan setelah `git pull` |
+
+Variabel yang sudah ada di lingkungan **tidak** ditimpa `.env` — itu disengaja, supaya nilai dari PM2 atau manajer rahasia menang atas berkas yang tertinggal dari penyiapan pertama.
+
 ### Kredensial migrasi terpisah dari kredensial runtime
 
 Di produksi, keduanya **bukan peran yang sama**:
