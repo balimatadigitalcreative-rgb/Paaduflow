@@ -12,7 +12,7 @@
 0008_outbox.sql 33a093ba5df0f2c3
 0009_authentication.sql c70c0ebbb75c363e
 0010_auth_ip_throttle.sql 52806f7b6913e6a3
-0011_authorization.sql d38854fd48f2a337
+0011_authorization.sql 71de57ce8f2754e7
 0012_accounts.sql 676249832b6e4b65
 0013_account_determination.sql e81ade2c330f2e50
 0014_inventory.sql 6dfc84e0d7a2bc54
@@ -24,3 +24,4 @@
 0020_tax.sql b7ac3ac94ee68b01
 0021_izin_penjualan_akuntansi.sql 07e4fa67d3e7aee2
 0022_nomor_seri_pajak_per_company.sql 389364245d344250
+0023_rls_peran_bawaan.sql 0c0d61118a4a9089

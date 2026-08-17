@@ -945,6 +945,26 @@ Ekspor pelaporan tidak punya bekas sama sekali. Tidak ada endpoint, tidak ada be
 
 Yang harus terjadi lebih dulu: V-07 dijawab konsultan pajak. Sesudah itu keduanya dibangun bersama testnya, bukan sebelum.
 
+### D-141 · Kebijakan RLS `roles` menolak barisnya sendiri, dan pengujian lokal tidak dapat melihatnya
+**Status:** Berlaku · diperbaiki di 0011 dan 0023
+Ditemukan saat deploy ke VPS, bukan oleh satu pun dari 434 test yang lulus.
+
+**Cacatnya.** Migrasi 0011 memasang kebijakan yang kedua sisinya tidak sepakat: `USING (tenant_id IS NULL OR tenant_id = paadu.current_tenant_id())` tetapi `WITH CHECK (tenant_id = paadu.current_tenant_id())`. Peran bawaan sistem disisipkan dengan `tenant_id` NULL, dan `NULL = apa pun` bernilai NULL — bukan true. WITH CHECK karena itu menolak baris yang USING-nya sendiri izinkan dibaca. Karena tabelnya memakai `FORCE ROW LEVEL SECURITY`, pemilik tabel pun tunduk; hanya superuser dan peran ber-`BYPASSRLS` yang lolos.
+
+Akibatnya dua, dan yang kedua lebih buruk: migrasi 0011 **gagal total** pada peran non-superuser — yaitu justru `paadu_owner` yang sejak 0001 dirancang menjalankannya — dan baris `tenant_id IS NULL` tidak dapat ditulis siapa pun sesudahnya.
+
+**Kenapa pengujian lokal tidak menangkapnya.** `tests/invariants/global-setup.ts` menjalankan migrasi sebagai `postgres`, superuser dari PostgreSQL sementara yang dinyalakannya sendiri. Superuser melewati RLS sepenuhnya. Setiap test RLS yang ada memang menguji kebijakan dengan `SET ROLE paadu_app` — tetapi seluruhnya berjalan **setelah** migrasi selesai, di basis data yang skemanya sudah jadi. Tidak ada satu pun yang menjalankan migrasinya sendiri sebagai peran yang tunduk RLS, sehingga kesalahan pada kebijakan yang menghalangi migrasi tidak punya tempat untuk muncul.
+
+Pola yang sama untuk ketiga kalinya di repo ini: fixture uji lebih sederhana daripada kenyataan. D-139 lolos karena fixture memberi tiap kode pajak satu versi dan akun tersendiri; migrasi 0022 lahir karena seluruh test menyeed satu company per tenant; dan sekarang, karena seluruh test bermigrasi sebagai superuser.
+
+**Perbaikannya di dua tempat, dan keduanya perlu.** 0011 diubah langsung — pengecualian sadar terhadap D-033, ditandai `paadu:allow-breaking`, karena migrasi yang mustahil dijalankan tidak dapat diperbaiki oleh migrasi sesudahnya: pemasangan baru tidak akan pernah sampai ke sana. 0023 memperbaiki basis data yang terlanjur menerapkan versi lamanya, yaitu setiap basis data yang bermigrasi sebagai superuser, dan ditulis idempoten supaya aman di kedua keadaan.
+
+Melonggarkan WITH CHECK saja akan membuka pintu lain: `paadu_app` dapat menyisipkan peran ber-`tenant_id` NULL, yang menurut kebijakan itu terlihat oleh **seluruh** tenant. Pembatasannya karena itu dipindah ke tempat yang tepat — tiga kebijakan `RESTRICTIVE` bercakupan `TO paadu_app`, dipecah per perintah supaya SELECT tidak ikut tertutup. Membaca peran bawaan harus tetap boleh: setiap pemberian akses company mencarinya justru lewat `WHERE tenant_id IS NULL`.
+
+**Pencegahannya.** `tests/invariants/migrasi-non-superuser.test.ts` membuat peran `NOSUPERUSER NOBYPASSRLS`, membuat basis data kosong yang dimilikinya, lalu menjalankan seluruh migrasi sebagai peran itu. Test pertamanya memastikan perannya memang tanpa keduanya — tanpa itu, sisanya hanya teater yang lulus karena RLS tidak pernah diterapkan.
+
+**Terkait.** Kredensial migrasi kini terpisah dari kredensial runtime lewat `MIGRATION_DATABASE_URL`, didokumentasikan di `.env.example` dan README. Sebelumnya `npm run migrate` hanya membaca `DATABASE_URL`, sehingga satu-satunya kredensial yang tersedia bagi proses runtime adalah kredensial yang dapat membongkar seluruh skema.
+
 ---
 
 ## Sengaja Ditunda

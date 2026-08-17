@@ -75,6 +75,25 @@ DATABASE_URL=postgresql://user:sandi@localhost:5432/paadu npm run dev
 
 Basis datanya harus ber-encoding UTF8 — `npm run migrate` menolak yang bukan, dengan pesan yang menyebutkan sebabnya.
 
+### Kredensial migrasi terpisah dari kredensial runtime
+
+Di produksi, keduanya **bukan peran yang sama**:
+
+| Variabel | Peran | Boleh apa |
+|---|---|---|
+| `DATABASE_URL` | `paadu_app` | Dibaca proses runtime. Tunduk RLS, bukan pemilik objek, tidak dapat mengubah skema. |
+| `MIGRATION_DATABASE_URL` | `paadu_owner` | Hanya dibaca `npm run migrate`. Pemilik objek. |
+
+`npm run migrate` membaca `MIGRATION_DATABASE_URL` lebih dulu dan jatuh ke `DATABASE_URL` bila kosong — cukup untuk lokal, karena pemilik basis data lokal memang superuser. Di produksi ia dicetak sebagai peringatan.
+
+**Jangan letakkan `MIGRATION_DATABASE_URL` di `.env` yang dimuat proses runtime.** Berikan hanya saat perintahnya dijalankan:
+
+```bash
+MIGRATION_DATABASE_URL=postgresql://paadu_owner:...@host:5432/paadu npm run migrate
+```
+
+Peran migrasi sengaja **bukan superuser dan tanpa `BYPASSRLS`**. Superuser melewati Row Level Security sepenuhnya, sehingga kebijakan yang salah tidak terlihat sampai deploy — persis yang terjadi pada D-141. `tests/invariants/migrasi-non-superuser.test.ts` menjalankan seluruh migrasi sebagai peran seperti itu, dari basis data kosong, supaya kelas bug tersebut gagal di lokal lebih dulu.
+
 ### Perintah lain
 
 | Perintah | Kegunaan |

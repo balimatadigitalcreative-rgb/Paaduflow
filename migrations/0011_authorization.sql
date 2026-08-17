@@ -84,9 +84,31 @@ ALTER TABLE roles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE roles FORCE ROW LEVEL SECURITY;
 
 -- Peran bawaan terlihat oleh semua tenant; peran kustom hanya oleh pemiliknya.
+--
+-- paadu:allow-breaking WITH CHECK versi pertama menolak `tenant_id` NULL yang USING-nya izinkan, sehingga migrasi ini gagal pada peran non-superuser dan tidak dapat dijalankan sama sekali di pemasangan baru — lihat D-141 dan migrasi 0023.
 CREATE POLICY tenant_isolation ON roles
   USING (tenant_id IS NULL OR tenant_id = paadu.current_tenant_id())
-  WITH CHECK (tenant_id = paadu.current_tenant_id());
+  WITH CHECK (tenant_id IS NULL OR tenant_id = paadu.current_tenant_id());
+
+-- Melonggarkan WITH CHECK saja akan membuka pintu lain: paadu_app dapat
+-- menyisipkan peran ber-`tenant_id` NULL, yang terlihat oleh SELURUH tenant.
+-- Pembatasannya karena itu diletakkan per peran basis data, bukan per baris.
+--
+-- Dipecah per perintah dengan sengaja. Satu kebijakan FOR ALL akan ikut
+-- membatasi SELECT, dan paadu_app justru HARUS dapat membaca peran bawaan —
+-- setiap pemberian akses company mencarinya lewat `WHERE tenant_id IS NULL`.
+CREATE POLICY app_tanpa_peran_global_insert ON roles
+  AS RESTRICTIVE FOR INSERT TO paadu_app
+  WITH CHECK (tenant_id IS NOT NULL AND NOT is_system);
+
+CREATE POLICY app_tanpa_peran_global_update ON roles
+  AS RESTRICTIVE FOR UPDATE TO paadu_app
+  USING (tenant_id IS NOT NULL)
+  WITH CHECK (tenant_id IS NOT NULL AND NOT is_system);
+
+CREATE POLICY app_tanpa_peran_global_delete ON roles
+  AS RESTRICTIVE FOR DELETE TO paadu_app
+  USING (tenant_id IS NOT NULL);
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON roles TO paadu_app;
 

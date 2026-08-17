@@ -68,10 +68,30 @@ export async function migrate(databaseUrl, options = {}) {
 const isDirectRun = process.argv[1] === fileURLToPath(import.meta.url)
 
 if (isDirectRun) {
-  const databaseUrl = process.env.DATABASE_URL
+  /**
+   * Kredensial migrasi terpisah dari kredensial runtime.
+   *
+   * Migrasi berjalan sebagai `paadu_owner` — pemilik objek, yang boleh membuat
+   * tabel, kebijakan, dan peran. Runtime berjalan sebagai `paadu_app`, yang
+   * tunduk RLS dan sengaja bukan pemilik. Bila keduanya memakai satu variabel,
+   * satu-satunya kredensial yang tersedia bagi proses runtime adalah kredensial
+   * yang dapat membongkar seluruh skema.
+   *
+   * `MIGRATION_DATABASE_URL` karena itu dibaca lebih dulu, dan tidak dimuat
+   * proses runtime mana pun. `DATABASE_URL` tetap dipakai bila ia tidak ada,
+   * supaya pengembangan lokal tidak menuntut dua variabel untuk satu basis data
+   * yang pemiliknya memang superuser.
+   */
+  const databaseUrl = process.env.MIGRATION_DATABASE_URL || process.env.DATABASE_URL
   if (databaseUrl === undefined || databaseUrl === '') {
-    console.error('DATABASE_URL belum dipasang.')
+    console.error('MIGRATION_DATABASE_URL maupun DATABASE_URL belum dipasang.')
     process.exit(1)
+  }
+  if (process.env.MIGRATION_DATABASE_URL === undefined || process.env.MIGRATION_DATABASE_URL === '') {
+    console.warn(
+      'Memakai DATABASE_URL untuk migrasi. Di produksi, pasang MIGRATION_DATABASE_URL\n' +
+        'dengan kredensial paadu_owner dan jangan sertakan ia di lingkungan runtime.',
+    )
   }
   const applied = await migrate(databaseUrl, { log: (message) => console.log(message) })
   console.log(
