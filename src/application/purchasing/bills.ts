@@ -161,6 +161,7 @@ export class PostBillService {
 
     if (nilaiPerantara !== 0) {
       const perantara = await this.accounts.resolve({
+        companyId: tagihan.companyId,
         transactionType: 'purchasing.receipt.clearing',
       })
       if (perantara.kind === 'unresolved') {
@@ -171,6 +172,7 @@ export class PostBillService {
 
     if (selisihHarga !== 0) {
       const varian = await this.accounts.resolve({
+        companyId: tagihan.companyId,
         transactionType: 'purchasing.bill.price_variance',
       })
       if (varian.kind === 'unresolved') {
@@ -187,6 +189,7 @@ export class PostBillService {
       for (const baris of tagihan.lines) {
         if (baris.itemId !== null) continue
         const akun = await this.accounts.resolve({
+          companyId: tagihan.companyId,
           transactionType: 'purchasing.bill.expense',
           itemCategoryId: baris.itemCategoryId,
           taxCodeId: baris.taxCodeId,
@@ -203,14 +206,20 @@ export class PostBillService {
     }
 
     if (tagihan.taxTotal > 0) {
-      const pajak = await this.accounts.resolve({ transactionType: 'purchasing.bill.tax_input' })
+      const pajak = await this.accounts.resolve({
+        companyId: tagihan.companyId,
+        transactionType: 'purchasing.bill.tax_input',
+      })
       if (pajak.kind === 'unresolved') {
         return { kind: 'account_unresolved', reason: pajak.reason }
       }
       barisJurnal.push({ accountId: pajak.accountId, debit: tagihan.taxTotal, credit: 0 })
     }
 
-    const utang = await this.accounts.resolve({ transactionType: 'purchasing.bill.payable' })
+    const utang = await this.accounts.resolve({
+      companyId: tagihan.companyId,
+      transactionType: 'purchasing.bill.payable',
+    })
     if (utang.kind === 'unresolved') {
       return { kind: 'account_unresolved', reason: utang.reason }
     }

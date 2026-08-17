@@ -8,7 +8,11 @@ import Fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest }
 
 import { bearerToken, sendError } from './context.js'
 import { registerIdentityRoutes } from './modules/identity/routes.js'
+import { registerAccountingRoutes } from './modules/accounting/routes.js'
+import { registerMasterDataRoutes } from './modules/master-data/routes.js'
 import { registerPurchasingRoutes } from './modules/purchasing/routes.js'
+import { registerSalesRoutes } from './modules/sales/routes.js'
+import { registerTaxRoutes } from './modules/tax/routes.js'
 
 export type PaaduServer = FastifyInstance<
   import('node:http').Server,
@@ -84,6 +88,10 @@ export async function buildHttpApp(options: HttpOptions): Promise<PaaduServer> {
 
   registerIdentityRoutes(app, options.services)
   registerPurchasingRoutes(app, options.services)
+  registerSalesRoutes(app, options.services)
+  registerAccountingRoutes(app, options.services)
+  registerMasterDataRoutes(app, options.services)
+  registerTaxRoutes(app, options.services)
 
   app.get('/openapi.json', { schema: { hide: true } }, async () => app.swagger())
 

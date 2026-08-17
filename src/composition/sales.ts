@@ -49,8 +49,8 @@ export function createSalesPosting(db: Queryable, tenantId: string): PostInvoice
         `SELECT id, transaction_type, item_category_id, warehouse_id, tax_code_id,
                 partner_type, account_id
            FROM account_determination_rules
-          WHERE tenant_id = $1 AND transaction_type = $2`,
-        [tenantId, context.transactionType],
+          WHERE tenant_id = $1 AND company_id = $2 AND transaction_type = $3`,
+        [tenantId, context.companyId, context.transactionType],
       )
 
       const rules: DeterminationRule[] = rows.map((row) => ({

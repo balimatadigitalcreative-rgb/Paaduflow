@@ -30,12 +30,178 @@ const Baris = Type.Object({
 })
 
 const JalurCompany = Type.Object({ companyId: Type.String({ format: 'uuid' }) })
+const Halaman = Type.Object({
+  cursor: Type.Optional(Type.String()),
+  per_page: Type.Optional(Type.Integer({ minimum: 1, maximum: 200 })),
+})
 const JalurDokumen = Type.Object({
   companyId: Type.String({ format: 'uuid' }),
   id: Type.String({ format: 'uuid' }),
 })
 
 export function registerPurchasingRoutes(app: PaaduServer, services: AppServices): void {
+
+  // ── Jalur baca ───────────────────────────────────────────────────────────
+  //
+  // Ditambahkan di sesi antarmuka. Modul ini sebelumnya hanya punya POST —
+  // cukup untuk test, sama sekali tidak cukup untuk layar (D-133).
+
+  async function baca(
+    request: import('fastify').FastifyRequest,
+    reply: import('fastify').FastifyReply,
+    companyId: string,
+    permission: string,
+    fn: (
+      scoped: import('#application/app-services').CompanyScopedServices,
+      companyId: string,
+    ) => Promise<{ status: number; body: unknown }>,
+  ): Promise<import('fastify').FastifyReply> {
+    if (!(await requireUser(request, reply, services))) return reply
+    if (!(await requireCompany(request, reply, services, companyId))) return reply
+
+    const user = request.authenticated!
+    const company = request.company!
+
+    const hasil = await services.withCompanyContext(
+      { tenantId: company.tenantId, userId: user.userId },
+      async (scoped) => {
+        const izin = await scoped.authorization.authorize(
+          { userId: user.userId, companyId: company.companyId },
+          { key: permission, scope: 'company', ask: 'Admin Company' },
+        )
+        if (!izin.allowed) {
+          return {
+            status: 403,
+            body: { success: false, message: 'Tidak diizinkan.', errors: [izin.denial] },
+          }
+        }
+        return fn(scoped, company.companyId)
+      },
+    )
+
+    return reply.status(hasil.status).send(hasil.body)
+  }
+
+  app.get(
+    '/v1/companies/:companyId/purchase-documents',
+    {
+      schema: {
+        params: JalurCompany,
+        querystring: Type.Intersect([
+          Halaman,
+          Type.Object({
+            doc_type: Type.Optional(
+              Type.Union([
+                Type.Literal('rfq'),
+                Type.Literal('purchase_order'),
+                Type.Literal('bill'),
+              ]),
+            ),
+          }),
+        ]),
+      },
+    },
+    async (request, reply) =>
+      baca(
+        request,
+        reply,
+        request.params.companyId,
+        'pembelian.pesanan.kelola',
+        async (scoped, companyId) => {
+          const hasil = await scoped.purchasing.queries.list(
+            companyId,
+            request.query.doc_type ?? null,
+            { cursor: request.query.cursor ?? null, limit: request.query.per_page ?? 50 },
+          )
+          return {
+            status: 200,
+            body: { success: true, data: hasil.items, meta: { next_cursor: hasil.nextCursor } },
+          }
+        },
+      ),
+  )
+
+  app.get(
+    '/v1/companies/:companyId/purchase-documents/:id',
+    { schema: { params: JalurDokumen } },
+    async (request, reply) =>
+      baca(
+        request,
+        reply,
+        request.params.companyId,
+        'pembelian.pesanan.kelola',
+        async (scoped, companyId) => {
+          const hasil = await scoped.purchasing.queries.detail(companyId, request.params.id)
+          if (hasil === null) {
+            return {
+              status: 404,
+              body: {
+                success: false,
+                message: 'Dokumen pembelian tidak ditemukan.',
+                errors: [{ code: 'not_found' }],
+              },
+            }
+          }
+          return { status: 200, body: { success: true, data: hasil } }
+        },
+      ),
+  )
+
+  /**
+   * Panel pencocokan tiga arah — dipesan, diterima, dan ditagih berdampingan.
+   *
+   * Selisihnya dihitung server dengan fungsi yang SAMA dengan yang dipakai
+   * posting. Panel yang menghitung sendiri di layar akan suatu hari menampilkan
+   * hijau pada tagihan yang ditolak posting, dan orang akan percaya yang hijau.
+   */
+  app.get(
+    '/v1/companies/:companyId/bills/:id/match',
+    { schema: { params: JalurDokumen } },
+    async (request, reply) =>
+      baca(
+        request,
+        reply,
+        request.params.companyId,
+        'pembelian.tagihan.posting',
+        async (scoped, companyId) => {
+          const hasil = await scoped.purchasing.queries.matchPanel(companyId, request.params.id)
+          if (hasil === null) {
+            return {
+              status: 404,
+              body: {
+                success: false,
+                message: 'Tagihan tidak ditemukan.',
+                errors: [{ code: 'not_found' }],
+              },
+            }
+          }
+          return { status: 200, body: { success: true, data: hasil } }
+        },
+      ),
+  )
+
+  app.get(
+    '/v1/companies/:companyId/goods-receipts',
+    { schema: { params: JalurCompany, querystring: Halaman } },
+    async (request, reply) =>
+      baca(
+        request,
+        reply,
+        request.params.companyId,
+        'pembelian.penerimaan.catat',
+        async (scoped, companyId) => {
+          const hasil = await scoped.purchasing.queries.listReceipts(companyId, {
+            cursor: request.query.cursor ?? null,
+            limit: request.query.per_page ?? 50,
+          })
+          return {
+            status: 200,
+            body: { success: true, data: hasil.items, meta: { next_cursor: hasil.nextCursor } },
+          }
+        },
+      ),
+  )
+
   // ── Dokumen: RFQ, pesanan, tagihan ───────────────────────────────────────
 
   app.post(

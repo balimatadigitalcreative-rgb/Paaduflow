@@ -923,6 +923,28 @@ Karena itu `teardown` global mendata anak yang tertinggal lewat `ParentProcessId
 
 Tidak dipakai: `process.exit`, `dangerouslyIgnoreUnhandledErrors`, maupun opsi apa pun yang menyembunyikan peringatan. Peringatannya benar — ada proses yang benar-benar tertinggal, dan sebelum ini ia menumpuk diam-diam di mesin pengembang.
 
+### D-139 · Rekonsiliasi pajak dihitung per AKUN, bukan per kode pajak
+**Status:** Berlaku · menggantikan bentuk jawaban `/reports/tax-reconciliation`
+Versi sebelumnya mengelompokkan mutasi buku besar per baris `tax_codes` lewat join pada `gl_account_id`. Akibatnya seluruh saldo akun disalin ke **setiap** baris kode yang menunjuk akun itu. Dua versi dari satu kode sudah cukup membuat angkanya berlipat — dan versi berganda adalah keadaan normal di modul ini, bukan kasus tepi, karena tarif memang tidak pernah diubah melainkan ditutup dan digantikan (D-124). Seed pengembangan pun sengaja membuat dua versi PPN keluaran.
+
+Sebabnya struktural: `journal_lines` hanya menyimpan `account_id` dan tidak pernah menyebut kode pajak. Saldo buku besar karena itu **tidak dapat** dibagi per kode tanpa mengarang. Grain yang benar adalah akun.
+
+Sisi buku pajak tetap dirinci per kode di `codes`, karena `tax_ledger` memang menyimpan `tax_code_id`. Jadi selisih dihitung pada grain yang dapat dipertanggungjawabkan, sedangkan penunjuk arah "kode mana yang mengisi akun ini" tidak hilang.
+
+Cacatnya lolos selama ini karena `tests/invariants/buku-pajak.test.ts` memberi tiap kode satu versi dan akun tersendiri — persis kasus khusus ketika query lama kebetulan benar. Test baru menambahkan kode kedua di akun yang sama dan menuntut total buku besar tidak berubah; sebelum perbaikan ia melaporkan tepat dua kali lipat.
+
+### D-140 · Faktur pajak pengganti dan ekspor pelaporan sengaja belum dibangun
+**Status:** Berlaku · ditinjau ulang setelah V-07 terjawab
+Keduanya **tidak** dibangun, dan ketiadaannya adalah keputusan, bukan pekerjaan yang terlewat.
+
+Aturan yang mengaturnya belum divalidasi konsultan pajak (V-07): syarat kapan sebuah faktur pajak boleh diganti, apa yang terjadi pada nomor seri faktur yang digantikan, bagaimana rantai penggantinya dilaporkan, serta format berkas pelaporan beserta tenggat setor dan lapornya. Membangunnya sekarang berarti menebak, dan tebakan pada pelaporan pajak tidak berhenti sebagai cacat perangkat lunak — ia menjadi berkas yang dikirim ke otoritas.
+
+Bekasnya sengaja ditinggalkan setengah: kolom `replaces_id` sudah ada di `output_tax_invoices` beserta relasi dua arahnya, karena skema yang menambahkan kolom belakangan lebih mahal daripada kolom yang menunggu. Yang tidak ada adalah jalur untuk mengisinya — tidak ada endpoint, tidak ada layanan, dan tidak ada layar. Rantai pengganti juga sengaja tidak ditampilkan di layar detail faktur keluaran: layar yang menampilkannya akan segera diikuti pertanyaan di mana tombol membuatnya.
+
+Ekspor pelaporan tidak punya bekas sama sekali. Tidak ada endpoint, tidak ada berkas contoh, dan tidak ada format yang diasumsikan.
+
+Yang harus terjadi lebih dulu: V-07 dijawab konsultan pajak. Sesudah itu keduanya dibangun bersama testnya, bukan sebelum.
+
 ---
 
 ## Sengaja Ditunda

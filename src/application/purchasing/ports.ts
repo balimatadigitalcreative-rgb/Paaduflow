@@ -12,7 +12,16 @@ import type { MatchLine, MatchStatus, MatchTolerance } from '#domain/purchasing/
 
 /** Menerjemahkan konteks menjadi akun. Diimplementasikan modul Akuntansi. */
 export interface AccountResolverPort {
+  /**
+   * `companyId` WAJIB.
+   *
+   * Tanpa ia, kueri aturan hanya menyaring tenant — dan tenant dengan dua
+   * company akan menemukan dua aturan yang sama-sama paling spesifik, lalu
+   * MENOLAK posting sebagai ambigu. Selama seluruh tenant uji hanya punya satu
+   * company, cacat ini tidak pernah terlihat (D-136).
+   */
   resolve(context: {
+    companyId: string
     transactionType: string
     itemCategoryId?: string | null
     taxCodeId?: string | null

@@ -189,11 +189,15 @@ export class PostReceiptService {
     if (barisPenerimaan.length === 0) return { kind: 'nothing_to_receive' }
     await this.writes.insertReceiptLines(receiptId, barisPenerimaan)
 
-    const persediaan = await this.accounts.resolve({ transactionType: 'purchasing.receipt.stock' })
+    const persediaan = await this.accounts.resolve({
+      companyId: input.companyId,
+      transactionType: 'purchasing.receipt.stock',
+    })
     if (persediaan.kind === 'unresolved') {
       return { kind: 'account_unresolved', reason: persediaan.reason }
     }
     const perantara = await this.accounts.resolve({
+      companyId: input.companyId,
       transactionType: 'purchasing.receipt.clearing',
     })
     if (perantara.kind === 'unresolved') {

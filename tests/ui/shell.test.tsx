@@ -3,7 +3,7 @@ import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, expect, test } from 'vitest'
 
-import { App } from '#interface/web/app'
+import { ShellDemo } from '#interface/web/shell-demo'
 
 /**
  * Audit aksesibilitas otomatis dan perilaku keyboard shell.
@@ -23,7 +23,7 @@ afterEach(() => {
 })
 
 test('shell lolos audit aksesibilitas otomatis', async () => {
-  const { container } = render(<App />)
+  const { container } = render(<ShellDemo />)
 
   const hasil = await axe.run(container, {
     runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'] },
@@ -45,7 +45,7 @@ test('shell lolos audit aksesibilitas otomatis', async () => {
 
 test('skip link adalah elemen pertama yang menerima fokus', async () => {
   const pengguna = userEvent.setup()
-  render(<App />)
+  render(<ShellDemo />)
 
   await pengguna.tab()
 
@@ -53,7 +53,7 @@ test('skip link adalah elemen pertama yang menerima fokus', async () => {
 })
 
 test('landmark lengkap dan diberi nama', () => {
-  render(<App />)
+  render(<ShellDemo />)
 
   expect(screen.getByRole('banner')).toBeDefined()
   expect(screen.getByRole('main')).toBeDefined()
@@ -62,7 +62,7 @@ test('landmark lengkap dan diberi nama', () => {
 })
 
 test('lapis 2 indikator konteks: company diulang di page header', () => {
-  render(<App />)
+  render(<ShellDemo />)
 
   const utama = screen.getByRole('main')
   // Bukan hanya di top bar. Orang yang menginput faktur menatap form, bukan chrome.
@@ -72,7 +72,7 @@ test('lapis 2 indikator konteks: company diulang di page header', () => {
 
 test('pengalih company: keyboard penuh, banner assertive, fokus kembali ke pemicu', async () => {
   const pengguna = userEvent.setup()
-  render(<App />)
+  render(<ShellDemo />)
 
   const pemicu = screen.getByRole('button', { name: /Nusantara Group/ })
   // Pemicu menyatakan tenant dan company sekaligus, tidak pernah di balik ikon.
@@ -94,7 +94,7 @@ test('pengalih company: keyboard penuh, banner assertive, fokus kembali ke pemic
 
 test('Esc menutup pengalih dan mengembalikan fokus', async () => {
   const pengguna = userEvent.setup()
-  render(<App />)
+  render(<ShellDemo />)
 
   const pemicu = screen.getByRole('button', { name: /Nusantara Group/ })
   await pengguna.click(pemicu)
@@ -106,7 +106,7 @@ test('Esc menutup pengalih dan mengembalikan fokus', async () => {
 
 test('command palette terbuka dengan pintasan dan menyaring menurut izin', async () => {
   const pengguna = userEvent.setup()
-  render(<App />)
+  render(<ShellDemo />)
 
   await pengguna.keyboard('{Control>}k{/Control}')
 
@@ -127,7 +127,7 @@ test('command palette terbuka dengan pintasan dan menyaring menurut izin', async
 
 test('pintasan tidak aktif saat mengetik di field', async () => {
   const pengguna = userEvent.setup()
-  render(<App />)
+  render(<ShellDemo />)
 
   const pemicu = screen.getByRole('button', { name: /Nusantara Group/ })
   await pengguna.click(pemicu)
@@ -144,7 +144,7 @@ test('pintasan tidak aktif saat mengetik di field', async () => {
 })
 
 test('item sidebar tanpa izin tidak dirender sama sekali', () => {
-  render(<App />)
+  render(<ShellDemo />)
 
   const sidebar = screen.getByRole('navigation', { name: 'Navigasi Penjualan' })
   expect(within(sidebar).queryByText('Pengaturan Penjualan')).toBeNull()
@@ -154,7 +154,7 @@ test('item sidebar tanpa izin tidak dirender sama sekali', () => {
 
 test('kepadatan dan tema tersimpan sebagai preferensi pengguna', async () => {
   const pengguna = userEvent.setup()
-  const { container } = render(<App />)
+  const { container } = render(<ShellDemo />)
 
   await pengguna.selectOptions(screen.getByLabelText(/Kepadatan/), 'compact')
   await pengguna.selectOptions(screen.getByLabelText(/Tema/), 'dark')
@@ -168,7 +168,7 @@ test('kepadatan dan tema tersimpan sebagai preferensi pengguna', async () => {
 })
 
 test('tema system tidak memaksa nilai, sehingga preferensi sistem menang', () => {
-  const { container } = render(<App />)
+  const { container } = render(<ShellDemo />)
   const shell = container.firstElementChild as HTMLElement
 
   expect(shell.dataset.theme).toBeUndefined()

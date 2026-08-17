@@ -1,0 +1,127 @@
+/**
+ * Tata letak halaman.
+ *
+ * Bukan komponen baru: tidak ada satu pun kelas di berkas ini yang diekspor
+ * sebagai komponen atau dipakai ulang di luar `pages/`. Ia hanya menempatkan
+ * komponen yang sudah ada di atas halaman — jarak, kolom, dan penyejajaran.
+ *
+ * Seluruh nilai lewat token. Tidak ada satu angka pun yang ditulis langsung.
+ */
+
+.masuk {
+  max-width: var(--size-container-form);
+  margin: var(--space-16) auto;
+  padding: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  background: var(--bg-surface-raised);
+  border: var(--border-width-default) solid var(--border-default);
+  border-radius: var(--radius-lg);
+}
+
+.masukForm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: flex-end;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--size-container-narrow), 1fr));
+  gap: var(--space-4);
+}
+
+.card {
+  padding: var(--space-4);
+  background: var(--bg-surface-raised);
+  border: var(--border-width-default) solid var(--border-default);
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.cardActive {
+  border-color: var(--border-interactive);
+  background: var(--bg-accent-subtle);
+}
+
+.meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--size-container-narrow), 1fr));
+  gap: var(--space-3);
+}
+
+.metaLabel {
+  color: var(--text-secondary);
+  font-size: var(--font-size-caption);
+}
+
+.metaValue {
+  font-size: var(--font-size-body);
+}
+
+.amount {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+/* Panel pencocokan: dipesan, diterima, ditagih berdampingan. */
+.matchTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.matchTable th,
+.matchTable td {
+  padding: var(--space-2) var(--space-3);
+  border-bottom: var(--border-width-default) solid var(--border-subtle);
+  text-align: left;
+}
+
+.matchTable th[data-numeric='true'],
+.matchTable td[data-numeric='true'] {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Baris yang menyimpang ditandai warna DAN teks — warna sendirian tidak
+   terbaca oleh sebagian orang, dan tidak terbaca sama sekali saat dicetak. */
+.matchTable tr[data-variance='true'] td {
+  background: var(--bg-surface-sunken);
+}
+
+.varianceNote {
+  color: var(--text-danger);
+  font-size: var(--font-size-caption);
+}
+
+.notice {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  border: var(--border-width-default) solid var(--border-default);
+  background: var(--bg-surface-sunken);
+}
+
+.noticeDanger {
+  border-color: var(--border-danger);
+  color: var(--text-danger);
+}
+
+.noticeSuccess {
+  color: var(--text-success);
+}

@@ -194,6 +194,56 @@ export function registerIdentityRoutes(app: PaaduServer, services: AppServices):
     },
   )
 
+  /**
+   * Company yang dapat diakses pengguna — pintu masuk seluruh antarmuka.
+   *
+   * Konteks company diambil dari path URL (D-002), yang berarti layar harus
+   * tahu id-nya sebelum dapat meminta apa pun. Sampai sesi antarmuka, tidak ada
+   * satu pun cara memperolehnya: `GET /v1/companies/:id/access` sudah menuntut
+   * id yang dicari. Lihat D-133.
+   */
+  app.get(
+    '/v1/me/companies',
+    {
+      schema: {
+        response: {
+          200: Type.Object({
+            success: Type.Literal(true),
+            data: Type.Array(
+              Type.Object({
+                id: Type.String(),
+                tenant_id: Type.String(),
+                tenant_name: Type.String(),
+                legal_name: Type.String(),
+                slug: Type.String(),
+                fiscal_year_start_month: Type.Integer(),
+                role: Type.String(),
+              }),
+            ),
+          }),
+        },
+      },
+    },
+    async (request, reply) => {
+      if (!(await requireUser(request, reply, services))) return reply
+
+      const daftar = await services.listCompaniesForUser(request.authenticated!.userId)
+
+      return reply.status(200).send({
+        success: true,
+        data: daftar.map((company) => ({
+          id: company.id,
+          tenant_id: company.tenantId,
+          tenant_name: company.tenantName,
+          legal_name: company.legalName,
+          slug: company.slug,
+          fiscal_year_start_month: company.fiscalYearStartMonth,
+          role: company.roleKey,
+        })),
+      })
+    },
+  )
+
   app.get(
     '/v1/companies/:companyId/access',
     {

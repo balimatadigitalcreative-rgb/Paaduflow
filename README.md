@@ -2,7 +2,66 @@
 
 **Business Operating System** — platform multi-tenant, multi-company untuk individu, UMKM, hingga enterprise Indonesia.
 
-> **Status: implementasi berjalan.** Fondasi, autentikasi, model izin, lapisan HTTP, app shell, dan komponen primitif sudah ada dan diuji. Modul bisnis belum. Riwayat keputusannya di `docs/DECISIONS.md`; urutan pembangunannya di `docs/Build_Playbook_Claude_Code.md`.
+> **Status: implementasi berjalan.** Fondasi, autentikasi, model izin, lapisan HTTP, app shell, komponen primitif, serta modul Penjualan, Pembelian, dan Pajak sudah ada dan diuji. Antarmuka minimal sudah tersambung ke API, cukup untuk membuat faktur dari layar, mempostingnya, dan melihat angkanya di buku besar. Riwayat keputusannya di `docs/DECISIONS.md`; urutan pembangunannya di `docs/Build_Playbook_Claude_Code.md`.
+
+---
+
+## Menjalankan di komputer sendiri
+
+Satu perintah, tanpa Docker dan tanpa memasang PostgreSQL:
+
+```bash
+npm install
+npm run dev
+```
+
+Perintah itu menyalakan PostgreSQL sementara di `.paadu-dev/`, menjalankan migrasi, mengisi data contoh bila basis datanya masih kosong, lalu menyalakan API dan antarmuka web sekaligus. Penyiapan pertama memakan waktu satu-dua menit; jalan berikutnya beberapa detik.
+
+| Yang dibuka | Alamat |
+|---|---|
+| **Antarmuka web** | **http://localhost:5173** |
+| API | http://localhost:3000 |
+| Dokumen OpenAPI | http://localhost:3000/openapi.json |
+
+Masuk dengan salah satu akun contoh:
+
+| Email | Peran | Kata sandi |
+|---|---|---|
+| `admin@contoh.test` | Admin Company | `kata sandi contoh yang panjang` |
+| `staf@contoh.test` | Anggota | `kata sandi contoh yang panjang` |
+
+Keduanya punya akses ke dua company: **PT Nusantara Contoh** (tahun fiskal mulai Januari) dan **PT Samudra Contoh** (mulai April). Pengalih company ada di kiri atas.
+
+> **Seluruh isinya data contoh.** Nama perusahaan, pelanggan, vendor, NPWP, harga, dan bagan akunnya karangan. Kata sandinya sengaja lemah. Basis data yang pernah diisi `npm run seed:dev` tidak boleh dipakai sebagai basis data produksi.
+
+### Alur yang dapat dicoba
+
+1. **Penjualan → Faktur baru.** Pilih customer, isi baris, simpan sebagai draf.
+2. Di halaman detail: **Ajukan** (nomor diberikan di sini, bukan saat draf), **Setujui**, lalu **Posting ke buku besar**.
+3. **Akuntansi → Buku Besar.** Jurnalnya sudah ada: Piutang Usaha di debit, Pendapatan dan PPN Keluaran di kredit.
+4. **Pembelian → Pesanan Pembelian → buka satu pesanan yang disetujui → Catat penerimaan.**
+5. **Pembelian → Faktur Pembelian → buka satu tagihan.** Panel pencocokan tiga arah menampilkan dipesan, diterima, dan ditagih berdampingan; baris yang menyimpang diberi keterangan, bukan sekadar warna.
+
+### Bila sudah punya PostgreSQL sendiri
+
+Pasang `DATABASE_URL`, dan basis data sementara tidak akan dinyalakan:
+
+```bash
+DATABASE_URL=postgresql://user:sandi@localhost:5432/paadu npm run dev
+```
+
+Basis datanya harus ber-encoding UTF8 — `npm run migrate` menolak yang bukan, dengan pesan yang menyebutkan sebabnya.
+
+### Perintah lain
+
+| Perintah | Kegunaan |
+|---|---|
+| `npm run dev` | Basis data + API + web, satu proses |
+| `npm run seed:dev` | Mengisi ulang data contoh (butuh `DATABASE_URL`) |
+| `npm run migrate` | Migrasi saja |
+| `npm test` | Seluruh test: unit, basis data, dan UI |
+| `npm run lint` | Token, batas arsitektur, dan tabel append-only |
+| `npm run typecheck` | TypeScript, tanpa emit |
 
 ---
 
