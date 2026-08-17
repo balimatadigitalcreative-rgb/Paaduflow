@@ -14,6 +14,13 @@ import {
   DetailPesanan,
   DetailTagihan,
 } from './pages/pembelian.js'
+import {
+  DaftarFakturKeluaran,
+  DetailFakturKeluaran,
+  KodePajak,
+  NomorSeri,
+  RekonsiliasiPajak,
+} from './pages/pajak.js'
 import { DaftarFaktur, DetailFaktur, FakturBaru } from './pages/penjualan.js'
 import { pergiKe, useRoute } from './router.js'
 import { AppShell } from './shell/app-shell.js'
@@ -40,6 +47,7 @@ const MODUL: readonly ModuleLink[] = [
   { id: 'penjualan', name: 'Penjualan', glyph: 'PJ' },
   { id: 'pembelian', name: 'Pembelian', glyph: 'PB' },
   { id: 'akuntansi', name: 'Akuntansi', glyph: 'AK' },
+  { id: 'pajak', name: 'Pajak', glyph: 'PJK' },
 ]
 
 const SIDEBAR: Record<string, readonly SidebarItem[]> = {
@@ -57,6 +65,12 @@ const SIDEBAR: Record<string, readonly SidebarItem[]> = {
     { id: 'akuntansi/bagan-akun', label: 'Bagan Akun', group: 'Data induk', permitted: true },
     { id: 'akuntansi/buku-besar', label: 'Buku Besar', group: 'Laporan', permitted: true },
   ],
+  pajak: [
+    { id: 'pajak/kode', label: 'Kode Pajak', group: 'Data induk', permitted: true },
+    { id: 'pajak/nomor-seri', label: 'Nomor Seri', group: 'Data induk', permitted: true },
+    { id: 'pajak/keluaran', label: 'Faktur Pajak Keluaran', group: 'Transaksi', permitted: true },
+    { id: 'pajak/rekonsiliasi', label: 'Rekonsiliasi', group: 'Laporan', permitted: true },
+  ],
 }
 
 const JUDUL: Record<string, { judul: string; remah: readonly string[] }> = {
@@ -68,6 +82,10 @@ const JUDUL: Record<string, { judul: string; remah: readonly string[] }> = {
   'pembelian/tagihan': { judul: 'Faktur Pembelian', remah: ['Pembelian', 'Tagihan'] },
   'akuntansi/bagan-akun': { judul: 'Bagan Akun', remah: ['Akuntansi', 'Bagan Akun'] },
   'akuntansi/buku-besar': { judul: 'Buku Besar', remah: ['Akuntansi', 'Buku Besar'] },
+  'pajak/kode': { judul: 'Kode Pajak', remah: ['Pajak', 'Kode Pajak'] },
+  'pajak/nomor-seri': { judul: 'Nomor Seri Faktur Pajak', remah: ['Pajak', 'Nomor Seri'] },
+  'pajak/keluaran': { judul: 'Faktur Pajak Keluaran', remah: ['Pajak', 'Faktur Pajak Keluaran'] },
+  'pajak/rekonsiliasi': { judul: 'Rekonsiliasi Pajak', remah: ['Pajak', 'Rekonsiliasi'] },
 }
 
 const KUNCI_COMPANY = 'paadu.company_id'
@@ -280,6 +298,22 @@ function Halaman({
   if (bagian === 'akuntansi') {
     if (kedua === 'buku-besar') return <BukuBesar konteks={konteks} />
     return <BaganAkun konteks={konteks} />
+  }
+
+  if (bagian === 'pajak') {
+    if (kedua === 'nomor-seri') return <NomorSeri konteks={konteks} />
+    if (kedua === 'rekonsiliasi') return <RekonsiliasiPajak konteks={konteks} />
+    if (kedua === 'keluaran') {
+      return ketiga === undefined ? (
+        <DaftarFakturKeluaran konteks={konteks} />
+      ) : (
+        <DetailFakturKeluaran konteks={konteks} invoiceId={ketiga} />
+      )
+    }
+    // Versi yang sedang diubah dibawa di PATH, bukan di query. Router ini
+    // memecah hash dengan `/`, sehingga `?ubah=…` akan menempel di segmen
+    // terakhir dan tidak pernah cocok dengan perbandingan mana pun.
+    return <KodePajak konteks={konteks} {...(ketiga === undefined ? {} : { ubahId: ketiga })} />
   }
 
   return <p>Halaman tidak ditemukan.</p>

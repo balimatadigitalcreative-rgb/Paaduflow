@@ -260,3 +260,75 @@ export interface AccountingQueryPort {
     page: PageRequest,
   ): Promise<Page<LedgerEntry>>
 }
+
+// ── Pajak ──────────────────────────────────────────────────────────────────
+
+/**
+ * Satu VERSI kode pajak, bukan satu kode pajak.
+ *
+ * Kode yang sama muncul beberapa kali dengan masa berlaku berbeda, dan itulah
+ * bentuk sebenarnya di basis data — tarif tidak pernah diubah, ia ditutup dan
+ * digantikan (D-124). Layar yang menampilkan satu baris per kode akan
+ * menyembunyikan justru hal yang paling perlu dilihat sebelum tarif diganti:
+ * sejak kapan yang berlaku sekarang berlaku.
+ *
+ * `validTo` null berarti versi ini masih terbuka.
+ */
+export interface TaxCodeVersion {
+  readonly id: string
+  readonly code: string
+  readonly name: string
+  readonly taxType: string
+  readonly rate: number
+  readonly validFrom: string
+  readonly validTo: string | null
+  readonly calculationBase: string
+  readonly isCreditable: boolean
+  readonly status: string
+  readonly glAccountId: string
+  readonly glAccountCode: string
+  readonly glAccountName: string
+}
+
+/**
+ * Faktur pajak keluaran dalam bentuk daftar.
+ *
+ * `formattedNumber` null berarti draf — nomor seri baru melekat saat terbit,
+ * dan itu invarian basis data, bukan kebiasaan (Module 08 §7).
+ */
+export interface OutputTaxInvoiceSummary {
+  readonly id: string
+  readonly formattedNumber: string | null
+  readonly customerName: string
+  readonly customerNpwp: string | null
+  readonly invoiceDate: string
+  readonly taxPeriod: string
+  readonly taxCode: string
+  readonly baseAmount: number
+  readonly taxAmount: number
+  readonly status: string
+}
+
+/** Satu faktur komersial yang tercakup faktur pajak — satu faktur pajak boleh mencakup beberapa. */
+export interface OutputTaxInvoiceSource {
+  readonly salesDocumentId: string
+  readonly salesDocumentNumber: string | null
+  readonly baseAmount: number
+  readonly taxAmount: number
+}
+
+export interface OutputTaxInvoiceDetail extends OutputTaxInvoiceSummary {
+  readonly serialNumber: number | null
+  readonly taxRate: number
+  readonly issuedAt: string | null
+  readonly cancelledAt: string | null
+  readonly cancelReason: string | null
+  readonly sources: readonly OutputTaxInvoiceSource[]
+}
+
+export interface TaxQueryPort {
+  /** Seluruh versi, terurut per kode lalu mundur menurut masa berlaku. */
+  taxCodes(companyId: string): Promise<readonly TaxCodeVersion[]>
+  outputInvoices(companyId: string, page: PageRequest): Promise<Page<OutputTaxInvoiceSummary>>
+  outputInvoice(companyId: string, invoiceId: string): Promise<OutputTaxInvoiceDetail | null>
+}

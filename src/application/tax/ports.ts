@@ -197,13 +197,32 @@ export interface TaxLedgerEntry {
   readonly createdBy: string | null
 }
 
-export interface ReconciliationRow {
+export interface ReconciliationCode {
   readonly taxCodeId: string
   readonly code: string
+  readonly taxLedgerTotal: number
+}
+
+/**
+ * Satu baris rekonsiliasi = satu AKUN buku besar, bukan satu kode pajak.
+ *
+ * Grainnya ditentukan oleh apa yang benar-benar tersimpan: `journal_lines`
+ * hanya memuat `account_id` dan tidak pernah menyebut kode pajak. Saldo akun
+ * karena itu tidak dapat dibagi per kode — dan versi sebelumnya melakukannya
+ * dengan cara yang salah, yaitu menyalin seluruh saldo akun ke setiap kode
+ * yang menunjuknya. Dua versi dari satu kode sudah cukup membuat angkanya
+ * berlipat, padahal versi berganda justru keadaan normal di modul ini.
+ *
+ * Sisi buku pajak tetap dirinci per kode lewat `codes`, karena `tax_ledger`
+ * memang menyimpan `tax_code_id`. Jadi selisih dihitung pada grain yang dapat
+ * dipertanggungjawabkan, sedangkan penunjuk arah "kode mana" tetap ada.
+ */
+export interface ReconciliationRow {
   readonly glAccountId: string
   readonly taxLedgerTotal: number
   readonly generalLedgerTotal: number
   readonly difference: number
+  readonly codes: readonly ReconciliationCode[]
 }
 
 export interface TaxLedgerPort {

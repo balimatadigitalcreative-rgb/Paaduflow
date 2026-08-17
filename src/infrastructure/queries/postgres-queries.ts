@@ -8,6 +8,8 @@ import type {
   LedgerEntry,
   MasterDataPort,
   MatchPanel,
+  OutputTaxInvoiceDetail,
+  OutputTaxInvoiceSummary,
   PartnerOption,
   Page,
   PageRequest,
@@ -17,6 +19,8 @@ import type {
   SalesDocumentDetail,
   SalesDocumentSummary,
   SalesQueryPort,
+  TaxCodeVersion,
+  TaxQueryPort,
   WarehouseOption,
 } from '#application/queries'
 import { explainVariance, matchThreeWay, NO_TOLERANCE } from '#domain/purchasing/three-way-match'
@@ -716,5 +720,195 @@ export class PostgresAccountingQueries implements AccountingQueryPort {
     })
 
     return halaman(items, limit)
+  }
+}
+
+// ── Pajak ──────────────────────────────────────────────────────────────────
+
+export class PostgresTaxQueries implements TaxQueryPort {
+  constructor(
+    private readonly db: Queryable,
+    private readonly tenantId: string,
+  ) {}
+
+  /**
+   * Seluruh versi, bukan hanya yang berlaku hari ini.
+   *
+   * Diurutkan per kode lalu mundur menurut `valid_from`, sehingga versi yang
+   * sedang berlaku selalu berada tepat di bawah judul kodenya dan versi lama
+   * terbaca sebagai riwayat. Akun buku besarnya ikut dibawa: pertanyaan "PPN
+   * ini masuk ke akun mana" ditanyakan di layar yang sama, dan menjawabnya
+   * dengan UUID berarti tidak menjawab.
+   */
+  async taxCodes(companyId: string): Promise<readonly TaxCodeVersion[]> {
+    const { rows } = await this.db.query<{
+      id: string
+      code: string
+      name: string
+      tax_type: string
+      rate: string
+      valid_from: unknown
+      valid_to: unknown
+      calculation_base: string
+      is_creditable: boolean
+      status: string
+      gl_account_id: string
+      gl_account_code: string
+      gl_account_name: string
+    }>(
+      `SELECT t.id, t.code, t.name, t.tax_type::text, t.rate,
+              t.valid_from, t.valid_to, t.calculation_base::text,
+              t.is_creditable, t.status, t.gl_account_id,
+              a.code AS gl_account_code, a.name AS gl_account_name
+         FROM tax_codes t
+         JOIN accounts a ON a.tenant_id = t.tenant_id AND a.id = t.gl_account_id
+        WHERE t.tenant_id = $1 AND t.company_id = $2
+        ORDER BY t.code, t.valid_from DESC`,
+      [this.tenantId, companyId],
+    )
+
+    return rows.map((row) => ({
+      id: row.id,
+      code: row.code,
+      name: row.name,
+      taxType: row.tax_type,
+      rate: Number(row.rate),
+      validFrom: tanggal(row.valid_from),
+      validTo: row.valid_to === null ? null : tanggal(row.valid_to),
+      calculationBase: row.calculation_base,
+      isCreditable: row.is_creditable,
+      status: row.status,
+      glAccountId: row.gl_account_id,
+      glAccountCode: row.gl_account_code,
+      glAccountName: row.gl_account_name,
+    }))
+  }
+
+  async outputInvoices(
+    companyId: string,
+    page: PageRequest,
+  ): Promise<Page<OutputTaxInvoiceSummary>> {
+    const limit = batas(page)
+    const { rows } = await this.db.query<{
+      id: string
+      formatted_number: string | null
+      customer_name: string
+      customer_npwp: string | null
+      invoice_date: unknown
+      tax_period: string
+      tax_code: string
+      base_amount: string
+      tax_amount: string
+      status: string
+    }>(
+      `SELECT f.id, f.formatted_number, f.customer_name, f.customer_npwp,
+              f.invoice_date, f.tax_period, c.code AS tax_code,
+              f.base_amount, f.tax_amount, f.status::text
+         FROM output_tax_invoices f
+         JOIN tax_codes c ON c.tenant_id = f.tenant_id AND c.id = f.tax_code_id
+        WHERE f.tenant_id = $1 AND f.company_id = $2
+          AND ($3::uuid IS NULL OR f.id < $3::uuid)
+        ORDER BY f.id DESC
+        LIMIT $4`,
+      [this.tenantId, companyId, page.cursor ?? null, limit + 1],
+    )
+
+    return halaman(
+      rows.map((row) => ({
+        id: row.id,
+        formattedNumber: row.formatted_number,
+        customerName: row.customer_name,
+        customerNpwp: row.customer_npwp,
+        invoiceDate: tanggal(row.invoice_date),
+        taxPeriod: row.tax_period,
+        taxCode: row.tax_code,
+        baseAmount: Number(row.base_amount),
+        taxAmount: Number(row.tax_amount),
+        status: row.status,
+      })),
+      limit,
+    )
+  }
+
+  /**
+   * Faktur komersial sumbernya ikut dibawa.
+   *
+   * Satu faktur pajak dapat mencakup beberapa faktur penjualan (Module 08 §4),
+   * dan tanpa daftar itu layar detail tidak dapat menjawab pertanyaan pertama
+   * yang selalu muncul: angka ini berasal dari faktur yang mana.
+   */
+  async outputInvoice(
+    companyId: string,
+    invoiceId: string,
+  ): Promise<OutputTaxInvoiceDetail | null> {
+    const { rows } = await this.db.query<{
+      id: string
+      serial_number: string | null
+      formatted_number: string | null
+      customer_name: string
+      customer_npwp: string | null
+      invoice_date: unknown
+      tax_period: string
+      tax_code: string
+      tax_rate: string
+      base_amount: string
+      tax_amount: string
+      status: string
+      issued_at: Date | null
+      cancelled_at: Date | null
+      cancel_reason: string | null
+    }>(
+      `SELECT f.id, f.serial_number, f.formatted_number, f.customer_name, f.customer_npwp,
+              f.invoice_date, f.tax_period, c.code AS tax_code, c.rate AS tax_rate,
+              f.base_amount, f.tax_amount, f.status::text,
+              f.issued_at, f.cancelled_at, f.cancel_reason
+         FROM output_tax_invoices f
+         JOIN tax_codes c ON c.tenant_id = f.tenant_id AND c.id = f.tax_code_id
+        WHERE f.tenant_id = $1 AND f.company_id = $2 AND f.id = $3`,
+      [this.tenantId, companyId, invoiceId],
+    )
+
+    const faktur = rows[0]
+    if (faktur === undefined) return null
+
+    const { rows: sumber } = await this.db.query<{
+      sales_document_id: string
+      sales_document_number: string | null
+      base_amount: string
+      tax_amount: string
+    }>(
+      `SELECT s.sales_document_id, d.number AS sales_document_number,
+              s.base_amount, s.tax_amount
+         FROM output_tax_invoice_sources s
+         LEFT JOIN sales_documents d
+           ON d.tenant_id = s.tenant_id AND d.id = s.sales_document_id
+        WHERE s.tenant_id = $1 AND s.output_tax_invoice_id = $2
+        ORDER BY d.number NULLS LAST`,
+      [this.tenantId, invoiceId],
+    )
+
+    return {
+      id: faktur.id,
+      serialNumber: faktur.serial_number === null ? null : Number(faktur.serial_number),
+      formattedNumber: faktur.formatted_number,
+      customerName: faktur.customer_name,
+      customerNpwp: faktur.customer_npwp,
+      invoiceDate: tanggal(faktur.invoice_date),
+      taxPeriod: faktur.tax_period,
+      taxCode: faktur.tax_code,
+      taxRate: Number(faktur.tax_rate),
+      baseAmount: Number(faktur.base_amount),
+      taxAmount: Number(faktur.tax_amount),
+      status: faktur.status,
+      issuedAt: faktur.issued_at === null ? null : faktur.issued_at.toISOString(),
+      cancelledAt: faktur.cancelled_at === null ? null : faktur.cancelled_at.toISOString(),
+      cancelReason: faktur.cancel_reason,
+      sources: sumber.map((row) => ({
+        salesDocumentId: row.sales_document_id,
+        salesDocumentNumber: row.sales_document_number,
+        baseAmount: Number(row.base_amount),
+        taxAmount: Number(row.tax_amount),
+      })),
+    }
   }
 }

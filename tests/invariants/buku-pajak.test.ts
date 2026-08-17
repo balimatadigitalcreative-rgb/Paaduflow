@@ -193,7 +193,7 @@ test('setelah transaksi acak, buku pajak sama dengan akun pajak di buku besar', 
   }
 
   const akhir = await rekonsiliasi()
-  expect(akhir[0]!.code).toBe('PPN-OUT')
+  expect(akhir[0]!.codes.map((item) => item.code)).toEqual(['PPN-OUT'])
   expect(akhir[0]!.taxLedgerTotal).toBeGreaterThan(0)
   expect(akhir[0]!.taxLedgerTotal).toBe(akhir[0]!.generalLedgerTotal)
 })
@@ -272,5 +272,29 @@ test('selisih terlihat per kode saat salah satu buku tertinggal', async () => {
   expect(baris[0]!.difference).toBe(-555_000)
   // Dan ia disebutkan bersama kodenya, bukan sebagai satu angka gabungan yang
   // tidak memberi tahu siapa pun harus melihat ke mana.
-  expect(baris[0]!.code).toBe('PPN-OUT')
+  expect(baris[0]!.codes.map((item) => item.code)).toContain('PPN-OUT')
+})
+
+test('kode kedua yang berbagi satu akun tidak membuat buku besar dihitung dua kali', async () => {
+  // Buku besar tidak menyimpan kode pajak — `journal_lines` hanya punya
+  // `account_id`. Karena itu saldo akun tidak dapat dibagi per kode, dan satu
+  // akun harus muncul tepat sekali berapa pun jumlah kode yang menunjuknya.
+  //
+  // Menambah kode kedua di akun yang SAMA tidak menambah satu rupiah pun ke
+  // buku besar, sehingga totalnya wajib tidak berubah.
+  const sebelum = await rekonsiliasi()
+  const totalSebelum = sebelum.reduce((jumlah, item) => jumlah + item.generalLedgerTotal, 0)
+
+  await seedTaxCode(admin, tenant.tenantId, tenant.companyId, {
+    code: 'PPN-BEBAS',
+    rate: 0,
+    validFrom: '2020-01-01',
+    glAccountId: akun.ppnKeluaran,
+  })
+
+  const sesudah = await rekonsiliasi()
+  const totalSesudah = sesudah.reduce((jumlah, item) => jumlah + item.generalLedgerTotal, 0)
+
+  expect(totalSesudah).toBe(totalSebelum)
+  expect(sesudah.filter((item) => item.glAccountId === akun.ppnKeluaran)).toHaveLength(1)
 })

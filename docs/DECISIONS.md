@@ -923,6 +923,16 @@ Karena itu `teardown` global mendata anak yang tertinggal lewat `ParentProcessId
 
 Tidak dipakai: `process.exit`, `dangerouslyIgnoreUnhandledErrors`, maupun opsi apa pun yang menyembunyikan peringatan. Peringatannya benar — ada proses yang benar-benar tertinggal, dan sebelum ini ia menumpuk diam-diam di mesin pengembang.
 
+### D-139 · Rekonsiliasi pajak dihitung per AKUN, bukan per kode pajak
+**Status:** Berlaku · menggantikan bentuk jawaban `/reports/tax-reconciliation`
+Versi sebelumnya mengelompokkan mutasi buku besar per baris `tax_codes` lewat join pada `gl_account_id`. Akibatnya seluruh saldo akun disalin ke **setiap** baris kode yang menunjuk akun itu. Dua versi dari satu kode sudah cukup membuat angkanya berlipat — dan versi berganda adalah keadaan normal di modul ini, bukan kasus tepi, karena tarif memang tidak pernah diubah melainkan ditutup dan digantikan (D-124). Seed pengembangan pun sengaja membuat dua versi PPN keluaran.
+
+Sebabnya struktural: `journal_lines` hanya menyimpan `account_id` dan tidak pernah menyebut kode pajak. Saldo buku besar karena itu **tidak dapat** dibagi per kode tanpa mengarang. Grain yang benar adalah akun.
+
+Sisi buku pajak tetap dirinci per kode di `codes`, karena `tax_ledger` memang menyimpan `tax_code_id`. Jadi selisih dihitung pada grain yang dapat dipertanggungjawabkan, sedangkan penunjuk arah "kode mana yang mengisi akun ini" tidak hilang.
+
+Cacatnya lolos selama ini karena `tests/invariants/buku-pajak.test.ts` memberi tiap kode satu versi dan akun tersendiri — persis kasus khusus ketika query lama kebetulan benar. Test baru menambahkan kode kedua di akun yang sama dan menuntut total buku besar tidak berubah; sebelum perbaikan ia melaporkan tepat dua kali lipat.
+
 ---
 
 ## Sengaja Ditunda

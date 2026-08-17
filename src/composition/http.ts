@@ -20,6 +20,7 @@ import {
   PostgresMasterData,
   PostgresPurchaseQueries,
   PostgresSalesQueries,
+  PostgresTaxQueries,
 } from '#infrastructure/queries/postgres-queries'
 
 import { createPurchasing } from './purchasing.js'
@@ -112,7 +113,10 @@ export function createAppServices(options: AppServicesOptions): AppServices {
           },
           accounting: { queries: new PostgresAccountingQueries(db, context.tenantId) },
           masterData: new PostgresMasterData(db, context.tenantId),
-          tax: createTax(db, context.tenantId),
+          tax: {
+            ...createTax(db, context.tenantId),
+            queries: new PostgresTaxQueries(db, context.tenantId),
+          },
         })
       })
     },

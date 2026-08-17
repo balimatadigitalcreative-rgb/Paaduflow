@@ -23,3 +23,4 @@
 0019_purchasing.sql fe8c7a34d91da9d1
 0020_tax.sql b7ac3ac94ee68b01
 0021_izin_penjualan_akuntansi.sql 07e4fa67d3e7aee2
+0022_nomor_seri_pajak_per_company.sql 389364245d344250

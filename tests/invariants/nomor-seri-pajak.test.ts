@@ -234,6 +234,49 @@ test('nomor di luar rentang yang dialokasikan dikenali sebagai di luar rentang',
   expect(await cek(0)).toBe(false)
 })
 
+/**
+ * Dijalankan paling akhir: ia menambah alokasi, dan pemeriksaan jumlah di atas
+ * menghitung seluruh nomor milik company ini.
+ */
+test('dua company dalam satu tenant memakai deret nomor yang terpisah', async () => {
+  // Nomor seri diberikan per PKP, dan dua company adalah dua NPWP. Deretnya
+  // berdiri sendiri-sendiri, sehingga nomor terformat yang sama pada keduanya
+  // bukan tabrakan — ia dua nomor berbeda dari dua penerima berbeda.
+  const companyKedua = randomUUID()
+  await admin.query(
+    `INSERT INTO companies (id, tenant_id, legal_name, slug, default_currency)
+     VALUES ($1, $2, 'PT Kedua Contoh', $3, 'IDR')`,
+    [companyKedua, tenant.tenantId, `kedua-${companyKedua.slice(0, 8)}`],
+  )
+
+  const alokasikan = async (companyId: string): Promise<number> =>
+    unitOfWork.inTenant({ tenantId: tenant.tenantId, userId: null }, async (db) => {
+      const hasil = await createTax(db, tenant.tenantId).serials.allocate({
+        companyId,
+        prefix: 'SAMA-',
+        digits: 8,
+        // Jauh dari rentang di atas: yang diuji di sini tabrakan ANTAR company,
+        // bukan tabrakan nomor di dalam satu company.
+        rangeStart: 101,
+        rangeEnd: 105,
+        createdBy: randomUUID(),
+      })
+      if (hasil.kind !== 'allocated') throw new Error(`alokasi gagal: ${hasil.kind}`)
+      return hasil.count
+    })
+
+  expect(await alokasikan(tenant.companyId)).toBe(5)
+  expect(await alokasikan(companyKedua)).toBe(5)
+
+  const { rows } = await admin.query(
+    `SELECT company_id FROM tax_serial_usage
+      WHERE tenant_id = $1 AND formatted_number = 'SAMA-00000101'
+      ORDER BY company_id`,
+    [tenant.tenantId],
+  )
+  expect(rows).toHaveLength(2)
+})
+
 test('alokasi yang rentangnya terbalik atau raksasa ditolak', async () => {
   const coba = async (rangeStart: number, rangeEnd: number) =>
     unitOfWork.inTenant({ tenantId: tenant.tenantId, userId: null }, async (db) =>

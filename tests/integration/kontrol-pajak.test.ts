@@ -216,6 +216,45 @@ test('versi kedua menutup yang pertama, tanpa menyentuh tarifnya', async () => {
   expect(Number(rows[0]!.rate)).toBe(10)
 })
 
+test('daftar kode pajak menampilkan setiap versi beserta masa berlakunya', async () => {
+  const hasil = await panggil('GET', `${pkp()}/tax-codes`, tokenAdminTenant)
+  expect(hasil.status).toBe(200)
+
+  const versi = (
+    hasil.body.data as readonly {
+      code: string
+      rate: number
+      validFrom: string
+      validTo: string | null
+      glAccountCode: string
+    }[]
+  ).filter((baris) => baris.code === 'PPN-OUT')
+
+  // Dua baris, bukan satu baris "PPN-OUT" yang menyembunyikan riwayatnya.
+  expect(versi).toHaveLength(2)
+
+  // Terurut mundur: yang berlaku sekarang berada di atas.
+  expect(versi.map((baris) => baris.rate)).toEqual([11, 10])
+
+  // Versi lama tertutup tepat saat versi baru mulai berlaku — tidak ada hari
+  // yang kehilangan tarif, dan tidak ada hari bertarif ganda.
+  expect(versi[0]!.validFrom).toBe('2022-04-01')
+  expect(versi[0]!.validTo).toBeNull()
+  expect(versi[1]!.validFrom).toBe('2022-01-01')
+  expect(versi[1]!.validTo).toBe('2022-04-01')
+
+  // Akun buku besarnya keluar sebagai kode yang dapat dibaca, bukan UUID.
+  expect(versi[0]!.glAccountCode).toBe('2100')
+})
+
+test('Company Admin boleh MELIHAT tarif meski tidak boleh mengubahnya', async () => {
+  // Pasangan positif dari penolakan di bawah. Tanpa ini, "tidak boleh mengubah"
+  // dapat dipenuhi dengan cara yang salah: menutup halamannya sama sekali.
+  const hasil = await panggil('GET', `${pkp()}/tax-codes`, tokenAdminCompany)
+  expect(hasil.status).toBe(200)
+  expect((hasil.body.data as readonly unknown[]).length).toBeGreaterThan(0)
+})
+
 test('NEGATIF · tidak ada endpoint untuk mengubah tarif kode yang sudah ada', async () => {
   // Bukan 403, bukan 422 — 404, karena rutenya memang tidak ada. Kontrol yang
   // paling sulit dilewati adalah kontrol yang tidak punya permukaan.
@@ -404,6 +443,57 @@ test('penerbitan mengambil nomor, dan pembatalan tidak mengembalikannya', async 
   })
 })
 
+test('daftar faktur pajak keluaran menahan nomor pada faktur yang sudah batal', async () => {
+  const hasil = await panggil('GET', `${pkp()}/output-tax-invoices`, tokenAdminCompany)
+  expect(hasil.status).toBe(200)
+
+  const baris = hasil.body.data as readonly {
+    id: string
+    formattedNumber: string | null
+    status: string
+    taxCode: string
+  }[]
+  expect(baris.length).toBeGreaterThan(0)
+
+  const dibatalkan = baris.find((item) => item.status === 'cancelled')
+  expect(dibatalkan).toBeDefined()
+  // Nomornya tetap melekat. Faktur batal yang tampil tanpa nomor akan membuat
+  // orang mengira nomor itu kembali tersedia.
+  expect(dibatalkan!.formattedNumber).toBe('FP-00000001')
+  expect(dibatalkan!.taxCode).toBe('PPN-OUT')
+})
+
+test('detail faktur pajak keluaran menyebut faktur penjualan sumbernya', async () => {
+  const daftar = await panggil('GET', `${pkp()}/output-tax-invoices`, tokenAdminCompany)
+  const pertama = (daftar.body.data as readonly { id: string }[])[0]!
+
+  const hasil = await panggil(
+    'GET',
+    `${pkp()}/output-tax-invoices/${pertama.id}`,
+    tokenAdminCompany,
+  )
+  expect(hasil.status).toBe(200)
+
+  const detail = hasil.body.data as {
+    taxRate: number
+    cancelReason: string | null
+    sources: readonly { salesDocumentId: string; taxAmount: number }[]
+  }
+  // Pertanyaan pertama di layar detail selalu "angka ini dari faktur mana".
+  expect(detail.sources.map((item) => item.salesDocumentId)).toContain(salesDocumentId)
+  expect(detail.taxRate).toBeGreaterThan(0)
+  expect(detail.cancelReason).toContain('Nomor tertukar')
+})
+
+test('NEGATIF · faktur pajak keluaran yang tidak ada menjawab 404, bukan 200 kosong', async () => {
+  const hasil = await panggil(
+    'GET',
+    `${pkp()}/output-tax-invoices/${randomUUID()}`,
+    tokenAdminCompany,
+  )
+  expect(hasil.status).toBe(404)
+})
+
 test('NEGATIF · faktur yang sudah batal tidak dapat diterbitkan ulang', async () => {
   const { rows } = await admin.query<{ id: string }>(
     `SELECT id FROM output_tax_invoices WHERE tenant_id = $1 AND status = 'cancelled' LIMIT 1`,
@@ -487,9 +577,22 @@ test('rekonsiliasi melaporkan selisih per kode, bukan satu angka gabungan', asyn
   expect(hasil.status).toBe(200)
   const data = hasil.body.data as {
     balanced: boolean
-    rows: { tax_code: string; difference: number }[]
+    rows: {
+      gl_account_id: string
+      difference: number
+      codes: { tax_code: string; tax_ledger_total: number }[]
+    }[]
   }
   expect(data.rows.length).toBeGreaterThan(0)
-  expect(data.rows[0]).toHaveProperty('tax_code')
   expect(data.rows[0]).toHaveProperty('difference')
+
+  // Satu akun muncul tepat sekali, berapa pun jumlah kode yang menunjuknya.
+  // Company ini punya dua versi PPN-OUT, dan sebelum perbaikan keduanya
+  // masing-masing membawa seluruh saldo akun.
+  const akun = data.rows.map((baris) => baris.gl_account_id)
+  expect(new Set(akun).size).toBe(akun.length)
+
+  // Sisi buku pajak tetap dirinci per kode, karena tax_ledger memang
+  // menyimpannya — selisih yang muncul tetap menunjuk ke suatu tempat.
+  expect(data.rows[0]).toHaveProperty('codes')
 })

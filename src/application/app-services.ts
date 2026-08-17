@@ -6,6 +6,7 @@ import type {
   MasterDataPort,
   PurchaseQueryPort,
   SalesQueryPort,
+  TaxQueryPort,
 } from './queries.js'
 import type { SalesDocumentService } from './sales/documents.js'
 import type { PostInvoiceService } from './sales/posting.js'
@@ -77,6 +78,8 @@ export interface TaxScopedServices {
   readonly serials: TaxSerialService
   readonly outputInvoices: OutputTaxInvoiceService
   readonly inputInvoices: InputTaxInvoiceService
+  /** Jalur baca untuk layar — sama bentuknya dengan modul lain. */
+  readonly queries: TaxQueryPort
   /** Pembacaan yang tidak punya layanan sendiri: profil dan rekonsiliasi. */
   readonly repository: {
     loadProfile(companyId: string): Promise<{

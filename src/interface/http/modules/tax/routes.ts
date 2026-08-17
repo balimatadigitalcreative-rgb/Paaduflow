@@ -133,6 +133,30 @@ export function registerTaxRoutes(app: PaaduServer, services: AppServices): void
 
   // ── Kode pajak: versi baru, tidak pernah pengubahan ──────────────────────
 
+  /**
+   * Seluruh versi kode pajak.
+   *
+   * Memakai izin baca laporan, bukan `pajak.kode.kelola`: melihat tarif yang
+   * berlaku dibutuhkan siapa pun yang membaca buku pajak, sedangkan mengubahnya
+   * tetap milik tingkat tenant.
+   */
+  app.get(
+    '/v1/companies/:companyId/tax-codes',
+    { schema: { params: JalurCompany } },
+    async (request, reply) =>
+      jalankan(
+        request,
+        reply,
+        request.params.companyId,
+        'pajak.laporan.baca',
+        'Akuntan Pajak',
+        async (scoped, ctx) => ({
+          status: 200,
+          body: { success: true, data: await scoped.tax.queries.taxCodes(ctx.companyId) },
+        }),
+      ),
+  )
+
   app.post(
     '/v1/companies/:companyId/tax-codes',
     {
@@ -379,6 +403,57 @@ export function registerTaxRoutes(app: PaaduServer, services: AppServices): void
   )
 
   // ── Faktur pajak keluaran ────────────────────────────────────────────────
+
+  app.get(
+    '/v1/companies/:companyId/output-tax-invoices',
+    {
+      schema: {
+        params: JalurCompany,
+        querystring: Type.Object({
+          cursor: Type.Optional(Type.String()),
+          per_page: Type.Optional(Type.Integer({ minimum: 1, maximum: 200 })),
+        }),
+      },
+    },
+    async (request, reply) =>
+      jalankan(
+        request,
+        reply,
+        request.params.companyId,
+        'pajak.laporan.baca',
+        'Akuntan Pajak',
+        async (scoped, ctx) => {
+          const hasil = await scoped.tax.queries.outputInvoices(ctx.companyId, {
+            cursor: request.query.cursor ?? null,
+            limit: request.query.per_page ?? 50,
+          })
+          return {
+            status: 200,
+            body: { success: true, data: hasil.items, meta: { next_cursor: hasil.nextCursor } },
+          }
+        },
+      ),
+  )
+
+  app.get(
+    '/v1/companies/:companyId/output-tax-invoices/:id',
+    { schema: { params: JalurDokumen } },
+    async (request, reply) =>
+      jalankan(
+        request,
+        reply,
+        request.params.companyId,
+        'pajak.laporan.baca',
+        'Akuntan Pajak',
+        async (scoped, ctx) => {
+          const faktur = await scoped.tax.queries.outputInvoice(ctx.companyId, request.params.id)
+          if (faktur === null) {
+            return tolak(404, 'not_found', 'Faktur pajak keluaran ini tidak ditemukan.')
+          }
+          return { status: 200, body: { success: true, data: faktur } }
+        },
+      ),
+  )
 
   app.post(
     '/v1/companies/:companyId/output-tax-invoices',
@@ -662,8 +737,10 @@ export function registerTaxRoutes(app: PaaduServer, services: AppServices): void
         'Akuntan Pajak',
         async (scoped, ctx) => {
           const baris = await scoped.tax.repository.reconcile(ctx.companyId, request.query.period)
-          // Selisih per kode, bukan satu angka gabungan. Satu angka gabungan
-          // yang bukan nol tidak memberi tahu siapa pun harus melihat ke mana.
+          // Selisih per AKUN, bukan satu angka gabungan — dan bukan pula per
+          // kode, karena buku besar tidak menyimpan kode pajak. Kode yang
+          // menyumbang sisi buku pajak tetap disebut di `codes`, sehingga
+          // selisih yang muncul tetap menunjuk ke suatu tempat.
           return {
             status: 200,
             body: {
@@ -672,12 +749,15 @@ export function registerTaxRoutes(app: PaaduServer, services: AppServices): void
                 period: request.query.period,
                 balanced: baris.every((row) => row.difference === 0),
                 rows: baris.map((row) => ({
-                  tax_code: row.code,
-                  tax_code_id: row.taxCodeId,
                   gl_account_id: row.glAccountId,
                   tax_ledger_total: row.taxLedgerTotal,
                   general_ledger_total: row.generalLedgerTotal,
                   difference: row.difference,
+                  codes: row.codes.map((kode) => ({
+                    tax_code: kode.code,
+                    tax_code_id: kode.taxCodeId,
+                    tax_ledger_total: kode.taxLedgerTotal,
+                  })),
                 })),
               },
             },

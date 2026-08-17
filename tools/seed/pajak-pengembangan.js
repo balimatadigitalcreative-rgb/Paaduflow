@@ -16,6 +16,12 @@
  *   sungguhan lewat Pengaturan → Pajak → Kode Pajak.
  *
  *   Cara menjalankan:
+ *     DATABASE_URL=... npm run seed:tax-dev
+ *
+ *   Tenant, company, dan kedua akun PPN dicari sendiri bila tidak disebut.
+ *   Bila kandidatnya lebih dari satu — misalnya `seed:dev` yang memasang dua
+ *   company — ia berhenti dan menyebutkan kandidatnya, bukan memilih salah satu.
+ *   Untuk menyebut sendiri:
  *     DATABASE_URL=... TENANT_ID=... COMPANY_ID=... \
  *     AKUN_PPN_KELUARAN=... AKUN_PPN_MASUKAN=... npm run seed:tax-dev
  *
@@ -68,17 +74,97 @@ function wajib(nama) {
   return nilai
 }
 
-async function main() {
-  const config = {
-    tenantId: wajib('TENANT_ID'),
-    companyId: wajib('COMPANY_ID'),
-    akun: { keluaran: wajib('AKUN_PPN_KELUARAN'), masukan: wajib('AKUN_PPN_MASUKAN') },
+function opsional(nama) {
+  const nilai = process.env[nama]
+  return nilai === undefined || nilai === '' ? null : nilai
+}
+
+/**
+ * Menemukan tepat satu baris, atau berhenti sambil menyebutkan kandidatnya.
+ *
+ * Menebak ketika ada dua kandidat adalah cara paling halus untuk menaruh data
+ * pajak di company yang salah. Kesalahan itu tidak menggagalkan apa pun hari
+ * ini; ia baru muncul di rekonsiliasi, sebagai selisih yang tidak ada sebabnya.
+ */
+async function tepatSatu(client, { sql, params, apa, variabel }) {
+  const { rows } = await client.query(sql, params)
+
+  if (rows.length === 1) return rows[0].id
+
+  if (rows.length === 0) {
+    throw new Error(
+      `Tidak ada ${apa} di basis data ini. Jalankan \`npm run seed:dev\` lebih dulu.`,
+    )
   }
 
+  const kandidat = rows.map((baris) => `      ${baris.id}  ${baris.label}`).join('\n')
+  throw new Error(
+    `Ada ${rows.length} ${apa}, dan seed ini tidak menebak.\n\n` +
+      `  Kandidat:\n${kandidat}\n\n` +
+      `  Pilih satu, lalu sebutkan lewat ${variabel}.`,
+  )
+}
+
+/**
+ * Akun pajak dicari lewat aturan penentuan, bukan lewat nomor akun.
+ *
+ * Modul tidak pernah menyebut nomor akun, dan seed yang menyebutnya akan
+ * berbeda dari bagan akun begitu bagan itu berubah.
+ */
+function akunPenentuan(client, tenantId, companyId, jenisTransaksi, variabel) {
+  return tepatSatu(client, {
+    sql: `SELECT a.id, a.code || ' — ' || a.name AS label
+            FROM account_determination_rules r
+            JOIN accounts a ON a.id = r.account_id
+           WHERE r.tenant_id = $1 AND r.company_id = $2 AND r.transaction_type = $3`,
+    params: [tenantId, companyId, jenisTransaksi],
+    apa: `aturan akun untuk ${jenisTransaksi}`,
+    variabel,
+  })
+}
+
+async function main() {
   const client = new pg.Client({ connectionString: wajib('DATABASE_URL') })
   await client.connect()
 
   try {
+    // Yang tidak disebut, dicari. Yang tidak dapat dipastikan, ditolak.
+    const tenantId =
+      opsional('TENANT_ID') ??
+      (await tepatSatu(client, {
+        sql: 'SELECT id, name AS label FROM tenants ORDER BY name',
+        params: [],
+        apa: 'tenant',
+        variabel: 'TENANT_ID',
+      }))
+
+    const companyId =
+      opsional('COMPANY_ID') ??
+      (await tepatSatu(client, {
+        sql: `SELECT id, legal_name AS label FROM companies
+               WHERE tenant_id = $1 ORDER BY legal_name`,
+        params: [tenantId],
+        apa: 'company pada tenant ini',
+        variabel: 'COMPANY_ID',
+      }))
+
+    const config = {
+      tenantId,
+      companyId,
+      akun: {
+        keluaran:
+          opsional('AKUN_PPN_KELUARAN') ??
+          (await akunPenentuan(
+            client, tenantId, companyId, 'sales.invoice.tax_output', 'AKUN_PPN_KELUARAN',
+          )),
+        masukan:
+          opsional('AKUN_PPN_MASUKAN') ??
+          (await akunPenentuan(
+            client, tenantId, companyId, 'purchasing.bill.tax_input', 'AKUN_PPN_MASUKAN',
+          )),
+      },
+    }
+
     await client.query('BEGIN')
 
     await client.query(
@@ -138,9 +224,17 @@ async function main() {
     // Diucapkan keras setiap kali. Nilai sementara yang tidak terdengar adalah
     // nilai sementara yang akan sampai ke produksi.
     console.warn(
-      `Seed pajak PENGEMBANGAN terpasang: ${TARIF_SEMENTARA.length} versi kode, ` +
-        `${ATURAN.length} aturan, ${ALOKASI.rangeEnd - ALOKASI.rangeStart + 1} nomor seri.\n` +
+      [
+        `Seed pajak PENGEMBANGAN terpasang: ${TARIF_SEMENTARA.length} versi kode, ` +
+          `${ATURAN.length} aturan, ${ALOKASI.rangeEnd - ALOKASI.rangeStart + 1} nomor seri.`,
+        // Disebutkan supaya terlihat ke MANA ia terpasang — terutama saat
+        // keempatnya ditemukan sendiri dan tidak ada yang mengetiknya.
+        `  Tenant            : ${config.tenantId}`,
+        `  Company           : ${config.companyId}`,
+        `  Akun PPN Keluaran : ${config.akun.keluaran}`,
+        `  Akun PPN Masukan  : ${config.akun.masukan}`,
         'Seluruh tarifnya adalah angka isian yang BELUM divalidasi konsultan pajak.',
+      ].join('\n'),
     )
   } catch (error) {
     await client.query('ROLLBACK').catch(() => undefined)

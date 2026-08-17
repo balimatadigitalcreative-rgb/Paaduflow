@@ -595,49 +595,69 @@ export class PostgresTaxRepository
   }
 
   /**
-   * Buku pajak berdampingan dengan akun pajaknya di buku besar.
+   * Buku pajak berdampingan dengan akun pajaknya di buku besar, per AKUN.
    *
    * Tanda dinormalkan supaya keduanya dapat dibandingkan langsung: PPN keluaran
-   * berdiri di sisi kredit, PPN masukan di sisi debit. Selisih yang bukan nol
-   * ditampilkan per kode, bukan sebagai satu angka gabungan — satu angka
-   * gabungan yang bukan nol tidak memberi tahu siapa pun harus melihat ke mana.
+   * berdiri di sisi kredit, PPN masukan di sisi debit.
+   *
+   * Grainnya akun, bukan kode. Alasannya struktural, bukan selera: buku besar
+   * tidak menyimpan kode pajak, hanya `account_id`. Mengelompokkan saldo akun
+   * per kode — seperti versi sebelumnya — berarti menyalin saldo yang sama ke
+   * setiap kode yang menunjuk akun itu, sehingga dua versi dari satu kode saja
+   * sudah melipatgandakan angkanya.
+   *
+   * Sisi buku pajak tetap dirinci per kode di `codes`, karena `tax_ledger`
+   * memang menyimpannya. Yang tidak dapat dirinci tidak dipaksa dirinci.
    */
   async reconcile(companyId: string, period: string): Promise<readonly ReconciliationRow[]> {
     const { rows } = await this.db.query<{
-      tax_code_id: string
-      code: string
       gl_account_id: string
       tax_total: string
       gl_total: string
+      codes: readonly { taxCodeId: string; code: string; taxLedgerTotal: number }[]
     }>(
-      `WITH buku_pajak AS (
-         SELECT l.tax_code_id,
+      `WITH kode AS (
+         SELECT id, code, gl_account_id
+           FROM tax_codes
+          WHERE tenant_id = $1 AND company_id = $2
+       ),
+       akun AS (SELECT DISTINCT gl_account_id FROM kode),
+       buku_pajak_kode AS (
+         SELECT k.gl_account_id, k.id AS tax_code_id, k.code,
                 sum(CASE WHEN l.direction = 'out' THEN l.tax_amount ELSE -l.tax_amount END) AS total
            FROM tax_ledger l
+           JOIN kode k ON k.id = l.tax_code_id
           WHERE l.tenant_id = $1 AND l.company_id = $2 AND l.tax_period = $3
-          GROUP BY l.tax_code_id
+          GROUP BY k.gl_account_id, k.id, k.code
+       ),
+       buku_pajak AS (
+         SELECT gl_account_id,
+                sum(total) AS total,
+                json_agg(
+                  json_build_object(
+                    'taxCodeId', tax_code_id, 'code', code, 'taxLedgerTotal', total
+                  ) ORDER BY code
+                ) AS codes
+           FROM buku_pajak_kode
+          GROUP BY gl_account_id
        ),
        buku_besar AS (
-         SELECT c.id AS tax_code_id,
-                sum(jl.credit - jl.debit) AS total
-           FROM tax_codes c
-           JOIN journal_lines jl
-             ON jl.tenant_id = c.tenant_id AND jl.account_id = c.gl_account_id
-           JOIN journals j
-             ON j.tenant_id = jl.tenant_id AND j.id = jl.journal_id
-          WHERE c.tenant_id = $1 AND c.company_id = $2
-            AND to_char(j.journal_date, 'YYYY-MM') = $3
-          GROUP BY c.id
+         SELECT a.gl_account_id, sum(jl.credit - jl.debit) AS total
+           FROM akun a
+           JOIN journal_lines jl ON jl.tenant_id = $1 AND jl.account_id = a.gl_account_id
+           JOIN journals j ON j.tenant_id = jl.tenant_id AND j.id = jl.journal_id
+          WHERE to_char(j.journal_date, 'YYYY-MM') = $3
+          GROUP BY a.gl_account_id
        )
-       SELECT c.id AS tax_code_id, c.code, c.gl_account_id,
+       SELECT a.gl_account_id,
               COALESCE(bp.total, 0) AS tax_total,
-              COALESCE(bb.total, 0) AS gl_total
-         FROM tax_codes c
-         LEFT JOIN buku_pajak bp ON bp.tax_code_id = c.id
-         LEFT JOIN buku_besar bb ON bb.tax_code_id = c.id
-        WHERE c.tenant_id = $1 AND c.company_id = $2
-          AND (bp.total IS NOT NULL OR bb.total IS NOT NULL)
-        ORDER BY c.code`,
+              COALESCE(bb.total, 0) AS gl_total,
+              COALESCE(bp.codes, '[]'::json) AS codes
+         FROM akun a
+         LEFT JOIN buku_pajak bp ON bp.gl_account_id = a.gl_account_id
+         LEFT JOIN buku_besar bb ON bb.gl_account_id = a.gl_account_id
+        WHERE bp.total IS NOT NULL OR bb.total IS NOT NULL
+        ORDER BY a.gl_account_id`,
       [this.tenantId, companyId, period],
     )
 
@@ -645,12 +665,15 @@ export class PostgresTaxRepository
       const bukuPajak = Number(row.tax_total)
       const bukuBesar = Number(row.gl_total)
       return {
-        taxCodeId: row.tax_code_id,
-        code: row.code,
         glAccountId: row.gl_account_id,
         taxLedgerTotal: bukuPajak,
         generalLedgerTotal: bukuBesar,
         difference: Math.round((bukuPajak - bukuBesar) * 100) / 100,
+        codes: row.codes.map((item) => ({
+          taxCodeId: item.taxCodeId,
+          code: item.code,
+          taxLedgerTotal: Number(item.taxLedgerTotal),
+        })),
       }
     })
   }

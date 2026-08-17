@@ -207,6 +207,15 @@ export async function seed(databaseUrl) {
         )
       }
 
+      // Dua akun inilah yang diminta `seed:tax-dev`. Diambil lewat aturan
+      // penentuan, bukan dengan menulis ulang nomor akunnya di sini: nomor itu
+      // sudah hidup di PENENTUAN_AKUN, dan dua tempat akan berbeda suatu hari.
+      const penentuan = new Map(PENENTUAN_AKUN)
+      company.akunPajak = {
+        keluaran: akunPerKode.get(penentuan.get('sales.invoice.tax_output')),
+        masukan: akunPerKode.get(penentuan.get('purchasing.bill.tax_input')),
+      }
+
       const gudangId = randomUUID()
       await client.query(
         `INSERT INTO warehouses (id, tenant_id, company_id, code, name)
@@ -282,8 +291,12 @@ export async function seed(databaseUrl) {
     return {
       tenantId,
       companies: companies.map((company) => ({
+        id: company.id,
         nama: company.nama,
         bulanAwalFiskal: company.bulanAwalFiskal,
+        // Ikut dikembalikan supaya rantai ke `seed:tax-dev` tidak menuntut
+        // siapa pun membuka basis data untuk mencari empat UUID.
+        akunPajak: company.akunPajak,
       })),
       admin: AKUN_ADMIN.email,
       staf: AKUN_STAF.email,
@@ -295,6 +308,22 @@ export async function seed(databaseUrl) {
   } finally {
     await client.end()
   }
+}
+
+/**
+ * Satu baris siap tempel untuk menyalakan `seed:tax-dev` pada satu company.
+ *
+ * Bentuknya mengikuti shell yang sedang dipakai. Mencetak bentuk bash di
+ * PowerShell berarti pembacanya tetap harus menerjemahkan sendiri, dan rantai
+ * yang menuntut terjemahan adalah rantai yang tetap putus.
+ */
+function barisLingkungan(variabel) {
+  const pasangan = Object.entries(variabel)
+  const awalan =
+    process.platform === 'win32'
+      ? pasangan.map(([nama, nilai]) => `$env:${nama}="${nilai}"`).join('; ') + '; '
+      : pasangan.map(([nama, nilai]) => `${nama}=${nilai}`).join(' ') + ' '
+  return `${awalan}npm run seed:tax-dev`
 }
 
 /**
@@ -322,6 +351,21 @@ if (process.argv[1]?.endsWith('pengembangan.js') === true) {
       `  Masuk sebagai : ${hasil.admin}  (Admin Company)`,
       `                  ${hasil.staf}  (Anggota)`,
       `  Kata sandi    : ${hasil.kataSandi}`,
+      '',
+      '  Seed pajak — salin satu baris, sesuai company yang dituju:',
+      '',
+      ...hasil.companies.flatMap((company) => [
+        `    ${company.nama}`,
+        `      ${barisLingkungan({
+          TENANT_ID: hasil.tenantId,
+          COMPANY_ID: company.id,
+          AKUN_PPN_KELUARAN: company.akunPajak.keluaran,
+          AKUN_PPN_MASUKAN: company.akunPajak.masukan,
+        })}`,
+        '',
+      ]),
+      '  Keempatnya juga dapat ditemukan sendiri oleh seed:tax-dev. Yang benar-benar',
+      '  perlu disebut hanya COMPANY_ID, dan itu pun karena company di sini ada dua.',
       '',
       '  Jangan pernah memakai basis data ini sebagai basis data produksi.',
       '',
