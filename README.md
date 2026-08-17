@@ -34,6 +34,21 @@ Keduanya punya akses ke dua company: **PT Nusantara Contoh** (tahun fiskal mulai
 
 > **Seluruh isinya data contoh.** Nama perusahaan, pelanggan, vendor, NPWP, harga, dan bagan akunnya karangan. Kata sandinya sengaja lemah. Basis data yang pernah diisi `npm run seed:dev` tidak boleh dipakai sebagai basis data produksi.
 
+### Menyalakan modul Pajak
+
+`npm run dev` **tidak** mengisi data pajak, dan itu disengaja: seluruh tarifnya angka isian yang belum divalidasi konsultan pajak (V-07). Tanpa langkah ini, layar Kode Pajak akan kosong — bukan rusak.
+
+```bash
+DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:55432/paadu_dev \
+COMPANY_ID=<id company> npm run seed:tax-dev
+```
+
+`COMPANY_ID` dapat disalin dari keluaran `npm run seed:dev`, yang mencetak blok siap tempel untuk tiap company. `TENANT_ID` dan kedua ID akun PPN ditemukan sendiri bila tidak disebut. Bila kandidatnya lebih dari satu, seed berhenti dan menyebutkan seluruhnya — ia tidak menebak.
+
+Setelahnya company itu punya profil PKP, empat versi kode pajak, tiga aturan penentuan, dan seratus nomor seri.
+
+Dijalankan dua kali pada company yang sama, ia berhenti dengan `duplicate key value violates unique constraint "tax_codes_…"`. Itu penolakan yang benar — dua versi kode yang sama tidak boleh berlaku pada tanggal yang sama — tetapi pesannya mentah, karena seed ini belum idempoten.
+
 ### Alur yang dapat dicoba
 
 1. **Penjualan → Faktur baru.** Pilih customer, isi baris, simpan sebagai draf.
@@ -41,6 +56,14 @@ Keduanya punya akses ke dua company: **PT Nusantara Contoh** (tahun fiskal mulai
 3. **Akuntansi → Buku Besar.** Jurnalnya sudah ada: Piutang Usaha di debit, Pendapatan dan PPN Keluaran di kredit.
 4. **Pembelian → Pesanan Pembelian → buka satu pesanan yang disetujui → Catat penerimaan.**
 5. **Pembelian → Faktur Pembelian → buka satu tagihan.** Panel pencocokan tiga arah menampilkan dipesan, diterima, dan ditagih berdampingan; baris yang menyimpang diberi keterangan, bukan sekadar warna.
+6. **Pajak → Kode Pajak.** Satu baris per **versi**, bukan per kode: PPN-OUT muncul dua kali, 10% yang sudah ditutup dan 11% yang masih berlaku. Tombol **Ubah tarif** membuka formulir yang menyebutkan versi mana yang akan ditutup pada tanggal berapa — tarif tidak pernah diubah, ia digantikan.
+7. **Pajak → Nomor Seri.** Terpakai, batal, kedaluwarsa, dan tersisa berdiri sendiri-sendiri, lalu dijumlahkan terhadap total dialokasikan. Nomor batal tidak pernah kembali ke pool, jadi menggabungkannya menjadi satu angka akan menyesatkan.
+8. **Pajak → Faktur Pajak Masukan.** Kolom Kelengkapan menyebut **apa** yang kurang — "vendor bukan PKP", bukan sekadar bendera merah.
+9. **Pajak → Rekonsiliasi.** Buku pajak berdampingan dengan akun pajak di buku besar, selisih per akun.
+
+> **Batas yang perlu diketahui sebelum mencoba langkah 9.** Memposting faktur penjualan menulis PPN ke buku besar, tetapi **tidak** menerbitkan faktur pajak keluaran — keduanya dokumen terpisah, dan satu faktur pajak dapat mencakup beberapa faktur komersial. Penerbitannya belum punya layar: endpointnya ada, tombolnya belum.
+>
+> Dua akibatnya terlihat langsung. **Pajak → Faktur Pajak Keluaran** akan kosong meski faktur penjualan sudah diposting. Dan **Rekonsiliasi** akan menampilkan selisih sebesar PPN yang sudah masuk buku besar. Keduanya perilaku yang benar dari layarnya, bukan kesalahan hitung — rekonsiliasi memang sedang melaporkan bahwa buku pajak tertinggal dari buku besar.
 
 ### Bila sudah punya PostgreSQL sendiri
 
@@ -58,6 +81,7 @@ Basis datanya harus ber-encoding UTF8 — `npm run migrate` menolak yang bukan, 
 |---|---|
 | `npm run dev` | Basis data + API + web, satu proses |
 | `npm run seed:dev` | Mengisi ulang data contoh (butuh `DATABASE_URL`) |
+| `npm run seed:tax-dev` | Data pajak untuk satu company (butuh `DATABASE_URL`, dan `COMPANY_ID` bila company lebih dari satu) |
 | `npm run migrate` | Migrasi saja |
 | `npm test` | Seluruh test: unit, basis data, dan UI |
 | `npm run lint` | Token, batas arsitektur, dan tabel append-only |

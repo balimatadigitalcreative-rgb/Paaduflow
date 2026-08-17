@@ -485,6 +485,52 @@ test('detail faktur pajak keluaran menyebut faktur penjualan sumbernya', async (
   expect(detail.cancelReason).toContain('Nomor tertukar')
 })
 
+test('NEGATIF · satu faktur penjualan tidak dapat tercakup dua faktur pajak', async () => {
+  // Faktur penjualan tersendiri: yang dipakai test sebelumnya sudah bebas lagi
+  // karena faktur pajaknya DIBATALKAN, dan pembatalan memang melepaskan
+  // sumbernya — nomornya yang hangus, bukan transaksi penjualannya.
+  const lain = randomUUID()
+  await admin.query(
+    `INSERT INTO sales_documents
+       (id, tenant_id, company_id, doc_type, customer_id, document_date, currency,
+        total, tax_base, tax_total, lifecycle_status)
+     VALUES ($1, $2, $3, 'invoice', $4, DATE '2026-03-06', 'IDR', 1110000, 1000000, 110000, 'posted')`,
+    [lain, tenantId, companyPkp, customerId],
+  )
+
+  const badan = {
+    customer_id: customerId,
+    invoice_date: '2026-03-06',
+    tax_code_id: kodePpnId,
+    base_amount: 1_000_000,
+    tax_amount: 110_000,
+    sources: [{ sales_document_id: lain, base_amount: 1_000_000, tax_amount: 110_000 }],
+  }
+
+  const pertama = await panggil('POST', `${pkp()}/output-tax-invoices`, tokenAdminCompany, badan)
+  expect(pertama.status).toBe(201)
+
+  // PPN yang sama masuk buku pajak dua kali bila yang kedua lolos, dan
+  // rekonsiliasi akan melaporkan selisih yang tidak berasal dari kesalahan
+  // pencatatan mana pun.
+  const kedua = await panggil('POST', `${pkp()}/output-tax-invoices`, tokenAdminCompany, badan)
+  expect(kedua.status).toBe(409)
+  expect((kedua.body.errors as { code: string }[])[0]?.code).toBe('already_covered')
+  // Menyebutkan cara memperbaikinya, bukan hanya menolak.
+  expect(kedua.body.message).toContain('Batalkan faktur pajak itu')
+
+  // Aturan yang sama menyaring daftar kandidat. Layar dan API tidak boleh
+  // berbeda pendapat: yang tidak ditawarkan juga ditolak bila dipaksa.
+  const kandidat = await panggil(
+    'GET',
+    `${pkp()}/sales-invoices-eligible-for-tax`,
+    tokenAdminCompany,
+  )
+  expect((kandidat.body.data as readonly { id: string }[]).map((item) => item.id)).not.toContain(
+    lain,
+  )
+})
+
 test('NEGATIF · faktur pajak keluaran yang tidak ada menjawab 404, bukan 200 kosong', async () => {
   const hasil = await panggil(
     'GET',
@@ -565,6 +611,34 @@ test('faktur pajak masukan dari vendor non-PKP tidak dapat dikreditkan, dan alas
   // Apa yang kurang, bukan sekadar bendera merah — Module 08 §8.
   expect(data.defects.map((butir) => butir.code)).toContain('vendor_not_pkp')
   expect(data.defects.every((butir) => butir.detail.length > 20)).toBe(true)
+})
+
+test('daftar faktur pajak masukan menyebutkan APA yang kurang, bukan sekadar menandai', async () => {
+  const hasil = await panggil('GET', `${pkp()}/input-tax-invoices`, tokenAdminCompany)
+  expect(hasil.status).toBe(200)
+
+  const baris = hasil.body.data as readonly {
+    id: string
+    supplierNumber: string
+    vendorName: string
+    vendorIsPkp: boolean
+    isCreditable: boolean
+    validatedAt: string | null
+    defects: readonly { code: string; detail: string }[]
+  }[]
+  expect(baris.length).toBeGreaterThan(0)
+
+  const bermasalah = baris.find((item) => item.defects.length > 0)
+  expect(bermasalah).toBeDefined()
+  expect(bermasalah!.defects.map((butir) => butir.code)).toContain('vendor_not_pkp')
+
+  // Kalimat yang dapat dibaca, bukan kode yang harus diterjemahkan layar.
+  // Inilah beda "penanda apa yang kurang" dengan "bendera merah".
+  expect(bermasalah!.defects.every((butir) => butir.detail.length > 20)).toBe(true)
+
+  expect(bermasalah!.isCreditable).toBe(false)
+  expect(bermasalah!.validatedAt).not.toBeNull()
+  expect(bermasalah!.vendorName).toBe('CV Kecil')
 })
 
 test('rekonsiliasi melaporkan selisih per kode, bukan satu angka gabungan', async () => {

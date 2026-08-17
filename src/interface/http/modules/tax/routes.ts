@@ -404,6 +404,33 @@ export function registerTaxRoutes(app: PaaduServer, services: AppServices): void
 
   // ── Faktur pajak keluaran ────────────────────────────────────────────────
 
+  /**
+   * Faktur penjualan yang layak dicakup — kandidat sumber penerbitan.
+   *
+   * Tanpa rute ini, layar penerbitan tidak punya apa pun untuk ditawarkan, dan
+   * faktur pajak hanya dapat dibuat oleh yang sudah tahu UUID faktur
+   * penjualannya.
+   */
+  app.get(
+    '/v1/companies/:companyId/sales-invoices-eligible-for-tax',
+    { schema: { params: JalurCompany } },
+    async (request, reply) =>
+      jalankan(
+        request,
+        reply,
+        request.params.companyId,
+        'pajak.laporan.baca',
+        'Akuntan Pajak',
+        async (scoped, ctx) => ({
+          status: 200,
+          body: {
+            success: true,
+            data: await scoped.tax.queries.eligibleSalesInvoices(ctx.companyId),
+          },
+        }),
+      ),
+  )
+
   app.get(
     '/v1/companies/:companyId/output-tax-invoices',
     {
@@ -511,6 +538,11 @@ export function registerTaxRoutes(app: PaaduServer, services: AppServices): void
           }
           if (hasil.kind === 'customer_npwp_missing') {
             return tolak(422, 'customer_npwp_missing', hasil.reason)
+          }
+          if (hasil.kind === 'already_covered') {
+            // 409: fakturnya sah, keadaannya yang menghalangi. PPN yang sama
+            // masuk buku pajak dua kali bila ini lolos.
+            return tolak(409, 'already_covered', hasil.reason)
           }
           if (hasil.kind === 'customer_not_found') {
             return tolak(404, 'customer_not_found', 'Pelanggan tidak ditemukan.')
@@ -620,6 +652,37 @@ export function registerTaxRoutes(app: PaaduServer, services: AppServices): void
   )
 
   // ── Faktur pajak masukan ─────────────────────────────────────────────────
+
+  app.get(
+    '/v1/companies/:companyId/input-tax-invoices',
+    {
+      schema: {
+        params: JalurCompany,
+        querystring: Type.Object({
+          cursor: Type.Optional(Type.String()),
+          per_page: Type.Optional(Type.Integer({ minimum: 1, maximum: 200 })),
+        }),
+      },
+    },
+    async (request, reply) =>
+      jalankan(
+        request,
+        reply,
+        request.params.companyId,
+        'pajak.laporan.baca',
+        'Akuntan Pajak',
+        async (scoped, ctx) => {
+          const hasil = await scoped.tax.queries.inputInvoices(ctx.companyId, {
+            cursor: request.query.cursor ?? null,
+            limit: request.query.per_page ?? 50,
+          })
+          return {
+            status: 200,
+            body: { success: true, data: hasil.items, meta: { next_cursor: hasil.nextCursor } },
+          }
+        },
+      ),
+  )
 
   app.post(
     '/v1/companies/:companyId/input-tax-invoices',

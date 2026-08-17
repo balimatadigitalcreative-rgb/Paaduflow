@@ -45,6 +45,7 @@ export type CreateOutputResult =
   | { readonly kind: 'customer_not_found' }
   | { readonly kind: 'replaced_not_issued' }
   | { readonly kind: 'no_sources' }
+  | { readonly kind: 'already_covered'; readonly reason: string }
 
 export type IssueResult =
   | { readonly kind: 'issued'; readonly formattedNumber: string; readonly serialNumber: number }
@@ -110,6 +111,22 @@ export class OutputTaxInvoiceService {
       const digantikan = await this.invoices.load(input.replacesId)
       if (digantikan === null || digantikan.status !== 'issued') {
         return { kind: 'replaced_not_issued' }
+      }
+    }
+
+    // Satu faktur penjualan hanya boleh tercakup satu faktur pajak yang masih
+    // berlaku. Tanpa pemeriksaan ini, PPN yang sama masuk buku pajak dua kali
+    // dan rekonsiliasi melaporkan selisih yang tidak berasal dari kesalahan
+    // pencatatan mana pun. Faktur pajak yang dibatalkan tidak menahan sumbernya.
+    const sudah = await this.invoices.coveredSalesDocuments(
+      input.sources.map((sumber) => sumber.salesDocumentId),
+    )
+    if (sudah.length > 0) {
+      return {
+        kind: 'already_covered',
+        reason:
+          `Faktur penjualan berikut sudah tercakup faktur pajak lain: ${sudah.map((item) => item.number ?? item.salesDocumentId).join(', ')}. ` +
+          'Batalkan faktur pajak itu lebih dulu bila memang harus diterbitkan ulang.',
       }
     }
 

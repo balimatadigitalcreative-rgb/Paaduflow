@@ -1,7 +1,13 @@
+import type { StatusGuardResult } from '#shared/document-lifecycle'
 import { calculateDocument } from '#shared/line-items'
 import { evaluateConversion } from '#shared/document-conversion'
 
 import type { OrderLineForReceipt } from './receipts'
+
+/** Sama bentuknya dengan `SubmitResult` di Penjualan, dan sengaja demikian. */
+export type PurchaseSubmitResult =
+  | { readonly kind: 'applied'; readonly number: string }
+  | Exclude<StatusGuardResult, { kind: 'applied' }>
 
 /**
  * Dokumen pembelian — RFQ, pesanan pembelian, dan tagihan vendor.
@@ -76,8 +82,9 @@ export interface PurchaseWritePort {
     docType: PurchaseDocType,
     periodKey: string,
     by: string,
-  ): Promise<string>
-  approve(documentId: string, by: string): Promise<void>
+  ): Promise<PurchaseSubmitResult>
+  requestApproval(documentId: string, by: string): Promise<StatusGuardResult>
+  approve(documentId: string, by: string): Promise<StatusGuardResult>
   loadOrderLines(
     purchaseOrderId: string,
   ): Promise<{ companyId: string; vendorId: string; currency: string; lines: readonly OrderLineForReceipt[] } | null>
@@ -192,17 +199,36 @@ export class PurchaseDocumentService {
     return { kind: 'created', documentId, total: hasil.total }
   }
 
+  /** Nomor diberikan di sini — D-007. Ditolak bila status asalnya bukan draf. */
   async submit(
     documentId: string,
     companyId: string,
     docType: PurchaseDocType,
     periodKey: string,
     by: string,
-  ): Promise<string> {
+  ): Promise<PurchaseSubmitResult> {
     return this.writes.submit(documentId, companyId, docType, periodKey, by)
   }
 
-  async approve(documentId: string, by: string): Promise<void> {
-    await this.writes.approve(documentId, by)
+  /**
+   * Mengajukan ke persetujuan — `submitted → pending_approval`.
+   *
+   * Pesanan pembelian wajib melewatinya; tabel transisi tidak memberinya jalan
+   * langsung dari `submitted` ke `approved`, berbeda dengan tagihan dan faktur
+   * penjualan yang punya keduanya.
+   */
+  async requestApproval(documentId: string, by: string): Promise<StatusGuardResult> {
+    return this.writes.requestApproval(documentId, by)
+  }
+
+  /**
+   * Menyetujui dokumen.
+   *
+   * Penjaganya di lapisan basis data, membaca `document_transitions`. Untuk
+   * `purchase_order` itu berarti hanya `pending_approval` yang lolos — tabelnya
+   * memang tidak memberi jalan langsung dari `submitted`.
+   */
+  async approve(documentId: string, by: string): Promise<StatusGuardResult> {
+    return this.writes.approve(documentId, by)
   }
 }

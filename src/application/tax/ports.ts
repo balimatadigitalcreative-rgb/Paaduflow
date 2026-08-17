@@ -121,6 +121,15 @@ export interface OutputTaxInvoicePort {
     invoiceId: string,
     sources: readonly { salesDocumentId: string; baseAmount: number; taxAmount: number }[],
   ): Promise<void>
+  /**
+   * Faktur penjualan yang sudah tercakup faktur pajak yang masih berlaku.
+   *
+   * Faktur pajak yang dibatalkan tidak ikut menahan sumbernya — nomornya hangus
+   * (Module 08 §8), tetapi transaksi penjualannya tetap perlu difakturpajakkan.
+   */
+  coveredSalesDocuments(
+    salesDocumentIds: readonly string[],
+  ): Promise<readonly { salesDocumentId: string; number: string | null }[]>
   load(invoiceId: string): Promise<OutputTaxInvoiceRecord | null>
   markIssued(
     invoiceId: string,

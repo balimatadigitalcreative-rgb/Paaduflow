@@ -326,9 +326,62 @@ export interface OutputTaxInvoiceDetail extends OutputTaxInvoiceSummary {
   readonly sources: readonly OutputTaxInvoiceSource[]
 }
 
+/**
+ * Satu syarat yang tidak terpenuhi pada faktur pajak masukan.
+ *
+ * `detail` adalah kalimat yang dapat dibaca, bukan kode yang harus
+ * diterjemahkan layar. Ia ditulis saat validasi berjalan, sehingga daftar dapat
+ * menyebutkan apa yang kurang tanpa menjalankan ulang validasinya.
+ */
+export interface InputTaxInvoiceDefect {
+  readonly code: string
+  readonly detail: string
+}
+
+export interface InputTaxInvoiceSummary {
+  readonly id: string
+  readonly supplierNumber: string
+  readonly vendorName: string
+  readonly vendorNpwp: string | null
+  readonly vendorIsPkp: boolean
+  readonly invoiceDate: string
+  readonly taxPeriod: string
+  /** Boleh berbeda dari masa fakturnya — Module 08 §4. */
+  readonly creditPeriod: string | null
+  readonly taxCode: string
+  readonly baseAmount: number
+  readonly taxAmount: number
+  readonly isCreditable: boolean
+  readonly validatedAt: string | null
+  readonly defects: readonly InputTaxInvoiceDefect[]
+}
+
+/**
+ * Faktur penjualan yang layak dicakup faktur pajak keluaran.
+ *
+ * Syaratnya dua: sudah `posted`, dan belum tercakup faktur pajak yang masih
+ * berlaku. Yang tanpa NPWP pelanggan tetap ditampilkan — ditandai, bukan
+ * disembunyikan, supaya orang tahu apa yang harus dilengkapi alih-alih
+ * bertanya-tanya kenapa fakturnya tidak muncul.
+ */
+export interface FakturLayakPajak {
+  readonly id: string
+  readonly number: string | null
+  readonly customerId: string
+  readonly customerName: string
+  readonly customerNpwp: string | null
+  readonly documentDate: string
+  readonly taxBase: number
+  readonly taxTotal: number
+  readonly currency: string
+}
+
 export interface TaxQueryPort {
   /** Seluruh versi, terurut per kode lalu mundur menurut masa berlaku. */
   taxCodes(companyId: string): Promise<readonly TaxCodeVersion[]>
   outputInvoices(companyId: string, page: PageRequest): Promise<Page<OutputTaxInvoiceSummary>>
   outputInvoice(companyId: string, invoiceId: string): Promise<OutputTaxInvoiceDetail | null>
+  inputInvoices(companyId: string, page: PageRequest): Promise<Page<InputTaxInvoiceSummary>>
+  /** Kandidat sumber faktur pajak keluaran — sudah posted, belum tercakup. */
+  eligibleSalesInvoices(companyId: string): Promise<readonly FakturLayakPajak[]>
 }

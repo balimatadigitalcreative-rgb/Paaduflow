@@ -502,6 +502,249 @@ export function DaftarFakturKeluaran({ konteks }: { readonly konteks: Konteks })
   )
 }
 
+/**
+ * Layar Pajak — Terbitkan Faktur Pajak Keluaran.
+ *
+ * Jembatan yang sebelumnya tidak ada: memposting faktur penjualan menulis PPN
+ * ke buku besar, tetapi buku pajak hanya terisi ketika faktur pajak
+ * diterbitkan. Tanpa layar ini, rekonsiliasi selalu melaporkan selisih dan
+ * tidak ada tombol mana pun yang dapat menutupnya.
+ *
+ * Satu faktur pajak boleh mencakup beberapa faktur penjualan (Module 08 §4),
+ * tetapi seluruhnya harus milik pelanggan yang sama — NPWP dan nama pelanggan
+ * disalin ke faktur pajak, dan satu faktur tidak dapat memuat dua NPWP.
+ */
+interface FakturLayak {
+  readonly id: string
+  readonly number: string | null
+  readonly customerId: string
+  readonly customerName: string
+  readonly customerNpwp: string | null
+  readonly documentDate: string
+  readonly taxBase: number
+  readonly taxTotal: number
+  readonly currency: string
+}
+
+export function TerbitkanFakturPajak({ konteks }: { readonly konteks: Konteks }): ReactNode {
+  const [kandidat, setKandidat] = useState<readonly FakturLayak[]>([])
+  const [dipilih, setDipilih] = useState<readonly string[]>([])
+  const [kode, setKode] = useState<readonly TaxCodeVersion[]>([])
+  const [kodeDipilih, setKodeDipilih] = useState('')
+  const [galat, setGalat] = useState<string | null>(null)
+  const [sukses, setSukses] = useState<string | null>(null)
+  const [menyimpan, setMenyimpan] = useState(false)
+
+  async function muat(): Promise<void> {
+    setGalat(null)
+    try {
+      const [layak, kodePajak] = await Promise.all([
+        api.get<FakturLayak[]>(`${perusahaan(konteks.companyId)}/sales-invoices-eligible-for-tax`),
+        api.get<TaxCodeVersion[]>(`${perusahaan(konteks.companyId)}/tax-codes`),
+      ])
+      setKandidat(layak.data)
+      setDipilih([])
+
+      // Hanya kode keluaran yang masih berlaku. Menawarkan versi yang sudah
+      // ditutup akan membuat faktur pajak lahir dengan tarif kedaluwarsa.
+      const keluaran = kodePajak.data.filter(
+        (item) => item.taxType === 'vat_out' && item.validTo === null,
+      )
+      setKode(keluaran)
+      setKodeDipilih(keluaran[0]?.id ?? '')
+    } catch (kesalahan) {
+      setGalat(
+        kesalahan instanceof ApiError ? kesalahan.message : 'Tidak dapat memuat faktur penjualan.',
+      )
+    }
+  }
+
+  useEffect(() => {
+    void muat()
+  }, [konteks.companyId])
+
+  const terpilih = kandidat.filter((item) => dipilih.includes(item.id))
+  const pelangganTerpilih = terpilih[0]
+  const bedaPelanggan = terpilih.some((item) => item.customerId !== pelangganTerpilih?.customerId)
+  const tanpaNpwp = terpilih.some(
+    (item) => item.customerNpwp === null || item.customerNpwp.trim() === '',
+  )
+  const totalDpp = terpilih.reduce((jumlah, item) => jumlah + item.taxBase, 0)
+  const totalPpn = terpilih.reduce((jumlah, item) => jumlah + item.taxTotal, 0)
+
+  async function terbitkan(): Promise<void> {
+    if (pelangganTerpilih === undefined || kodeDipilih === '') return
+    setMenyimpan(true)
+    setGalat(null)
+    setSukses(null)
+
+    try {
+      const draf = await api.post<{ id: string }>(
+        `${perusahaan(konteks.companyId)}/output-tax-invoices`,
+        {
+          customer_id: pelangganTerpilih.customerId,
+          invoice_date: terpilih[terpilih.length - 1]!.documentDate,
+          tax_code_id: kodeDipilih,
+          base_amount: totalDpp,
+          tax_amount: totalPpn,
+          sources: terpilih.map((item) => ({
+            sales_document_id: item.id,
+            base_amount: item.taxBase,
+            tax_amount: item.taxTotal,
+          })),
+        },
+      )
+
+      // Dua langkah dengan sengaja: draf lahir tanpa nomor, dan nomor seri baru
+      // melekat saat terbit. Menggabungkannya akan membuat nomor terpakai oleh
+      // draf yang mungkin tidak pernah jadi.
+      const terbit = await api.post<{ number: string }>(
+        `${perusahaan(konteks.companyId)}/output-tax-invoices/${draf.data.id}/issue`,
+      )
+      setSukses(
+        `Faktur pajak ${terbit.data.number} terbit, mencakup ${terpilih.length} faktur penjualan.`,
+      )
+      await muat()
+    } catch (kesalahan) {
+      // Pesan server sudah menyebut cara melengkapinya — "Lengkapi di Pelanggan
+      // → Data Pajak". Mengarang pesan sendiri akan menggantikan yang menuntun
+      // dengan yang umum.
+      setGalat(
+        kesalahan instanceof ApiError
+          ? kesalahan.message
+          : 'Faktur pajak tidak dapat diterbitkan.',
+      )
+    } finally {
+      setMenyimpan(false)
+    }
+  }
+
+  const dapatTerbit =
+    terpilih.length > 0 && !bedaPelanggan && !tanpaNpwp && kodeDipilih !== '' && !menyimpan
+
+  return (
+    <div className={styles.stack}>
+      <div className={styles.meta}>
+        <div>
+          <div className={styles.metaLabel}>Company</div>
+          <div className={styles.metaValue}>{konteks.companyName}</div>
+        </div>
+        <div>
+          <div className={styles.metaLabel}>Faktur terpilih</div>
+          <div className={styles.metaValue}>{terpilih.length}</div>
+        </div>
+        <div>
+          <div className={styles.metaLabel}>DPP</div>
+          <div className={styles.metaValue}>{formatAmount(totalDpp, konteks.currency)}</div>
+        </div>
+        <div>
+          <div className={styles.metaLabel}>PPN</div>
+          <div className={styles.metaValue}>{formatAmount(totalPpn, konteks.currency)}</div>
+        </div>
+      </div>
+
+      {sukses !== null ? (
+        <p className={styles.noticeSuccess} role="status">
+          {sukses}
+        </p>
+      ) : null}
+      {galat !== null ? (
+        <p className={styles.noticeDanger} role="alert">
+          {galat}
+        </p>
+      ) : null}
+
+      {kandidat.length === 0 ? (
+        <p className={styles.notice} role="status">
+          Tidak ada faktur penjualan yang menunggu difakturpajakkan. Faktur muncul di sini setelah
+          diposting, dan hilang setelah tercakup faktur pajak.
+        </p>
+      ) : (
+        <>
+          <table className={styles.matchTable}>
+            <caption>
+              Faktur penjualan terposting yang belum tercakup — pilih satu atau beberapa
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">Pilih</th>
+                <th scope="col">Nomor</th>
+                <th scope="col">Pelanggan</th>
+                <th scope="col">NPWP</th>
+                <th scope="col">Tanggal</th>
+                <th scope="col" data-numeric="true">
+                  DPP
+                </th>
+                <th scope="col" data-numeric="true">
+                  PPN
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {kandidat.map((baris) => {
+                const npwpKosong = baris.customerNpwp === null || baris.customerNpwp.trim() === ''
+                return (
+                  <tr key={baris.id} data-variance={npwpKosong}>
+                    <td>
+                      <Checkbox
+                        id={`pilih-${baris.id}`}
+                        label={`Pilih ${baris.number ?? baris.id}`}
+                        checked={dipilih.includes(baris.id)}
+                        onChange={(nyala) =>
+                          setDipilih((lama) =>
+                            nyala ? [...lama, baris.id] : lama.filter((id) => id !== baris.id),
+                          )
+                        }
+                      />
+                    </td>
+                    <td>{baris.number ?? '(tanpa nomor)'}</td>
+                    <td>{baris.customerName}</td>
+                    <td>{npwpKosong ? 'belum diisi' : baris.customerNpwp}</td>
+                    <td>{baris.documentDate}</td>
+                    <td data-numeric="true">{formatAmount(baris.taxBase, baris.currency)}</td>
+                    <td data-numeric="true">{formatAmount(baris.taxTotal, baris.currency)}</td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+
+          <Select
+            id="kode-pajak-terbit"
+            label="Kode pajak"
+            helper="Hanya kode PPN keluaran yang masa berlakunya masih terbuka."
+            value={kodeDipilih}
+            options={kode.map((item) => ({
+              value: item.id,
+              label: `${item.code} — ${formatTarif(item.rate)} sejak ${item.validFrom}`,
+            }))}
+            onChange={setKodeDipilih}
+          />
+
+          {bedaPelanggan ? (
+            <p className={styles.noticeDanger} role="alert">
+              Faktur yang dipilih milik pelanggan berbeda. Satu faktur pajak membawa satu NPWP, jadi
+              terbitkan terpisah per pelanggan.
+            </p>
+          ) : null}
+          {tanpaNpwp ? (
+            <p className={styles.noticeDanger} role="alert">
+              Ada pelanggan yang NPWP-nya belum diisi. Faktur pajak keluaran memerlukan NPWP
+              pelanggan — lengkapi di Pelanggan → Data Pajak, lalu muat ulang halaman ini.
+            </p>
+          ) : null}
+
+          <div className={styles.row}>
+            <Button loading={menyimpan} disabled={!dapatTerbit} onClick={() => void terbitkan()}>
+              Terbitkan faktur pajak
+            </Button>
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
 export function DetailFakturKeluaran({
   konteks,
   invoiceId,
@@ -639,6 +882,158 @@ export function DetailFakturKeluaran({
         </Button>
       </div>
     </div>
+  )
+}
+
+/**
+ * Layar Pajak — Faktur Pajak Masukan.
+ *
+ * Kolom "Kelengkapan" tidak pernah berhenti pada bendera merah. Ia menyebutkan
+ * kalimat cacatnya apa adanya — "NPWP vendor kosong", bukan "tidak valid" —
+ * karena orang yang membuka layar ini sedang mencari apa yang harus
+ * dilengkapi, bukan konfirmasi bahwa ada yang salah.
+ *
+ * Kalimat itu datang dari `input_tax_invoice_defects`, ditulis saat validasi
+ * berjalan. Layar tidak menerjemahkan kode cacat menjadi kalimat sendiri:
+ * terjemahan kedua akan menyimpang dari yang pertama begitu aturannya berubah.
+ */
+interface FakturMasukan {
+  readonly id: string
+  readonly supplierNumber: string
+  readonly vendorName: string
+  readonly vendorNpwp: string | null
+  readonly vendorIsPkp: boolean
+  readonly invoiceDate: string
+  readonly taxPeriod: string
+  readonly creditPeriod: string | null
+  readonly taxCode: string
+  readonly baseAmount: number
+  readonly taxAmount: number
+  readonly isCreditable: boolean
+  readonly validatedAt: string | null
+  readonly defects: readonly { readonly code: string; readonly detail: string }[]
+}
+
+export function DaftarFakturMasukan({ konteks }: { readonly konteks: Konteks }): ReactNode {
+  const [state, setState] = useState<TableState<FakturMasukan>>({ kind: 'loading' })
+
+  async function muat(): Promise<void> {
+    setState({ kind: 'loading' })
+    try {
+      const jawaban = await api.get<FakturMasukan[]>(
+        `${perusahaan(konteks.companyId)}/input-tax-invoices`,
+      )
+      setState(
+        jawaban.data.length === 0
+          ? { kind: 'empty' }
+          : {
+              kind: 'ready',
+              rows: jawaban.data,
+              total: jawaban.data.length,
+              nextCursor: jawaban.meta?.next_cursor ?? null,
+            },
+      )
+    } catch (galat) {
+      setState({
+        kind: 'error',
+        message:
+          galat instanceof ApiError ? galat.message : 'Tidak dapat memuat faktur pajak masukan.',
+      })
+    }
+  }
+
+  useEffect(() => {
+    void muat()
+  }, [konteks.companyId])
+
+  const columns: readonly Column<FakturMasukan>[] = useMemo(
+    () => [
+      {
+        id: 'number',
+        header: 'Nomor faktur vendor',
+        identifier: true,
+        sortable: true,
+        cell: (row) => row.supplierNumber,
+        sortValue: (row) => row.supplierNumber,
+      },
+      {
+        id: 'vendor',
+        header: 'Vendor',
+        cell: (row) => (row.vendorIsPkp ? row.vendorName : `${row.vendorName} (non-PKP)`),
+      },
+      { id: 'npwp', header: 'NPWP vendor', cell: (row) => row.vendorNpwp ?? '—' },
+      {
+        id: 'date',
+        header: 'Tanggal',
+        sortable: true,
+        cell: (row) => row.invoiceDate,
+        sortValue: (row) => row.invoiceDate,
+      },
+      { id: 'period', header: 'Masa', cell: (row) => row.taxPeriod },
+      {
+        id: 'credit_period',
+        header: 'Masa kredit',
+        // Boleh berbeda dari masa fakturnya. Menyamakan keduanya di layar akan
+        // menyembunyikan faktur yang sengaja dikreditkan di masa lain.
+        cell: (row) => row.creditPeriod ?? '—',
+      },
+      {
+        id: 'tax',
+        header: 'PPN',
+        align: 'end',
+        sortable: true,
+        cell: (row) => formatAmount(row.taxAmount, konteks.currency),
+        sortValue: (row) => row.taxAmount,
+      },
+      {
+        id: 'kelengkapan',
+        header: 'Kelengkapan',
+        cell: (row) => {
+          if (row.validatedAt === null) return <Badge>Belum divalidasi</Badge>
+          if (row.defects.length === 0) {
+            return (
+              <Badge tone={row.isCreditable ? 'success' : 'warning'}>
+                {row.isCreditable ? 'Lengkap — dapat dikreditkan' : 'Lengkap — tidak dikreditkan'}
+              </Badge>
+            )
+          }
+          return (
+            <span>
+              <Badge tone="danger">
+                {row.defects.length === 1 ? '1 syarat kurang' : `${row.defects.length} syarat kurang`}
+              </Badge>
+              {/* Kalimatnya ikut ditampilkan, bukan disembunyikan di balik
+                  tooltip: yang tersembunyi tidak menolong siapa pun yang
+                  sedang menelusuri daftar. */}
+              <ul>
+                {row.defects.map((cacat) => (
+                  <li key={cacat.code}>{cacat.detail}</li>
+                ))}
+              </ul>
+            </span>
+          )
+        },
+      },
+    ],
+    [konteks.currency],
+  )
+
+  return (
+    <DataTable
+      caption="Faktur Pajak Masukan"
+      columns={columns}
+      state={state}
+      rowId={(row) => row.id}
+      // Belum ada layar detail faktur masukan, dan menautkan ke halaman yang
+      // tidak ada lebih buruk daripada menautkan ke diri sendiri. Seluruh yang
+      // perlu dibaca — termasuk apa yang kurang — sudah ada di baris ini.
+      rowHref={() => '#/pajak/masukan'}
+      filter={{}}
+      sort={[]}
+      companyName={konteks.companyName}
+      onSortChange={() => undefined}
+      onRetry={() => void muat()}
+    />
   )
 }
 

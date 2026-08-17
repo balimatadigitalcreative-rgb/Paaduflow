@@ -1,4 +1,5 @@
 import type { AppServices } from '#application/app-services'
+import { explainStateRestriction } from '#shared/document-lifecycle'
 import { Type } from '@sinclair/typebox'
 
 import { requireCompany, requireUser, withIdempotency, type PaaduServer } from '../../app.js'
@@ -334,14 +335,93 @@ export function registerPurchasingRoutes(app: PaaduServer, services: AppServices
               return { status: 403, body: { success: false, message: 'Tidak diizinkan.', errors: [izin.denial] } }
             }
 
-            const nomor = await scoped.purchasing.documents.submit(
+            const hasil = await scoped.purchasing.documents.submit(
               request.params.id,
               company.companyId,
               request.body.doc_type,
               request.body.period_key,
               user.userId,
             )
-            return { status: 200, body: { success: true, data: { number: nomor } } }
+
+            if (hasil.kind === 'not_found') {
+              return {
+                status: 404,
+                body: { success: false, message: 'Dokumen tidak ditemukan.', errors: [{ code: 'not_found' }] },
+              }
+            }
+            if (hasil.kind === 'state_restricted') {
+              return {
+                status: 409,
+                body: {
+                  success: false,
+                  message: explainStateRestriction('diajukan', hasil.current, hasil.available),
+                  errors: [{ code: 'state_restricted', current: hasil.current }],
+                },
+              }
+            }
+            return { status: 200, body: { success: true, data: { number: hasil.number } } }
+          },
+        ),
+      )
+    },
+  )
+
+  /**
+   * Mengajukan ke persetujuan — `submitted → pending_approval`.
+   *
+   * Pesanan pembelian tidak punya jalan langsung dari `submitted` ke
+   * `approved`; ia wajib melewati sini. Rute ini sebelumnya tidak ada, dan
+   * ketiadaannya membuat seluruh tabel transisi pesanan pembelian tidak dapat
+   * dijalani — tersembunyi selama `approve` masih menggeser dokumen apa pun.
+   */
+  app.post(
+    '/v1/companies/:companyId/purchase-documents/:id/request-approval',
+    { schema: { params: JalurDokumen } },
+    async (request, reply) => {
+      if (!(await requireUser(request, reply, services))) return reply
+      if (!(await requireCompany(request, reply, services, request.params.companyId))) return reply
+
+      const user = request.authenticated!
+      const company = request.company!
+
+      return withIdempotency(request, reply, services, async () =>
+        services.withCompanyContext(
+          { tenantId: company.tenantId, userId: user.userId },
+          async (scoped) => {
+            const izin = await scoped.authorization.authorize(
+              { userId: user.userId, companyId: company.companyId },
+              { key: 'pembelian.pesanan.kelola', scope: 'company', ask: 'Admin Company' },
+            )
+            if (!izin.allowed) {
+              return { status: 403, body: { success: false, message: 'Tidak diizinkan.', errors: [izin.denial] } }
+            }
+
+            const hasil = await scoped.purchasing.documents.requestApproval(
+              request.params.id,
+              user.userId,
+            )
+
+            if (hasil.kind === 'not_found') {
+              return {
+                status: 404,
+                body: { success: false, message: 'Dokumen tidak ditemukan.', errors: [{ code: 'not_found' }] },
+              }
+            }
+            if (hasil.kind === 'state_restricted') {
+              return {
+                status: 409,
+                body: {
+                  success: false,
+                  message: explainStateRestriction(
+                    'diajukan ke persetujuan',
+                    hasil.current,
+                    hasil.available,
+                  ),
+                  errors: [{ code: 'state_restricted', current: hasil.current }],
+                },
+              }
+            }
+            return { status: 200, body: { success: true } }
           },
         ),
       )
@@ -369,7 +449,25 @@ export function registerPurchasingRoutes(app: PaaduServer, services: AppServices
             if (!izin.allowed) {
               return { status: 403, body: { success: false, message: 'Tidak diizinkan.', errors: [izin.denial] } }
             }
-            await scoped.purchasing.documents.approve(request.params.id, user.userId)
+            const hasil = await scoped.purchasing.documents.approve(request.params.id, user.userId)
+
+            if (hasil.kind === 'not_found') {
+              return {
+                status: 404,
+                body: { success: false, message: 'Dokumen tidak ditemukan.', errors: [{ code: 'not_found' }] },
+              }
+            }
+            if (hasil.kind === 'state_restricted') {
+              // 409: keadaannya yang menghalangi, bukan bentuk permintaannya.
+              return {
+                status: 409,
+                body: {
+                  success: false,
+                  message: explainStateRestriction('disetujui', hasil.current, hasil.available),
+                  errors: [{ code: 'state_restricted', current: hasil.current }],
+                },
+              }
+            }
             return { status: 200, body: { success: true } }
           },
         ),

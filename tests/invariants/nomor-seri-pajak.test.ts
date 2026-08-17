@@ -34,7 +34,26 @@ let customerId: string
 let salesDocumentId: string
 let kodePpn: string
 
+/**
+ * Faktur penjualan baru untuk setiap draf.
+ *
+ * Satu faktur penjualan hanya boleh tercakup satu faktur pajak yang masih
+ * berlaku — kalau seluruh draf di berkas ini berbagi satu sumber, yang diuji
+ * bukan lagi penomoran seri melainkan penolakan sumber ganda.
+ */
+async function fakturPenjualanBaru(): Promise<string> {
+  const id = randomUUID()
+  await admin.query(
+    `INSERT INTO sales_documents
+       (id, tenant_id, company_id, doc_type, customer_id, document_date, currency, total)
+     VALUES ($1, $2, $3, 'invoice', $4, DATE '2026-03-01', 'IDR', 1110000)`,
+    [id, tenant.tenantId, tenant.companyId, customerId],
+  )
+  return id
+}
+
 async function buatDraf(tanggal = '2026-03-10'): Promise<string> {
+  const salesDocumentId = await fakturPenjualanBaru()
   return unitOfWork.inTenant({ tenantId: tenant.tenantId, userId: null }, async (db) => {
     const hasil = await createTax(db, tenant.tenantId).outputInvoices.create({
       companyId: tenant.companyId,
