@@ -1,3 +1,4 @@
+import type { StatusGuardResult } from '#shared/document-lifecycle'
 import { calculateDocument } from '#shared/line-items'
 
 /**
@@ -55,9 +56,19 @@ export interface SalesWritePort {
     })[],
   ): Promise<void>
   /** Mengambil nomor dan memindahkan status. Nomor diberikan saat submit — D-007. */
-  submit(documentId: string, companyId: string, periodKey: string, by: string): Promise<string>
-  approve(documentId: string, by: string): Promise<void>
+  submit(documentId: string, companyId: string, periodKey: string, by: string): Promise<SubmitResult>
+  approve(documentId: string, by: string): Promise<StatusGuardResult>
 }
+
+/**
+ * Submit berhasil membawa nomornya; gagal membawa sebabnya.
+ *
+ * Nomor tidak pernah keluar dari jalur gagal — bukan string kosong, bukan null
+ * yang harus ditebak pemanggilnya.
+ */
+export type SubmitResult =
+  | { readonly kind: 'applied'; readonly number: string }
+  | Exclude<StatusGuardResult, { kind: 'applied' }>
 
 export class SalesDocumentService {
   constructor(
@@ -111,16 +122,25 @@ export class SalesDocumentService {
     return { documentId, total: hasil.total }
   }
 
+  /** Nomor diberikan di sini — D-007. Ditolak bila status asalnya bukan draf. */
   async submit(
     documentId: string,
     companyId: string,
     periodKey: string,
     by: string,
-  ): Promise<string> {
+  ): Promise<SubmitResult> {
     return this.writes.submit(documentId, companyId, periodKey, by)
   }
 
-  async approve(documentId: string, by: string): Promise<void> {
-    await this.writes.approve(documentId, by)
+  /**
+   * Menyetujui dokumen.
+   *
+   * Penjaganya ada di lapisan basis data, dan sengaja di sana: UPDATE yang
+   * status asalnya tidak sah mengenai nol baris. Sebelum ini, `approve`
+   * menggeser dokumen apa pun — termasuk draf — sehingga submit dan penomoran
+   * dapat dilewati dan dokumen mencapai `posted` tanpa pernah bernomor.
+   */
+  async approve(documentId: string, by: string): Promise<StatusGuardResult> {
+    return this.writes.approve(documentId, by)
   }
 }

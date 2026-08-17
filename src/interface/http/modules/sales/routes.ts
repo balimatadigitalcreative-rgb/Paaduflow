@@ -1,4 +1,5 @@
 import type { AppServices, CompanyScopedServices } from '#application/app-services'
+import { explainStateRestriction } from '#shared/document-lifecycle'
 import { Type } from '@sinclair/typebox'
 import type { FastifyReply, FastifyRequest } from 'fastify'
 
@@ -213,13 +214,22 @@ export function registerSalesRoutes(app: PaaduServer, services: AppServices): vo
         'Admin Company',
         async (scoped, ctx) => {
           // Nomor diberikan di sini, bukan saat draf dibuat — D-007.
-          const nomor = await scoped.sales.documents.submit(
+          const hasil = await scoped.sales.documents.submit(
             request.params.id,
             ctx.companyId,
             request.body.period_key,
             ctx.userId,
           )
-          return { status: 200, body: { success: true, data: { number: nomor } } }
+
+          if (hasil.kind === 'not_found') return tolak(404, 'not_found', 'Faktur tidak ditemukan.')
+          if (hasil.kind === 'state_restricted') {
+            return tolak(
+              409,
+              'state_restricted',
+              explainStateRestriction('diajukan', hasil.current, hasil.available),
+            )
+          }
+          return { status: 200, body: { success: true, data: { number: hasil.number } } }
         },
       ),
   )
@@ -238,7 +248,18 @@ export function registerSalesRoutes(app: PaaduServer, services: AppServices): vo
           const dokumen = await scoped.sales.queries.detail(ctx.companyId, request.params.id)
           if (dokumen === null) return tolak(404, 'not_found', 'Faktur tidak ditemukan.')
 
-          await scoped.sales.documents.approve(request.params.id, ctx.userId)
+          const hasil = await scoped.sales.documents.approve(request.params.id, ctx.userId)
+
+          if (hasil.kind === 'not_found') return tolak(404, 'not_found', 'Faktur tidak ditemukan.')
+          if (hasil.kind === 'state_restricted') {
+            // 409: keadaannya yang menghalangi, bukan bentuk permintaannya —
+            // sama dengan penolakan posting di bawah.
+            return tolak(
+              409,
+              'state_restricted',
+              explainStateRestriction('disetujui', hasil.current, hasil.available),
+            )
+          }
           return { status: 200, body: { success: true } }
         },
       ),

@@ -80,3 +80,32 @@ export function isEditable(status: LifecycleStatus): boolean {
 export function needsNumber(to: LifecycleStatus): boolean {
   return to === 'submitted'
 }
+
+/**
+ * Hasil perpindahan status yang dijaga basis data.
+ *
+ * `evaluateTransition` di atas menjaga di lapisan layanan, dengan pesan yang
+ * menuntun. Tipe ini menjaga di lapisan kedua: UPDATE-nya sendiri menolak
+ * bergerak bila status asalnya tidak sah, sehingga layanan yang lupa memeriksa
+ * tidak dapat menggeser dokumen diam-diam.
+ *
+ * Dua lapis dengan sengaja. Yang pertama menjelaskan, yang kedua menjamin.
+ */
+export type StatusGuardResult =
+  | { readonly kind: 'applied' }
+  | {
+      readonly kind: 'state_restricted'
+      readonly current: LifecycleStatus
+      readonly available: readonly LifecycleStatus[]
+    }
+  | { readonly kind: 'not_found' }
+
+/** Kalimat penolakan yang menyebutkan keadaan sekarang dan jalan yang tersisa. */
+export function explainStateRestriction(
+  action: string,
+  current: LifecycleStatus,
+  available: readonly LifecycleStatus[],
+): string {
+  const jalan = available.length === 0 ? 'tidak ada' : available.join(', ')
+  return `Dokumen berstatus ${current} tidak dapat ${action}. Tujuan yang tersedia dari status ini: ${jalan}.`
+}

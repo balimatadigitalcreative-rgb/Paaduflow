@@ -1,5 +1,9 @@
+import { randomUUID } from 'node:crypto'
+
 import { Pool } from 'pg'
 import { afterAll, beforeAll, expect, test } from 'vitest'
+
+import { seedTenant, withClient, type Tenant } from './database.js'
 
 /**
  * Kelengkapan mesin status terhadap Flow_Archetypes §2.
@@ -13,6 +17,8 @@ import { afterAll, beforeAll, expect, test } from 'vitest'
  */
 
 let admin: Pool
+let tenant: Tenant
+let customerId: string
 
 /** Perpindahan yang Archetype 2 tetapkan untuk setiap dokumen bersiklus penuh. */
 const WAJIB: readonly [string, string][] = [
@@ -29,8 +35,19 @@ const WAJIB: readonly [string, string][] = [
   ['submitted', 'draft'],
 ]
 
-beforeAll(() => {
+beforeAll(async () => {
   admin = new Pool({ connectionString: process.env.TEST_DATABASE_URL })
+
+  await withClient(async (client) => {
+    tenant = await seedTenant(client, `mesinstatus-${randomUUID().slice(0, 8)}`)
+  })
+
+  customerId = randomUUID()
+  await admin.query(
+    `INSERT INTO customers (id, tenant_id, company_id, code, name, currency)
+     VALUES ($1, $2, $3, 'C-01', 'PT Uji Status', 'IDR')`,
+    [customerId, tenant.tenantId, tenant.companyId],
+  )
 })
 
 afterAll(async () => {
@@ -90,6 +107,113 @@ test('void selalu mensyaratkan jurnal pembalik', async () => {
 
   expect(rows.length).toBeGreaterThan(0)
   for (const row of rows) expect(row.requires).toContain('reversal_journal')
+})
+
+/**
+ * Penjaga status di lapisan basis data.
+ *
+ * Sebelum ini, `approve` melakukan UPDATE tanpa syarat apa pun, sehingga draf
+ * dapat langsung disetujui — submit dan penomoran terlewat, dan dokumen dapat
+ * mencapai `posted` tanpa pernah bernomor. Ditemukan saat menjalankan alur
+ * penuh dari luar, bukan oleh pembacaan ulang.
+ *
+ * Yang diuji di sini bukan tabelnya, melainkan bahwa UPDATE-nya benar-benar
+ * menolak. Tabel yang benar tanpa penegakan tidak menahan apa pun.
+ */
+async function siapkanFaktur(status: string): Promise<string> {
+  const id = randomUUID()
+  await admin.query(
+    `INSERT INTO sales_documents
+       (id, tenant_id, company_id, doc_type, customer_id, document_date, currency,
+        total, lifecycle_status)
+     VALUES ($1, $2, $3, 'invoice', $4, DATE '2026-08-16', 'IDR', 0, $5::lifecycle_status)`,
+    [id, tenant.tenantId, tenant.companyId, customerId, status],
+  )
+  return id
+}
+
+/** Perpindahan langsung ke `approved`, lewat SQL yang sama dengan repository. */
+async function cobaSetujui(documentId: string): Promise<number> {
+  const hasil = await admin.query(
+    `UPDATE sales_documents d
+        SET lifecycle_status = 'approved', approved_at = now()
+      WHERE d.tenant_id = $1 AND d.id = $2
+        AND EXISTS (
+          SELECT 1 FROM document_transitions t
+           WHERE t.doc_type = d.doc_type::text
+             AND t.from_status = d.lifecycle_status
+             AND t.to_status = 'approved'
+        )`,
+    [tenant.tenantId, documentId],
+  )
+  return hasil.rowCount ?? 0
+}
+
+test('approve MENOLAK draf — submit dan penomoran tidak dapat dilewati', async () => {
+  const draf = await siapkanFaktur('draft')
+  expect(await cobaSetujui(draf)).toBe(0)
+
+  const { rows } = await admin.query<{ status: string; number: string | null }>(
+    'SELECT lifecycle_status AS status, number FROM sales_documents WHERE tenant_id = $1 AND id = $2',
+    [tenant.tenantId, draf],
+  )
+  // Tetap draf, dan tetap tanpa nomor. Inilah keadaan yang dulu bisa dilewati.
+  expect(rows[0]!.status).toBe('draft')
+  expect(rows[0]!.number).toBeNull()
+})
+
+test('approve menerima status asal yang memang sah menurut tabel', async () => {
+  // `invoice` punya submitted → approved DAN pending_approval → approved.
+  // Keduanya harus lolos; menyempitkannya ke salah satu akan mematahkan alur
+  // yang sah, bukan menutup lubang.
+  for (const asal of ['submitted', 'pending_approval']) {
+    const dokumen = await siapkanFaktur(asal)
+    expect(await cobaSetujui(dokumen)).toBe(1)
+  }
+})
+
+test('setiap transisi menolak seluruh status asal yang tidak terdaftar', async () => {
+  const { rows: sah } = await admin.query<{ from_status: string }>(
+    `SELECT from_status FROM document_transitions
+      WHERE doc_type = 'invoice' AND to_status = 'approved'`,
+  )
+  const asalSah = new Set(sah.map((baris) => baris.from_status))
+
+  // Seluruh status lain diuji, bukan hanya draft. Lubang yang ditutup untuk
+  // satu status saja adalah lubang yang pindah, bukan lubang yang hilang.
+  const semua = ['draft', 'submitted', 'pending_approval', 'approved', 'rejected', 'cancelled']
+  const bocor: string[] = []
+
+  for (const asal of semua) {
+    if (asalSah.has(asal)) continue
+    const dokumen = await siapkanFaktur(asal)
+    if ((await cobaSetujui(dokumen)) !== 0) bocor.push(asal)
+  }
+
+  expect(bocor).toEqual([])
+})
+
+test('posting menolak status asal selain approved', async () => {
+  const cobaPosting = async (documentId: string): Promise<number> => {
+    const hasil = await admin.query(
+      `UPDATE sales_documents d
+          SET lifecycle_status = 'posted', posted_at = now()
+        WHERE d.tenant_id = $1 AND d.id = $2
+          AND EXISTS (
+            SELECT 1 FROM document_transitions t
+             WHERE t.doc_type = d.doc_type::text
+               AND t.from_status = d.lifecycle_status
+               AND t.to_status = 'posted'
+          )`,
+      [tenant.tenantId, documentId],
+    )
+    return hasil.rowCount ?? 0
+  }
+
+  for (const asal of ['draft', 'submitted', 'pending_approval']) {
+    expect(await cobaPosting(await siapkanFaktur(asal))).toBe(0)
+  }
+  expect(await cobaPosting(await siapkanFaktur('approved'))).toBe(1)
 })
 
 test('penarikan kembali hanya boleh dilakukan pengajunya sendiri', async () => {

@@ -1,6 +1,7 @@
 import type {
   PurchaseDocType,
   PurchaseDraftLine,
+  PurchaseSubmitResult,
   PurchaseWritePort,
 } from '#application/purchasing/documents'
 import type {
@@ -12,7 +13,27 @@ import type { OrderLineForReceipt, ReceiptWritePort } from '#application/purchas
 import type { MatchStatus, MatchTolerance } from '#domain/purchasing/three-way-match'
 import { NO_TOLERANCE } from '#domain/purchasing/three-way-match'
 import type { Queryable } from '#infrastructure/db/queryable'
-import type { LifecycleStatus, Transition } from '#shared/document-lifecycle'
+import type {
+  LifecycleStatus,
+  StatusGuardResult,
+  Transition,
+} from '#shared/document-lifecycle'
+
+/**
+ * Syarat perpindahan status, ditulis di dalam UPDATE-nya sendiri.
+ *
+ * Kembarannya ada di repository Penjualan. Keduanya membaca tabel yang sama,
+ * `document_transitions`, sehingga aturannya tetap satu meski penegakannya di
+ * dua tempat — dan `purchase_order` yang tidak punya `submitted → approved`
+ * ditolak di sini tanpa satu baris pun aturan khusus.
+ */
+const SYARAT_TRANSISI = `
+  AND EXISTS (
+    SELECT 1 FROM document_transitions t
+     WHERE t.doc_type = d.doc_type::text
+       AND t.from_status = d.lifecycle_status
+       AND t.to_status = $TUJUAN
+  )`
 
 /**
  * Repository Pembelian.
@@ -228,12 +249,22 @@ export class PostgresPurchaseRepository
   }
 
   async markPosted(billId: string, postedBy: string, at: Date): Promise<void> {
-    await this.db.query(
-      `UPDATE purchase_documents
+    const hasil = await this.db.query(
+      `UPDATE purchase_documents d
           SET lifecycle_status = 'posted', posted_at = $3, posted_by = $4
-        WHERE tenant_id = $1 AND id = $2`,
+        WHERE d.tenant_id = $1 AND d.id = $2
+          ${SYARAT_TRANSISI.replace('$TUJUAN', `'posted'`)}`,
       [this.tenantId, billId, at, postedBy],
     )
+
+    // Layanan sudah memeriksa transisinya. Penolakan di sini berarti kedua
+    // lapis berbeda pendapat — cacat, bukan masukan yang salah.
+    if (hasil.rowCount !== 1) {
+      throw new Error(
+        `Posting tagihan ditolak penjaga status basis data untuk dokumen ${billId}. ` +
+          'Lapisan layanan dan document_transitions tidak sepakat.',
+      )
+    }
   }
 
   // ── PurchaseWritePort ───────────────────────────────────────────────────
@@ -309,7 +340,19 @@ export class PostgresPurchaseRepository
     docType: PurchaseDocType,
     periodKey: string,
     by: string,
-  ): Promise<string> {
+  ): Promise<PurchaseSubmitResult> {
+    // Transisi diperiksa dan baris dikunci lebih dulu — alasan yang sama dengan
+    // di Penjualan: nomor dokumen adalah deret tanpa celah.
+    const { rows: boleh } = await this.db.query(
+      `SELECT 1
+         FROM purchase_documents d
+        WHERE d.tenant_id = $1 AND d.id = $2
+          ${SYARAT_TRANSISI.replace('$TUJUAN', `'submitted'`)}
+          FOR UPDATE`,
+      [this.tenantId, documentId],
+    )
+    if (boleh.length === 0) return this.jelaskanPenolakan(documentId)
+
     const { rows } = await this.db.query<{ nomor: string }>(
       'SELECT paadu.next_document_number($1, $2, $3) AS nomor',
       [companyId, AWALAN[docType], periodKey],
@@ -317,21 +360,68 @@ export class PostgresPurchaseRepository
     const nomor = rows[0]!.nomor
 
     await this.db.query(
-      `UPDATE purchase_documents
+      `UPDATE purchase_documents d
           SET number = $3, lifecycle_status = 'submitted', submitted_at = now(), submitted_by = $4
-        WHERE tenant_id = $1 AND id = $2`,
+        WHERE d.tenant_id = $1 AND d.id = $2
+          ${SYARAT_TRANSISI.replace('$TUJUAN', `'submitted'`)}`,
       [this.tenantId, documentId, nomor, by],
     )
-    return nomor
+    return { kind: 'applied', number: nomor }
   }
 
-  async approve(documentId: string, by: string): Promise<void> {
-    await this.db.query(
-      `UPDATE purchase_documents
-          SET lifecycle_status = 'approved', approved_at = now(), approved_by = $3
-        WHERE tenant_id = $1 AND id = $2`,
+  /**
+   * Mengajukan dokumen ke persetujuan.
+   *
+   * Ada karena tabel transisi menuntutnya dan tidak ada satu baris kode pun yang
+   * pernah menulis `pending_approval` — pesanan pembelian karena itu tidak
+   * pernah punya jalan sah menuju `approved`. Sebelum penjaga status dipasang,
+   * ketiadaan langkah ini tidak terasa: `approve` menggeser dokumen apa pun.
+   */
+  async requestApproval(documentId: string, by: string): Promise<StatusGuardResult> {
+    const hasil = await this.db.query(
+      `UPDATE purchase_documents d
+          SET lifecycle_status = 'pending_approval', updated_at = now(), updated_by = $3
+        WHERE d.tenant_id = $1 AND d.id = $2
+          ${SYARAT_TRANSISI.replace('$TUJUAN', `'pending_approval'`)}`,
       [this.tenantId, documentId, by],
     )
+
+    if (hasil.rowCount === 1) return { kind: 'applied' }
+    return this.jelaskanPenolakan(documentId)
+  }
+
+  async approve(documentId: string, by: string): Promise<StatusGuardResult> {
+    const hasil = await this.db.query(
+      `UPDATE purchase_documents d
+          SET lifecycle_status = 'approved', approved_at = now(), approved_by = $3
+        WHERE d.tenant_id = $1 AND d.id = $2
+          ${SYARAT_TRANSISI.replace('$TUJUAN', `'approved'`)}`,
+      [this.tenantId, documentId, by],
+    )
+
+    if (hasil.rowCount === 1) return { kind: 'applied' }
+    return this.jelaskanPenolakan(documentId)
+  }
+
+  /** Menjelaskan kenapa perpindahan tidak mengenai baris apa pun. */
+  private async jelaskanPenolakan(
+    documentId: string,
+  ): Promise<Exclude<StatusGuardResult, { kind: 'applied' }>> {
+    const { rows } = await this.db.query<{ status: LifecycleStatus; tersedia: LifecycleStatus[] }>(
+      `SELECT d.lifecycle_status AS status,
+              COALESCE(array_agg(t.to_status ORDER BY t.to_status)
+                       FILTER (WHERE t.to_status IS NOT NULL), '{}') AS tersedia
+         FROM purchase_documents d
+         LEFT JOIN document_transitions t
+           ON t.doc_type = d.doc_type::text AND t.from_status = d.lifecycle_status
+        WHERE d.tenant_id = $1 AND d.id = $2
+        GROUP BY d.lifecycle_status`,
+      [this.tenantId, documentId],
+    )
+
+    const baris = rows[0]
+    if (baris === undefined) return { kind: 'not_found' }
+    return { kind: 'state_restricted', current: baris.status, available: baris.tersedia }
   }
 
   // ── ReceiptWritePort ────────────────────────────────────────────────────

@@ -226,6 +226,20 @@ async function siapkanTagihan(options: {
     ).status,
   ).toBe(200)
 
+  // Pesanan pembelian wajib melewati persetujuan eksplisit: tabel transisi
+  // tidak memberinya jalan langsung dari `submitted` ke `approved`, berbeda
+  // dengan tagihan. Sebelum penjaga status dipasang, langkah ini terlewat
+  // tanpa ada yang menolak.
+  expect(
+    (
+      await panggil(
+        'POST',
+        `${dasar()}/purchase-documents/${pesananId}/request-approval`,
+        tokenPembeli,
+      )
+    ).status,
+  ).toBe(200)
+
   expect(
     (await panggil('POST', `${dasar()}/purchase-documents/${pesananId}/approve`, tokenAtasan))
       .status,

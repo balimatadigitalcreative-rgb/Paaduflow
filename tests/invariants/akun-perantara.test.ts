@@ -210,6 +210,9 @@ async function jalankan(siklus: Siklus, periode: string): Promise<void> {
       periode,
       PEMBUAT,
     )
+    // Pesanan pembelian melewati persetujuan eksplisit — tabel transisi tidak
+    // memberinya jalan langsung dari `submitted` ke `approved`.
+    await layanan.documents.requestApproval(pesanan.documentId, PEMBUAT)
     await layanan.documents.approve(pesanan.documentId, PENYETUJU)
 
     const { rows: barisPesanan } = await db.query<{ id: string; line_no: number }>(
