@@ -7,6 +7,7 @@ import type {
   ItemOption,
   LedgerEntry,
   MasterDataPort,
+  InputTaxInvoiceSummary,
   MatchPanel,
   OutputTaxInvoiceDetail,
   OutputTaxInvoiceSummary,
@@ -910,5 +911,76 @@ export class PostgresTaxQueries implements TaxQueryPort {
         taxAmount: Number(row.tax_amount),
       })),
     }
+  }
+
+  /**
+   * Cacat ikut dibawa bersama barisnya, bukan diambil layar satu per satu.
+   *
+   * Pertanyaan yang dibawa orang ke daftar ini adalah "mana yang belum lengkap,
+   * dan apa yang kurang". Mengambil cacat lewat permintaan terpisah per faktur
+   * membuat jawaban kedua datang belakangan — dan daftar yang sempat
+   * menampilkan semuanya seolah lengkap adalah daftar yang menyesatkan.
+   */
+  async inputInvoices(
+    companyId: string,
+    page: PageRequest,
+  ): Promise<Page<InputTaxInvoiceSummary>> {
+    const limit = batas(page)
+    const { rows } = await this.db.query<{
+      id: string
+      supplier_number: string
+      vendor_name: string
+      vendor_npwp: string | null
+      vendor_is_pkp: boolean
+      invoice_date: unknown
+      tax_period: string
+      credit_period: string | null
+      tax_code: string
+      base_amount: string
+      tax_amount: string
+      is_creditable: boolean
+      validated_at: Date | null
+      defects: readonly { code: string; detail: string }[]
+    }>(
+      `SELECT f.id, f.supplier_number, v.name AS vendor_name, f.vendor_npwp, f.vendor_is_pkp,
+              f.invoice_date, f.tax_period, f.credit_period, c.code AS tax_code,
+              f.base_amount, f.tax_amount, f.is_creditable, f.validated_at,
+              COALESCE((
+                SELECT json_agg(
+                         json_build_object('code', d.defect_code, 'detail', d.detail)
+                         ORDER BY d.defect_code
+                       )
+                  FROM input_tax_invoice_defects d
+                 WHERE d.tenant_id = f.tenant_id AND d.input_tax_invoice_id = f.id
+              ), '[]'::json) AS defects
+         FROM input_tax_invoices f
+         JOIN vendors v ON v.tenant_id = f.tenant_id AND v.id = f.vendor_id
+         JOIN tax_codes c ON c.tenant_id = f.tenant_id AND c.id = f.tax_code_id
+        WHERE f.tenant_id = $1 AND f.company_id = $2
+          AND ($3::uuid IS NULL OR f.id < $3::uuid)
+        ORDER BY f.id DESC
+        LIMIT $4`,
+      [this.tenantId, companyId, page.cursor ?? null, limit + 1],
+    )
+
+    return halaman(
+      rows.map((row) => ({
+        id: row.id,
+        supplierNumber: row.supplier_number,
+        vendorName: row.vendor_name,
+        vendorNpwp: row.vendor_npwp,
+        vendorIsPkp: row.vendor_is_pkp,
+        invoiceDate: tanggal(row.invoice_date),
+        taxPeriod: row.tax_period,
+        creditPeriod: row.credit_period,
+        taxCode: row.tax_code,
+        baseAmount: Number(row.base_amount),
+        taxAmount: Number(row.tax_amount),
+        isCreditable: row.is_creditable,
+        validatedAt: row.validated_at === null ? null : row.validated_at.toISOString(),
+        defects: row.defects.map((item) => ({ code: item.code, detail: item.detail })),
+      })),
+      limit,
+    )
   }
 }

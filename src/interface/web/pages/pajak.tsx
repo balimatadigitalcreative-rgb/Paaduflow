@@ -643,6 +643,158 @@ export function DetailFakturKeluaran({
 }
 
 /**
+ * Layar Pajak — Faktur Pajak Masukan.
+ *
+ * Kolom "Kelengkapan" tidak pernah berhenti pada bendera merah. Ia menyebutkan
+ * kalimat cacatnya apa adanya — "NPWP vendor kosong", bukan "tidak valid" —
+ * karena orang yang membuka layar ini sedang mencari apa yang harus
+ * dilengkapi, bukan konfirmasi bahwa ada yang salah.
+ *
+ * Kalimat itu datang dari `input_tax_invoice_defects`, ditulis saat validasi
+ * berjalan. Layar tidak menerjemahkan kode cacat menjadi kalimat sendiri:
+ * terjemahan kedua akan menyimpang dari yang pertama begitu aturannya berubah.
+ */
+interface FakturMasukan {
+  readonly id: string
+  readonly supplierNumber: string
+  readonly vendorName: string
+  readonly vendorNpwp: string | null
+  readonly vendorIsPkp: boolean
+  readonly invoiceDate: string
+  readonly taxPeriod: string
+  readonly creditPeriod: string | null
+  readonly taxCode: string
+  readonly baseAmount: number
+  readonly taxAmount: number
+  readonly isCreditable: boolean
+  readonly validatedAt: string | null
+  readonly defects: readonly { readonly code: string; readonly detail: string }[]
+}
+
+export function DaftarFakturMasukan({ konteks }: { readonly konteks: Konteks }): ReactNode {
+  const [state, setState] = useState<TableState<FakturMasukan>>({ kind: 'loading' })
+
+  async function muat(): Promise<void> {
+    setState({ kind: 'loading' })
+    try {
+      const jawaban = await api.get<FakturMasukan[]>(
+        `${perusahaan(konteks.companyId)}/input-tax-invoices`,
+      )
+      setState(
+        jawaban.data.length === 0
+          ? { kind: 'empty' }
+          : {
+              kind: 'ready',
+              rows: jawaban.data,
+              total: jawaban.data.length,
+              nextCursor: jawaban.meta?.next_cursor ?? null,
+            },
+      )
+    } catch (galat) {
+      setState({
+        kind: 'error',
+        message:
+          galat instanceof ApiError ? galat.message : 'Tidak dapat memuat faktur pajak masukan.',
+      })
+    }
+  }
+
+  useEffect(() => {
+    void muat()
+  }, [konteks.companyId])
+
+  const columns: readonly Column<FakturMasukan>[] = useMemo(
+    () => [
+      {
+        id: 'number',
+        header: 'Nomor faktur vendor',
+        identifier: true,
+        sortable: true,
+        cell: (row) => row.supplierNumber,
+        sortValue: (row) => row.supplierNumber,
+      },
+      {
+        id: 'vendor',
+        header: 'Vendor',
+        cell: (row) => (row.vendorIsPkp ? row.vendorName : `${row.vendorName} (non-PKP)`),
+      },
+      { id: 'npwp', header: 'NPWP vendor', cell: (row) => row.vendorNpwp ?? '—' },
+      {
+        id: 'date',
+        header: 'Tanggal',
+        sortable: true,
+        cell: (row) => row.invoiceDate,
+        sortValue: (row) => row.invoiceDate,
+      },
+      { id: 'period', header: 'Masa', cell: (row) => row.taxPeriod },
+      {
+        id: 'credit_period',
+        header: 'Masa kredit',
+        // Boleh berbeda dari masa fakturnya. Menyamakan keduanya di layar akan
+        // menyembunyikan faktur yang sengaja dikreditkan di masa lain.
+        cell: (row) => row.creditPeriod ?? '—',
+      },
+      {
+        id: 'tax',
+        header: 'PPN',
+        align: 'end',
+        sortable: true,
+        cell: (row) => formatAmount(row.taxAmount, konteks.currency),
+        sortValue: (row) => row.taxAmount,
+      },
+      {
+        id: 'kelengkapan',
+        header: 'Kelengkapan',
+        cell: (row) => {
+          if (row.validatedAt === null) return <Badge>Belum divalidasi</Badge>
+          if (row.defects.length === 0) {
+            return (
+              <Badge tone={row.isCreditable ? 'success' : 'warning'}>
+                {row.isCreditable ? 'Lengkap — dapat dikreditkan' : 'Lengkap — tidak dikreditkan'}
+              </Badge>
+            )
+          }
+          return (
+            <span>
+              <Badge tone="danger">
+                {row.defects.length === 1 ? '1 syarat kurang' : `${row.defects.length} syarat kurang`}
+              </Badge>
+              {/* Kalimatnya ikut ditampilkan, bukan disembunyikan di balik
+                  tooltip: yang tersembunyi tidak menolong siapa pun yang
+                  sedang menelusuri daftar. */}
+              <ul>
+                {row.defects.map((cacat) => (
+                  <li key={cacat.code}>{cacat.detail}</li>
+                ))}
+              </ul>
+            </span>
+          )
+        },
+      },
+    ],
+    [konteks.currency],
+  )
+
+  return (
+    <DataTable
+      caption="Faktur Pajak Masukan"
+      columns={columns}
+      state={state}
+      rowId={(row) => row.id}
+      // Belum ada layar detail faktur masukan, dan menautkan ke halaman yang
+      // tidak ada lebih buruk daripada menautkan ke diri sendiri. Seluruh yang
+      // perlu dibaca — termasuk apa yang kurang — sudah ada di baris ini.
+      rowHref={() => '#/pajak/masukan'}
+      filter={{}}
+      sort={[]}
+      companyName={konteks.companyName}
+      onSortChange={() => undefined}
+      onRetry={() => void muat()}
+    />
+  )
+}
+
+/**
  * Layar Pajak — Rekonsiliasi.
  *
  * Buku pajak dan buku besar diletakkan berdampingan **per kode pajak**, bukan

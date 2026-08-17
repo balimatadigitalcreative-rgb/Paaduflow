@@ -16,6 +16,7 @@ import {
 } from './pages/pembelian.js'
 import {
   DaftarFakturKeluaran,
+  DaftarFakturMasukan,
   DetailFakturKeluaran,
   KodePajak,
   NomorSeri,
@@ -69,6 +70,7 @@ const SIDEBAR: Record<string, readonly SidebarItem[]> = {
     { id: 'pajak/kode', label: 'Kode Pajak', group: 'Data induk', permitted: true },
     { id: 'pajak/nomor-seri', label: 'Nomor Seri', group: 'Data induk', permitted: true },
     { id: 'pajak/keluaran', label: 'Faktur Pajak Keluaran', group: 'Transaksi', permitted: true },
+    { id: 'pajak/masukan', label: 'Faktur Pajak Masukan', group: 'Transaksi', permitted: true },
     { id: 'pajak/rekonsiliasi', label: 'Rekonsiliasi', group: 'Laporan', permitted: true },
   ],
 }
@@ -85,6 +87,7 @@ const JUDUL: Record<string, { judul: string; remah: readonly string[] }> = {
   'pajak/kode': { judul: 'Kode Pajak', remah: ['Pajak', 'Kode Pajak'] },
   'pajak/nomor-seri': { judul: 'Nomor Seri Faktur Pajak', remah: ['Pajak', 'Nomor Seri'] },
   'pajak/keluaran': { judul: 'Faktur Pajak Keluaran', remah: ['Pajak', 'Faktur Pajak Keluaran'] },
+  'pajak/masukan': { judul: 'Faktur Pajak Masukan', remah: ['Pajak', 'Faktur Pajak Masukan'] },
   'pajak/rekonsiliasi': { judul: 'Rekonsiliasi Pajak', remah: ['Pajak', 'Rekonsiliasi'] },
 }
 
@@ -303,6 +306,7 @@ function Halaman({
   if (bagian === 'pajak') {
     if (kedua === 'nomor-seri') return <NomorSeri konteks={konteks} />
     if (kedua === 'rekonsiliasi') return <RekonsiliasiPajak konteks={konteks} />
+    if (kedua === 'masukan') return <DaftarFakturMasukan konteks={konteks} />
     if (kedua === 'keluaran') {
       return ketiga === undefined ? (
         <DaftarFakturKeluaran konteks={konteks} />

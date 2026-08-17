@@ -621,6 +621,37 @@ export function registerTaxRoutes(app: PaaduServer, services: AppServices): void
 
   // ── Faktur pajak masukan ─────────────────────────────────────────────────
 
+  app.get(
+    '/v1/companies/:companyId/input-tax-invoices',
+    {
+      schema: {
+        params: JalurCompany,
+        querystring: Type.Object({
+          cursor: Type.Optional(Type.String()),
+          per_page: Type.Optional(Type.Integer({ minimum: 1, maximum: 200 })),
+        }),
+      },
+    },
+    async (request, reply) =>
+      jalankan(
+        request,
+        reply,
+        request.params.companyId,
+        'pajak.laporan.baca',
+        'Akuntan Pajak',
+        async (scoped, ctx) => {
+          const hasil = await scoped.tax.queries.inputInvoices(ctx.companyId, {
+            cursor: request.query.cursor ?? null,
+            limit: request.query.per_page ?? 50,
+          })
+          return {
+            status: 200,
+            body: { success: true, data: hasil.items, meta: { next_cursor: hasil.nextCursor } },
+          }
+        },
+      ),
+  )
+
   app.post(
     '/v1/companies/:companyId/input-tax-invoices',
     {

@@ -567,6 +567,34 @@ test('faktur pajak masukan dari vendor non-PKP tidak dapat dikreditkan, dan alas
   expect(data.defects.every((butir) => butir.detail.length > 20)).toBe(true)
 })
 
+test('daftar faktur pajak masukan menyebutkan APA yang kurang, bukan sekadar menandai', async () => {
+  const hasil = await panggil('GET', `${pkp()}/input-tax-invoices`, tokenAdminCompany)
+  expect(hasil.status).toBe(200)
+
+  const baris = hasil.body.data as readonly {
+    id: string
+    supplierNumber: string
+    vendorName: string
+    vendorIsPkp: boolean
+    isCreditable: boolean
+    validatedAt: string | null
+    defects: readonly { code: string; detail: string }[]
+  }[]
+  expect(baris.length).toBeGreaterThan(0)
+
+  const bermasalah = baris.find((item) => item.defects.length > 0)
+  expect(bermasalah).toBeDefined()
+  expect(bermasalah!.defects.map((butir) => butir.code)).toContain('vendor_not_pkp')
+
+  // Kalimat yang dapat dibaca, bukan kode yang harus diterjemahkan layar.
+  // Inilah beda "penanda apa yang kurang" dengan "bendera merah".
+  expect(bermasalah!.defects.every((butir) => butir.detail.length > 20)).toBe(true)
+
+  expect(bermasalah!.isCreditable).toBe(false)
+  expect(bermasalah!.validatedAt).not.toBeNull()
+  expect(bermasalah!.vendorName).toBe('CV Kecil')
+})
+
 test('rekonsiliasi melaporkan selisih per kode, bukan satu angka gabungan', async () => {
   const hasil = await panggil(
     'GET',
