@@ -485,6 +485,52 @@ test('detail faktur pajak keluaran menyebut faktur penjualan sumbernya', async (
   expect(detail.cancelReason).toContain('Nomor tertukar')
 })
 
+test('NEGATIF · satu faktur penjualan tidak dapat tercakup dua faktur pajak', async () => {
+  // Faktur penjualan tersendiri: yang dipakai test sebelumnya sudah bebas lagi
+  // karena faktur pajaknya DIBATALKAN, dan pembatalan memang melepaskan
+  // sumbernya — nomornya yang hangus, bukan transaksi penjualannya.
+  const lain = randomUUID()
+  await admin.query(
+    `INSERT INTO sales_documents
+       (id, tenant_id, company_id, doc_type, customer_id, document_date, currency,
+        total, tax_base, tax_total, lifecycle_status)
+     VALUES ($1, $2, $3, 'invoice', $4, DATE '2026-03-06', 'IDR', 1110000, 1000000, 110000, 'posted')`,
+    [lain, tenantId, companyPkp, customerId],
+  )
+
+  const badan = {
+    customer_id: customerId,
+    invoice_date: '2026-03-06',
+    tax_code_id: kodePpnId,
+    base_amount: 1_000_000,
+    tax_amount: 110_000,
+    sources: [{ sales_document_id: lain, base_amount: 1_000_000, tax_amount: 110_000 }],
+  }
+
+  const pertama = await panggil('POST', `${pkp()}/output-tax-invoices`, tokenAdminCompany, badan)
+  expect(pertama.status).toBe(201)
+
+  // PPN yang sama masuk buku pajak dua kali bila yang kedua lolos, dan
+  // rekonsiliasi akan melaporkan selisih yang tidak berasal dari kesalahan
+  // pencatatan mana pun.
+  const kedua = await panggil('POST', `${pkp()}/output-tax-invoices`, tokenAdminCompany, badan)
+  expect(kedua.status).toBe(409)
+  expect((kedua.body.errors as { code: string }[])[0]?.code).toBe('already_covered')
+  // Menyebutkan cara memperbaikinya, bukan hanya menolak.
+  expect(kedua.body.message).toContain('Batalkan faktur pajak itu')
+
+  // Aturan yang sama menyaring daftar kandidat. Layar dan API tidak boleh
+  // berbeda pendapat: yang tidak ditawarkan juga ditolak bila dipaksa.
+  const kandidat = await panggil(
+    'GET',
+    `${pkp()}/sales-invoices-eligible-for-tax`,
+    tokenAdminCompany,
+  )
+  expect((kandidat.body.data as readonly { id: string }[]).map((item) => item.id)).not.toContain(
+    lain,
+  )
+})
+
 test('NEGATIF · faktur pajak keluaran yang tidak ada menjawab 404, bukan 200 kosong', async () => {
   const hasil = await panggil(
     'GET',

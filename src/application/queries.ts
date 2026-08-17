@@ -356,10 +356,32 @@ export interface InputTaxInvoiceSummary {
   readonly defects: readonly InputTaxInvoiceDefect[]
 }
 
+/**
+ * Faktur penjualan yang layak dicakup faktur pajak keluaran.
+ *
+ * Syaratnya dua: sudah `posted`, dan belum tercakup faktur pajak yang masih
+ * berlaku. Yang tanpa NPWP pelanggan tetap ditampilkan — ditandai, bukan
+ * disembunyikan, supaya orang tahu apa yang harus dilengkapi alih-alih
+ * bertanya-tanya kenapa fakturnya tidak muncul.
+ */
+export interface FakturLayakPajak {
+  readonly id: string
+  readonly number: string | null
+  readonly customerId: string
+  readonly customerName: string
+  readonly customerNpwp: string | null
+  readonly documentDate: string
+  readonly taxBase: number
+  readonly taxTotal: number
+  readonly currency: string
+}
+
 export interface TaxQueryPort {
   /** Seluruh versi, terurut per kode lalu mundur menurut masa berlaku. */
   taxCodes(companyId: string): Promise<readonly TaxCodeVersion[]>
   outputInvoices(companyId: string, page: PageRequest): Promise<Page<OutputTaxInvoiceSummary>>
   outputInvoice(companyId: string, invoiceId: string): Promise<OutputTaxInvoiceDetail | null>
   inputInvoices(companyId: string, page: PageRequest): Promise<Page<InputTaxInvoiceSummary>>
+  /** Kandidat sumber faktur pajak keluaran — sudah posted, belum tercakup. */
+  eligibleSalesInvoices(companyId: string): Promise<readonly FakturLayakPajak[]>
 }

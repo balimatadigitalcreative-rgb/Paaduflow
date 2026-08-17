@@ -382,6 +382,27 @@ export class PostgresTaxRepository
     }
   }
 
+  async coveredSalesDocuments(
+    salesDocumentIds: readonly string[],
+  ): Promise<readonly { salesDocumentId: string; number: string | null }[]> {
+    if (salesDocumentIds.length === 0) return []
+
+    const { rows } = await this.db.query<{ sales_document_id: string; number: string | null }>(
+      `SELECT s.sales_document_id, d.number
+         FROM output_tax_invoice_sources s
+         JOIN output_tax_invoices f
+           ON f.tenant_id = s.tenant_id AND f.id = s.output_tax_invoice_id
+         LEFT JOIN sales_documents d
+           ON d.tenant_id = s.tenant_id AND d.id = s.sales_document_id
+        WHERE s.tenant_id = $1
+          AND s.sales_document_id = ANY($2::uuid[])
+          AND f.status <> 'cancelled'`,
+      [this.tenantId, [...salesDocumentIds]],
+    )
+
+    return rows.map((row) => ({ salesDocumentId: row.sales_document_id, number: row.number }))
+  }
+
   async load(invoiceId: string): Promise<OutputTaxInvoiceRecord | null> {
     const { rows } = await this.db.query<{
       id: string

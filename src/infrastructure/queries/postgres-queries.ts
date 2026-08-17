@@ -7,6 +7,7 @@ import type {
   ItemOption,
   LedgerEntry,
   MasterDataPort,
+  FakturLayakPajak,
   InputTaxInvoiceSummary,
   MatchPanel,
   OutputTaxInvoiceDetail,
@@ -982,5 +983,59 @@ export class PostgresTaxQueries implements TaxQueryPort {
       })),
       limit,
     )
+  }
+
+  /**
+   * Kandidat sumber faktur pajak keluaran.
+   *
+   * `NOT EXISTS` terhadap faktur pajak yang belum dibatalkan — aturan yang sama
+   * yang ditegakkan layanan saat membuat. Layar dan penolakan karena itu tidak
+   * dapat berbeda pendapat: yang tidak muncul di daftar juga akan ditolak bila
+   * dipaksa lewat API, dan sebaliknya.
+   */
+  async eligibleSalesInvoices(companyId: string): Promise<readonly FakturLayakPajak[]> {
+    const { rows } = await this.db.query<{
+      id: string
+      number: string | null
+      customer_id: string
+      customer_name: string
+      customer_npwp: string | null
+      document_date: unknown
+      tax_base: string
+      tax_total: string
+      currency: string
+    }>(
+      `SELECT d.id, d.number, d.customer_id, c.name AS customer_name, c.tax_id AS customer_npwp,
+              d.document_date, d.tax_base, d.tax_total, d.currency
+         FROM sales_documents d
+         JOIN customers c ON c.tenant_id = d.tenant_id AND c.id = d.customer_id
+        WHERE d.tenant_id = $1 AND d.company_id = $2
+          AND d.doc_type = 'invoice'
+          AND d.lifecycle_status = 'posted'
+          AND d.tax_total > 0
+          AND NOT EXISTS (
+            SELECT 1
+              FROM output_tax_invoice_sources s
+              JOIN output_tax_invoices f
+                ON f.tenant_id = s.tenant_id AND f.id = s.output_tax_invoice_id
+             WHERE s.tenant_id = d.tenant_id
+               AND s.sales_document_id = d.id
+               AND f.status <> 'cancelled'
+          )
+        ORDER BY d.document_date, d.number`,
+      [this.tenantId, companyId],
+    )
+
+    return rows.map((row) => ({
+      id: row.id,
+      number: row.number,
+      customerId: row.customer_id,
+      customerName: row.customer_name,
+      customerNpwp: row.customer_npwp,
+      documentDate: tanggal(row.document_date),
+      taxBase: Number(row.tax_base),
+      taxTotal: Number(row.tax_total),
+      currency: row.currency,
+    }))
   }
 }
