@@ -138,6 +138,108 @@ if (mendahului !== '0') {
 const komit = (await lokal(['rev-parse', '--short', BRANCH])).keluaran.trim()
 console.log(hijau(`     bersih, sejajar dengan origin/${BRANCH} pada ${komit}`))
 
+// ── Prasyarat di server ────────────────────────────────────────────────────
+//
+// Seluruhnya diperiksa dalam SATU sambungan SSH, sebelum menyentuh apa pun.
+// Gagal di detik pertama dengan daftar lengkap lebih baik daripada gagal di
+// langkah 4 setelah `git pull` — dan lebih baik daripada memperbaiki satu
+// syarat, mengulang, lalu menemukan syarat berikutnya.
+
+langkah('0b', 'Memeriksa prasyarat server')
+
+const laporan = await ssh(
+  [
+    `test -d ${APP_DIR}/.git && echo dir:ok || echo dir:kurang`,
+    `test -f ${APP_DIR}/.env && echo env:ok || echo env:kurang`,
+    `test -f ${MIGRATION_ENV} && echo envdeploy:ok || echo envdeploy:kurang`,
+    `grep -qE '^MIGRATION_DATABASE_URL=.+' ${MIGRATION_ENV} 2>/dev/null && echo migurl:ok || echo migurl:kurang`,
+    `command -v pm2 >/dev/null && echo pm2:ok || echo pm2:kurang`,
+    `command -v curl >/dev/null && echo curl:ok || echo curl:kurang`,
+    `pm2 describe ${PM2_NAME} >/dev/null 2>&1 && echo proses:ok || echo proses:kurang`,
+  ].join('; '),
+)
+
+if (laporan.kode !== 0 && laporan.keluaran.trim() === '') {
+  berhenti(
+    'menyambung ke server',
+    laporan,
+    `Pastikan \`ssh ${SERVER}\` berhasil dari komputer ini tanpa menanyakan kata sandi.`,
+  )
+}
+
+const hasilPeriksa = new Map(
+  laporan.keluaran
+    .trim()
+    .split('\n')
+    .map((baris) => baris.trim().split(':'))
+    .filter((bagian) => bagian.length === 2)
+    .map(([kunci, nilai]) => [kunci, nilai]),
+)
+
+const kurang = []
+const perlu = (kunci, judul, perbaikan) => {
+  if (hasilPeriksa.get(kunci) !== 'ok') kurang.push({ judul, perbaikan })
+}
+
+perlu('dir', `${APP_DIR} bukan repositori git`, [
+  `git clone <repo> ${APP_DIR}`,
+  `cd ${APP_DIR} && git checkout ${BRANCH}`,
+])
+perlu('env', `${APP_DIR}/.env tidak ada — kredensial RUNTIME`, [
+  `cp ${APP_DIR}/.env.example ${APP_DIR}/.env`,
+  '',
+  '  lalu isi minimal empat baris ini:',
+  '      DATABASE_URL=postgresql://paadu_app:...@localhost:5432/paadu',
+  '      PORT=3000',
+  '      TOKEN_SIGNING_SECRET=<acak, minimal 32 karakter>',
+  '      MFA_ENCRYPTION_KEY=<32 bait base64>',
+])
+perlu('envdeploy', `${MIGRATION_ENV} tidak ada — kredensial MIGRASI`, [
+  `cat > ${MIGRATION_ENV} <<'ENV'`,
+  'MIGRATION_DATABASE_URL=postgresql://paadu_owner:...@localhost:5432/paadu',
+  'ENV',
+  `chmod 600 ${MIGRATION_ENV}`,
+  '',
+  '  Sengaja di LUAR direktori aplikasi: berkas .env di dalamnya dimuat',
+  '  proses runtime, dan kredensial pemilik basis data tidak boleh berada',
+  '  di lingkungan proses yang melayani permintaan (D-141).',
+])
+perlu('migurl', `${MIGRATION_ENV} ada tetapi tidak memuat MIGRATION_DATABASE_URL`, [
+  `echo 'MIGRATION_DATABASE_URL=postgresql://paadu_owner:...@localhost:5432/paadu' >> ${MIGRATION_ENV}`,
+])
+perlu('pm2', 'pm2 tidak terpasang', ['npm install -g pm2', 'pm2 startup   # agar hidup lagi setelah reboot'])
+perlu('curl', 'curl tidak terpasang — dipakai verifikasi kesehatan', [
+  'sudo apt-get install -y curl',
+])
+perlu('proses', `PM2 belum punya proses bernama "${PM2_NAME}"`, [
+  `cd ${APP_DIR} && npm ci --include=dev && npm run build`,
+  `PAADU_DIR=${APP_DIR} pm2 start ecosystem.config.cjs`,
+  'pm2 save',
+  '',
+  `  Bila proses lama masih bernama lain, hapus dulu: pm2 delete <nama-lama>`,
+  `  Atau pakai nama yang sudah ada: DEPLOY_PM2=<nama> npm run deploy`,
+])
+
+if (kurang.length > 0) {
+  console.error('')
+  console.error(merah(`  ✕ Server belum siap — ${kurang.length} prasyarat belum terpenuhi.`))
+  console.error(redup('     Belum ada satu pun perubahan di server.'))
+  for (const { judul, perbaikan } of kurang) {
+    console.error('')
+    console.error(`  • ${judul}`)
+    console.error('')
+    for (const baris of perbaikan) {
+      console.error(baris === '' ? '' : `      ${baris}`)
+    }
+  }
+  console.error('')
+  console.error(`  Seluruhnya dijalankan di server: ssh ${SERVER}`)
+  console.error('')
+  process.exit(1)
+}
+
+console.log(hijau('     berkas .env, kredensial migrasi, pm2, dan proses siap'))
+
 // ── Di server ──────────────────────────────────────────────────────────────
 
 langkah(1, 'git pull')

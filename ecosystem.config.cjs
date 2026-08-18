@@ -8,12 +8,21 @@
  *
  * `.cjs` dengan sengaja: package.json memakai `"type": "module"`, sedangkan PM2
  * memuat berkas ekosistem sebagai CommonJS.
+ *
+ * Seluruh path dibaca dari lingkungan. Berkas ini tidak boleh perlu disunting
+ * hanya karena sebuah server memakai tata letak direktori yang berbeda —
+ * suntingan lokal di berkas terversi akan bertabrakan pada `git pull`
+ * berikutnya.
  */
+const dir = process.env.PAADU_DIR || '/home/paadu/app'
+const logDir = process.env.PAADU_LOG_DIR || `${dir}/log`
+const nama = process.env.PAADU_PM2_NAME || 'paadu-api'
+
 module.exports = {
   apps: [
     {
-      name: 'paadu-api',
-      cwd: '/srv/paadu',
+      name: nama,
+      cwd: dir,
       script: 'npm',
       args: 'start',
 
@@ -40,10 +49,10 @@ module.exports = {
 
       // MIGRATION_DATABASE_URL sengaja TIDAK ada di sini. Kredensial pemilik
       // basis data tidak boleh berada di lingkungan proses runtime (D-141).
-      // Sisa variabel dibaca dari /srv/paadu/.env oleh titik masuknya.
+      // Sisa variabel dibaca dari <PAADU_DIR>/.env oleh titik masuknya.
 
-      error_file: '/var/log/paadu/api.error.log',
-      out_file: '/var/log/paadu/api.out.log',
+      error_file: `${logDir}/api.error.log`,
+      out_file: `${logDir}/api.out.log`,
       merge_logs: true,
       time: true,
     },

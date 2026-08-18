@@ -61,9 +61,9 @@ Dijalankan dua kali pada company yang sama, ia berhenti dengan `duplicate key va
 8. **Pajak → Faktur Pajak Masukan.** Kolom Kelengkapan menyebut **apa** yang kurang — "vendor bukan PKP", bukan sekadar bendera merah.
 9. **Pajak → Rekonsiliasi.** Buku pajak berdampingan dengan akun pajak di buku besar, selisih per akun.
 
-> **Batas yang perlu diketahui sebelum mencoba langkah 9.** Memposting faktur penjualan menulis PPN ke buku besar, tetapi **tidak** menerbitkan faktur pajak keluaran — keduanya dokumen terpisah, dan satu faktur pajak dapat mencakup beberapa faktur komersial. Penerbitannya belum punya layar: endpointnya ada, tombolnya belum.
->
-> Dua akibatnya terlihat langsung. **Pajak → Faktur Pajak Keluaran** akan kosong meski faktur penjualan sudah diposting. Dan **Rekonsiliasi** akan menampilkan selisih sebesar PPN yang sudah masuk buku besar. Keduanya perilaku yang benar dari layarnya, bukan kesalahan hitung — rekonsiliasi memang sedang melaporkan bahwa buku pajak tertinggal dari buku besar.
+10. **Pajak → Terbitkan Faktur Pajak.** Memposting faktur penjualan menulis PPN ke buku besar, tetapi **tidak** menerbitkan faktur pajaknya — keduanya dokumen terpisah, dan satu faktur pajak dapat mencakup beberapa faktur komersial. Layar ini yang menjembataninya: pilih satu atau beberapa faktur terposting, lalu terbitkan. Nomor seri melekat saat terbit, bukan saat draf dibuat.
+
+> **Rekonsiliasi baru cocok setelah langkah 10.** Sebelum faktur pajak diterbitkan, buku pajak memang tertinggal dari buku besar, dan Rekonsiliasi melaporkannya sebagai selisih. Itu perilaku yang benar, bukan kesalahan hitung.
 
 ### Bila sudah punya PostgreSQL sendiri
 
@@ -86,18 +86,25 @@ Yang dipakai di server hanya dua perintah: `npm run build` lalu `npm start`. `np
 ### Penyiapan sekali
 
 ```bash
-sudo mkdir -p /srv/paadu /var/log/paadu
-git clone <repo> /srv/paadu && cd /srv/paadu
+git clone <repo> /home/paadu/app && cd /home/paadu/app
+mkdir -p log
+
 cp .env.example .env      # isi DATABASE_URL, PORT, TOKEN_SIGNING_SECRET, MFA_ENCRYPTION_KEY
-npm ci
+npm ci --include=dev
 
-# Migrasi dijalankan sendiri, dengan kredensial pemilik — sekali di awal
-MIGRATION_DATABASE_URL=postgresql://paadu_owner:...@localhost:5432/paadu npm run migrate
+# Kredensial migrasi, DI LUAR direktori aplikasi
+printf 'MIGRATION_DATABASE_URL=postgresql://paadu_owner:...@localhost:5432/paadu
+' > /home/paadu/.env.deploy
+chmod 600 /home/paadu/.env.deploy
 
-npm run build
-pm2 start ecosystem.config.cjs
+set -a && . /home/paadu/.env.deploy && set +a && npm run migrate
+
+npm run build              # menghasilkan dist/web DAN dist/server
+PAADU_DIR=/home/paadu/app pm2 start ecosystem.config.cjs
 pm2 save
 ```
+
+`npm ci --include=dev` bukan salah ketik: build memerlukan Vite dan TypeScript, yang keduanya devDependencies.
 
 ### Setiap deploy — satu perintah
 
@@ -128,6 +135,31 @@ Alamat, direktori, dan nama proses dapat diganti tanpa menyunting skrip:
 ```bash
 DEPLOY_SSH=paadu@72.61.124.95 DEPLOY_DIR=/home/paadu/app DEPLOY_PM2=paadu-api npm run deploy
 ```
+
+#### Prasyarat deploy pertama
+
+`npm run deploy` memeriksa seluruhnya **di detik pertama**, dalam satu sambungan SSH, dan berhenti sebelum menyentuh apa pun bila ada yang kurang — lengkap dengan perintah perbaikannya. Daftar ini hanya agar Anda dapat menyiapkannya lebih dulu.
+
+| Prasyarat | Cara memenuhinya |
+|---|---|
+| Kunci SSH terpasang | `ssh paadu@<host>` berhasil tanpa kata sandi |
+| Repo ter-clone | `git clone <repo> /home/paadu/app` |
+| `.env` runtime | `cp .env.example .env` lalu isi `DATABASE_URL`, `PORT`, `TOKEN_SIGNING_SECRET`, `MFA_ENCRYPTION_KEY` |
+| `.env.deploy` migrasi | Di **luar** direktori aplikasi — lihat di bawah |
+| `pm2` terpasang | `npm install -g pm2` lalu `pm2 startup` |
+| `curl` terpasang | Dipakai verifikasi kesehatan |
+| Proses PM2 bernama `paadu-api` | `PAADU_DIR=/home/paadu/app pm2 start ecosystem.config.cjs && pm2 save` |
+
+Proses PM2-nya harus sudah ada sebelum deploy pertama, karena `npm run deploy` **me-restart**, bukan membuat. Sekali saja:
+
+```bash
+cd /home/paadu/app
+npm ci --include=dev && npm run build
+PAADU_DIR=/home/paadu/app pm2 start ecosystem.config.cjs
+pm2 save
+```
+
+`ecosystem.config.cjs` tidak menghardcode path. Ia membaca `PAADU_DIR` (bawaan `/home/paadu/app`), `PAADU_LOG_DIR` (bawaan `<PAADU_DIR>/log`), dan `PAADU_PM2_NAME` (bawaan `paadu-api`). Menyunting berkas itu di server akan bertabrakan pada `git pull` berikutnya — pasang variabelnya, jangan sunting berkasnya.
 
 #### Yang harus ada di server sekali saja
 
