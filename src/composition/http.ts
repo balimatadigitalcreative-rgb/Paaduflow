@@ -63,6 +63,12 @@ export function createAppServices(options: AppServicesOptions): AppServices {
     sessions: identity.sessions,
     idempotency: new PostgresIdempotencyStore(unitOfWork),
 
+    async ping(): Promise<void> {
+      // Langsung ke pool, tanpa konteks tenant: yang diperiksa keterjangkauan
+      // basis datanya, bukan izin siapa pun.
+      await options.pool.query('SELECT 1')
+    },
+
     async resolveTenantForCompany(userId: string, companyId: string): Promise<string | null> {
       // Berjalan sebelum konteks tenant ada. Kebijakan RLS `company_access`
       // mengizinkan pengguna membaca barisnya sendiri justru untuk langkah ini

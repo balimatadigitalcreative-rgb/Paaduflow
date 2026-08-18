@@ -114,6 +114,14 @@ export interface AppServices {
   readonly idempotency: IdempotencyStore
 
   /**
+   * Menyentuh basis data sekali, tanpa konteks tenant.
+   *
+   * Dipakai endpoint kesehatan. Proses yang menyala tetapi tidak dapat
+   * menjangkau basis datanya harus mengaku, bukan menjawab 200.
+   */
+  ping(): Promise<void>
+
+  /**
    * Menentukan tenant dari company di path.
    *
    * Langkah ini berjalan sebelum konteks tenant ada — lihat D-064. Jawaban

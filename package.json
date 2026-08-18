@@ -30,6 +30,7 @@
     "build:web": "vite build",
     "build:server": "vite build --config vite.server.config.ts",
     "start": "node dist/server/main.js",
+    "deploy": "node tools/deploy/deploy.js",
     "typecheck": "tsc --noEmit",
     "pretest": "npm run tokens:build",
     "test": "vitest run",

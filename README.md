@@ -99,19 +99,54 @@ pm2 start ecosystem.config.cjs
 pm2 save
 ```
 
-### Setiap deploy
+### Setiap deploy — satu perintah
+
+Dari komputer pengembang, bukan dari server:
 
 ```bash
-cd /srv/paadu
-git pull
-npm ci
+npm run deploy
+```
 
-# Hanya bila ada migrasi baru. Berhenti sendiri bila kredensialnya bukan pemilik.
-MIGRATION_DATABASE_URL=postgresql://paadu_owner:...@localhost:5432/paadu npm run migrate
+Ia menjalankan seluruh urutannya lewat SSH dan **berhenti di kegagalan pertama**, menampilkan pesan galat utuh:
 
-npm run build
-pm2 restart paadu-api
-pm2 logs paadu-api --lines 50
+| Langkah | Yang terjadi |
+|---|---|
+| 0 | Memeriksa kode lokal — menolak bila ada perubahan belum di-commit, belum di-push, atau tertinggal dari origin |
+| 1 | `git fetch` + `reset --hard origin/main` di server |
+| 2 | `npm ci --include=dev` |
+| 3 | `npm run build:web` |
+| 4 | Menampilkan migrasi tertunda dan **menunggu Anda mengetik `ya`** |
+| 5 | `pm2 restart` |
+| 6 | Memanggil `/healthz` sampai menjawab 200 |
+
+Bila langkah 6 gagal, ia menampilkan **30 baris terakhir log PM2** — tidak perlu SSH manual untuk tahu sebabnya.
+
+Migrasi tidak pernah berjalan diam-diam. Bila tidak ada yang tertunda, langkah 4 dilewati tanpa bertanya. Bila ada, namanya disebutkan satu per satu lebih dulu. Membatalkan di titik itu **tidak** merestart server, sehingga kode lama tetap melayani.
+
+Alamat, direktori, dan nama proses dapat diganti tanpa menyunting skrip:
+
+```bash
+DEPLOY_SSH=paadu@72.61.124.95 DEPLOY_DIR=/home/paadu/app DEPLOY_PM2=paadu-api npm run deploy
+```
+
+#### Yang harus ada di server sekali saja
+
+`npm run deploy` tidak menyimpan kredensial apa pun. SSH memakai kunci yang sudah terpasang, dan kredensial migrasi tinggal di server:
+
+```bash
+# /home/paadu/.env.deploy — DI LUAR direktori aplikasi
+MIGRATION_DATABASE_URL=postgresql://paadu_owner:...@localhost:5432/paadu
+```
+
+Letaknya di luar `app/` dengan sengaja: berkas `.env` di dalam direktori aplikasi dimuat proses runtime, dan kredensial pemilik basis data tidak boleh berada di lingkungan proses yang melayani permintaan (D-141).
+
+#### Bila ingin menjalankannya manual
+
+```bash
+cd /home/paadu/app
+git pull && npm ci --include=dev && npm run build:web
+set -a && . /home/paadu/.env.deploy && set +a && npm run migrate
+pm2 restart paadu-api && curl -i localhost:3000/healthz
 ```
 
 Urutannya disengaja: **migrasi sebelum build dan restart.** Skema yang tertinggal di belakang kode adalah kegagalan saat permintaan pertama masuk; kode yang tertinggal di belakang skema biasanya masih berjalan.

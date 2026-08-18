@@ -95,6 +95,33 @@ export async function buildHttpApp(options: HttpOptions): Promise<PaaduServer> {
 
   app.get('/openapi.json', { schema: { hide: true } }, async () => app.swagger())
 
+  /**
+   * Kesehatan proses — tanpa autentikasi, dan sengaja demikian.
+   *
+   * Dipanggil skrip deploy dan pemantau, yang keduanya tidak punya token. Ia
+   * tidak membocorkan apa pun: hanya menyatakan proses menyala dan basis
+   * datanya terjangkau.
+   *
+   * Basis data ikut disentuh dengan `SELECT 1`. Tanpa itu, endpoint ini akan
+   * menjawab 200 pada proses yang menyala sempurna tetapi tidak dapat melayani
+   * satu permintaan pun — dan deploy akan dinyatakan berhasil tepat ketika ia
+   * gagal.
+   */
+  app.get('/healthz', { schema: { hide: true } }, async (_request, reply) => {
+    try {
+      await options.services.ping()
+      return reply.status(200).send({ status: 'ok', database: 'ok' })
+    } catch (galat) {
+      // 503, bukan 500: keadaannya sementara dan pemanggilnya boleh mencoba
+      // lagi. Pesannya ikut supaya deploy tidak perlu menebak.
+      return reply.status(503).send({
+        status: 'degraded',
+        database: 'unreachable',
+        message: galat instanceof Error ? galat.message : 'Basis data tidak terjangkau.',
+      })
+    }
+  })
+
   return app
 }
 
