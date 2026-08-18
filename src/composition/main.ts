@@ -69,6 +69,71 @@ function periksaLingkungan(): void {
     process.exit(1)
   }
 
+  /**
+   * Format, bukan sekadar keberadaan.
+   *
+   * Nilai yang ada tetapi salah bentuk dulu lolos pemeriksaan ini dan baru
+   * meledak jauh di dalam — `AesSecretCipher` menolak kunci non-32-bait, dan
+   * pesannya hanya terlihat di log PM2 setelah proses gagal menyala. Kunci hex
+   * adalah kesalahan yang paling mudah dilakukan: ia tampak seperti rahasia
+   * yang benar, dan base64 menerimanya tanpa protes sampai panjangnya dihitung.
+   */
+  const salah: string[][] = []
+
+  const dbUrl = process.env.DATABASE_URL ?? ''
+  if (!/^postgres(ql)?:\/\//.test(dbUrl)) {
+    salah.push([
+      'DATABASE_URL bukan URL koneksi PostgreSQL.',
+      'Format : postgresql://pengguna:sandi@host:port/basis',
+    ])
+  }
+
+  const port = Number(process.env.PORT)
+  if (!Number.isInteger(port) || port < 1 || port > 65535) {
+    salah.push([
+      `PORT bernilai "${process.env.PORT}", bukan bilangan bulat 1–65535.`,
+      'Format : bilangan bulat, mis. 3000',
+    ])
+  }
+
+  const rahasiaToken = process.env.TOKEN_SIGNING_SECRET ?? ''
+  if (rahasiaToken.length < 32) {
+    salah.push([
+      `TOKEN_SIGNING_SECRET hanya ${rahasiaToken.length} karakter, minimal 32.`,
+      'Format : teks bebas, minimal 32 karakter, dipakai apa adanya sebagai UTF-8',
+      'Buat   : openssl rand -base64 48',
+    ])
+  }
+
+  const kunciMfa = process.env.MFA_ENCRYPTION_KEY ?? ''
+  const baitMfa = Buffer.from(kunciMfa, 'base64').length
+  if (baitMfa !== 32) {
+    salah.push([
+      `MFA_ENCRYPTION_KEY mendekode menjadi ${baitMfa} bait, seharusnya tepat 32.`,
+      'Format : base64 yang mendekode menjadi 32 bait — 44 karakter, berakhir "="',
+      'Buat   : openssl rand -base64 32',
+      ...(/^[0-9a-fA-F]+$/.test(kunciMfa)
+        ? ['', '  Nilainya tampak HEX. AES-256 di sini menuntut base64, bukan hex.']
+        : []),
+    ])
+  }
+
+  if (salah.length > 0) {
+    console.error('')
+    console.error(`  Tidak dapat menyala: ${salah.length} variabel salah format.`)
+    for (const butir of salah) {
+      console.error('')
+      console.error(`      ${butir[0]}`)
+      for (const baris of butir.slice(1)) {
+        console.error(baris === '' ? '' : `        ${baris}`)
+      }
+    }
+    console.error('')
+    console.error('  Seluruh formatnya dijelaskan di .env.example.')
+    console.error('')
+    process.exit(1)
+  }
+
   if (!existsSync(resolve(WEB, 'index.html'))) {
     console.error(
       [

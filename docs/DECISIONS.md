@@ -989,6 +989,23 @@ Yang membuatnya berbahaya bukan sekadar tidak efisien: proses yang bermigrasi sa
 
 `ecosystem.config.cjs` menjalankan `npm start` dengan `max_restarts` dan `min_uptime`. Tanpa keduanya, konfigurasi yang salah berubah menjadi proses yang menyala dan mati ribuan kali semalaman, dan lognya menjadi tidak terbaca justru saat paling dibutuhkan.
 
+
+### D-143 · `.env.example` adalah kontrak, dan diperiksa CI
+**Status:** Berlaku
+Deploy gagal sembilan kali berturut-turut karena `.env` di server disusun dari `.env.example`, dan berkas itu tidak menyebut `TOKEN_SIGNING_SECRET` maupun `MFA_ENCRYPTION_KEY` — padahal `npm start` menolak menyala tanpa keduanya. Kesalahan berikutnya lebih halus: `MFA_ENCRYPTION_KEY` diisi `openssl rand -hex 32`, dan aplikasi menolaknya karena menuntut base64 32 bait. Format itu tidak tertulis di mana pun.
+
+**Sebab yang sebenarnya, dan ia bukan soal dokumentasi.** `.env.example` diperlakukan sebagai catatan yang kebetulan ada, bukan sebagai kontrak. Tidak ada apa pun yang menghubungkannya dengan daftar variabel yang benar-benar dituntut kode, sehingga ia menua diam-diam setiap kali ada variabel baru — dan yang menemukan penuaannya adalah deploy, di tempat yang paling mahal.
+
+**Nama saja tidak cukup.** Dua rahasia di modul ini punya syarat yang berbeda jenis: `TOKEN_SIGNING_SECRET` dihitung dalam **karakter** (minimal 32, dipakai apa adanya sebagai UTF-8), sedangkan `MFA_ENCRYPTION_KEY` dihitung dalam **bait setelah didekode** (tepat 32, base64). Keduanya terlihat seperti "rahasia acak 32-an", dan justru karena itu tertukar. Perintah pembuatnya kini dicantumkan — `openssl rand -base64 48` dan `openssl rand -base64 32` — karena instruksi "isi dengan nilai acak" tetap membiarkan orang memilih hex.
+
+**Pemeriksanya.** `tools/check-env-example.js` membaca daftar wajib dari `src/composition/main.ts` — satu-satunya tempat yang menolak proses menyala — lalu menuntut tiga hal: setiap variabel wajib tercantum, setiap variabel wajib punya baris `Format`, dan setiap nama yang mengandung `SECRET`, `KEY`, `PASSWORD`, atau `TOKEN` punya baris `Buat` berisi perintah pembuatnya. Dipasang ke `npm run lint`, sehingga ia gerbang CI, bukan kebiasaan.
+
+Bila bentuk daftar di `main.ts` berubah dan tidak lagi terbaca, pemeriksaan **gagal** alih-alih diam. Pemeriksa yang mati diam-diam lebih buruk daripada tidak ada pemeriksa, karena ia memberi rasa aman yang tidak berdasar.
+
+**Kegagalan formatnya juga dipindah lebih awal.** `npm start` kini memvalidasi bentuk, bukan hanya keberadaan, sebelum menyentuh basis data — dan menyebutkan format yang benar beserta perintah pembuatnya. Nilai yang tampak hex disebutkan sebagai hex. Sebelumnya kesalahan ini muncul dari dalam `AesSecretCipher` dan hanya terlihat di log manajer proses setelah proses gagal menyala.
+
+**Yang paling perlu diingat dari kejadian ini bukan tentang env.** Perbaikan `.env.example` sudah ditulis satu giliran sebelum deploy itu, tetapi tidak pernah di-commit — sehingga server menarik versi lama dan gagal karena celah yang sudah tertutup di komputer pengembang. Pekerjaan yang tidak di-commit tidak ada bagi siapa pun selain yang mengetiknya.
+
 ---
 
 ## Sengaja Ditunda
