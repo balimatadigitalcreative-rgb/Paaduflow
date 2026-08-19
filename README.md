@@ -106,6 +106,32 @@ pm2 save
 
 `npm ci --include=dev` bukan salah ketik: build memerlukan Vite dan TypeScript, yang keduanya devDependencies.
 
+### Dua perintah, dan bedanya
+
+| | Yang dilakukan | Dipakai saat |
+|---|---|---|
+| `npm run ship` | commit → push → deploy | Ada perubahan yang belum di-commit |
+| `npm run deploy` | deploy saja | Kode sudah ter-push, atau mengulang deploy yang gagal |
+
+`npm run ship` adalah pembungkus tipis. Seluruh logika server tetap milik `deploy`, dipanggil apa adanya — gerbang prasyarat, konfirmasi migrasi, verifikasi kesehatan, dan berhenti di kegagalan pertama semuanya tetap berlaku. Yang ditambahkan `ship` hanya dua langkah di depannya.
+
+Bila tidak ada perubahan untuk di-commit, `ship` melewati keduanya dan langsung men-deploy. Jadi ia aman dipakai sebagai kebiasaan, termasuk saat mengulang deploy yang gagal.
+
+`ship` menyusun pesan commit dari daftar perubahannya sendiri, lalu **meminta konfirmasi**:
+
+```
+  Pesan commit yang diusulkan:
+
+      Perubahan pada kode, test (7 berkas)
+      ...
+
+  Pakai pesan ini? (ya / ubah / batal)
+```
+
+Pesan itu menyebutkan **apa** yang berubah, tidak pernah mengarang **kenapa** — alasannya hanya diketahui yang mengubahnya. Jawab `ubah` untuk menuliskannya sendiri, atau `batal` untuk berhenti tanpa menyentuh apa pun. Untuk pesan panjang berparagraf, commit manual dulu lalu jalankan `npm run deploy`.
+
+`ship` berhenti bila hook pre-commit menolak, dan berhenti bila push gagal — dalam kedua keadaan itu server belum tersentuh sama sekali.
+
 ### Setiap deploy — satu perintah
 
 Dari komputer pengembang, bukan dari server:

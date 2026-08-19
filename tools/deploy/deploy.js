@@ -67,6 +67,25 @@ const ssh = (perintah, opsi = {}) =>
 
 const lokal = (argumen) => jalankan('git', argumen)
 
+/**
+ * Bertanya, dan menyerah bila masukannya berakhir.
+ *
+ * `question()` tidak pernah selesai bila stdin tertutup lebih dulu — prosesnya
+ * lalu mati dengan "unsettled top-level await" tanpa satu pun pesan yang
+ * berguna. Itu terjadi setiap kali perintah ini dijalankan tanpa terminal:
+ * dari skrip, dari CI, atau dari pipa.
+ *
+ * Masukan yang berakhir diperlakukan sebagai penolakan, bukan persetujuan.
+ */
+async function tanyakan(antarmuka, prompt) {
+  const jawaban = await Promise.race([
+    antarmuka.question(prompt),
+    new Promise((selesai) => antarmuka.once('close', () => selesai(null))),
+  ])
+  return jawaban === null ? null : jawaban.trim()
+}
+
+
 /** Berhenti dengan pesan utuh. Kegagalan yang dipotong adalah kegagalan yang diulang. */
 function berhenti(langkah, hasil, saran) {
   console.error('')
@@ -279,7 +298,7 @@ if (daftar.length === 0) {
   console.log('')
 
   const tanya = createInterface({ input: process.stdin, output: process.stdout })
-  const jawab = (await tanya.question('     Jalankan migrasi ini? (ketik "ya") ')).trim()
+  const jawab = await tanyakan(tanya, '     Jalankan migrasi ini? (ketik "ya") ')
   tanya.close()
 
   if (jawab !== 'ya') {
