@@ -352,3 +352,4 @@ Daftar lengkap di `docs/DECISIONS.md` bagian akhir.
 Proprietary dan belum dirilis — lihat `LICENSE`. Tidak ada izin memakai, menyalin, memodifikasi, atau mendistribusikan isi repositori ini tanpa izin tertulis.
 
 Bila repo ini publik dan itu tidak disengaja, ubah visibilitasnya — `docs/` memuat positioning, roadmap, dan arsitektur lengkap sembilan belas modul.
+ 
