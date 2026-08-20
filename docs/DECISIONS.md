@@ -1060,6 +1060,30 @@ Diganti dengan tiga keadaan terpisah: `memuat`, `siap` beserta daftarnya, dan `g
 Layar galat dan layar kosong keduanya membawa "Keluar", supaya tidak ada gerbang yang menjadi jalan buntu.
 
 **Premis laporan awalnya keliru dan diperiksa lebih dulu.** Dugaannya `/v1/me/companies` menjawab 200 dengan daftar kosong bagi pengguna yang belum masuk. Diuji di produksi, ketiga varian permintaan tanpa sesi menjawab 401 — rutenya memanggil `requireUser` sebelum apa pun. Yang menggantung justru pengguna yang sudah masuk.
+
+### D-148 · RLS tidak menular lewat join, dan daftar company membayarnya
+**Status:** Berlaku
+`GET /v1/me/companies` menjawab `{"success":true,"data":[]}` di produksi meski `company_access` berisi baris untuk pengguna yang sudah masuk.
+
+Kueri itu berjalan lewat `asUser`, yang memasang `app.user_id` tanpa `app.tenant_id` — tenant-nya justru yang sedang dicari (D-064). 0011 membuka `company_access` khusus untuk langkah ini, dan komentar di lapisan kueri menyatakan `companies` dan `tenants` "ikut terbaca lewat join yang dibatasi baris akses itu".
+
+**Kalimat itu keliru, dan itulah bugnya.** RLS dievaluasi per tabel. Setiap tabel yang disebut dalam kueri disaring kebijakannya sendiri, tanpa peduli tabel apa yang mengikatnya lewat join. Diukur dengan `app.user_id` terpasang dan `app.tenant_id` kosong:
+
+```
+company_access  1 baris    ← punya jalur user_id
+companies       0 baris    ← hanya mengenal app.tenant_id
+tenants         0 baris    ← hanya mengenal app.tenant_id
+roles           4 baris    ← lolos lewat tenant_id IS NULL
+join lengkap    0 baris
+```
+
+Satu tabel yang memulangkan nol sudah cukup mengosongkan seluruh join.
+
+**Kenapa pengujian lokal hijau, dan kali ini bukan karena superuser.** Seluruh test integrasi sudah terhubung sebagai `paadu_app` lewat `options: '-c role=paadu_app'`, jadi RLS memang berlaku di sana. Sebabnya lebih sederhana dan lebih memalukan: **tidak ada satu pun test yang memanggil `/v1/me/companies`.** Pintu masuk seluruh antarmuka tanpa cakupan sama sekali. Ditutup oleh `tests/integration/daftar-company.test.ts`, yang menjalankan alur sungguhan — daftar, masuk, lalu ambil daftarnya memakai token yang dikembalikan.
+
+**Diperbaiki dengan kebijakan terpisah, bukan dengan melonggarkan `tenant_isolation`.** Melonggarkan USING pada kebijakan yang ada akan ikut melonggarkan UPDATE dan DELETE, karena USING menentukan baris mana yang boleh disasar. Pengguna dengan konteks tenant T1 dan akses ke company di T2 lalu dapat meng-UPDATE baris T2 itu dengan `tenant_id = T1`; WITH CHECK-nya lolos, dan company berpindah tenant. `bootstrap_akses_sendiri` di 0024 memakai `FOR SELECT`, sehingga jalur baca melebar dan jalur tulis tidak bergerak sama sekali.
+
+Yang dibuka persis sebesar yang sudah terbuka di `company_access`: baris yang aksesnya memang sudah dimiliki pengguna. Tanpa `app.user_id`, `paadu.current_user_id()` bernilai NULL dan kebijakan ini tidak menyumbang baris apa pun.
 ---
 
 ## Sengaja Ditunda

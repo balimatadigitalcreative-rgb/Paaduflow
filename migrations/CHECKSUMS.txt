@@ -25,3 +25,4 @@
 0021_izin_penjualan_akuntansi.sql 07e4fa67d3e7aee2
 0022_nomor_seri_pajak_per_company.sql 389364245d344250
 0023_rls_peran_bawaan.sql 0c0d61118a4a9089
+0024_rls_bootstrap_daftar_company.sql 89f1f6cc7a3b7939

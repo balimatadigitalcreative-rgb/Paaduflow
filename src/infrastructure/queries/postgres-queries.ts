@@ -75,8 +75,14 @@ export class PostgresCompanyDirectory implements CompanyDirectoryPort {
    * Berjalan tanpa konteks tenant, karena tenant-nya justru yang dicari.
    *
    * Kebijakan RLS `company_access` mengizinkan pengguna membaca barisnya
-   * sendiri untuk keperluan ini (D-064); `companies` dan `tenants` ikut terbaca
-   * lewat join yang dibatasi baris akses itu.
+   * sendiri untuk keperluan ini (D-064). `companies` dan `tenants` menuntut
+   * kebijakannya SENDIRI — `bootstrap_akses_sendiri` di 0024 — karena RLS
+   * dievaluasi per tabel dan tidak menular lewat join.
+   *
+   * Komentar di sini pernah menyatakan sebaliknya, dan kekeliruan itulah yang
+   * membuat endpoint ini menjawab 200 dengan daftar kosong di produksi selama
+   * pengujian lokal terus hijau. Setiap tabel yang ditambahkan ke join di bawah
+   * harus dapat dibaca tanpa `app.tenant_id`, atau seluruh hasilnya kosong.
    */
   async listForUser(userId: string): Promise<readonly AccessibleCompany[]> {
     const { rows } = await this.db.query<{
