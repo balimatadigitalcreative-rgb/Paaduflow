@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 
 import { periodOf, formatPeriod } from '#shared/fiscal-period'
 
-import { api, sesi } from './api/client.js'
+import { ApiError, api, onSesiHabis, sesi } from './api/client.js'
 import { Button } from './components/button.js'
 import { Dasbor, type CompanyDapatDiakses } from './pages/dasbor.js'
 import { BaganAkun, BukuBesar } from './pages/akuntansi.js'
@@ -25,6 +25,7 @@ import {
 } from './pages/pajak.js'
 import { DaftarFaktur, DetailFaktur, FakturBaru } from './pages/penjualan.js'
 import { pergiKe, useRoute } from './router.js'
+import styles from './pages/pages.module.css'
 import { AppShell } from './shell/app-shell.js'
 import { ToastProvider } from './components/toast.js'
 import { PreferencesProvider } from './shell/preferences.js'
@@ -111,19 +112,45 @@ const AKSI_PRIMER: Record<string, { readonly label: string; readonly tujuan: str
 
 const KUNCI_COMPANY = 'paadu.company_id'
 
+/**
+ * Tiga keadaan, bukan satu daftar.
+ *
+ * Sebelumnya `companies` hanyalah array yang dimulai kosong, sehingga "belum
+ * dijawab" dan "dijawab, memang tidak ada" tidak dapat dibedakan. Pengguna yang
+ * akunnya belum diberi company mana pun melihat "Memuat company…" selamanya —
+ * indikator yang menjanjikan sesuatu yang tidak akan pernah datang.
+ *
+ * Daftar kosong bukan kegagalan, dan bukan pula kelambatan. Ia jawaban yang
+ * sah, dan satu-satunya cara menampilkannya jujur adalah membuatnya keadaan
+ * tersendiri. Ini pola yang sama dengan `TableState` di pustaka tabel, yang
+ * memang sudah memisahkan `loading`, `empty`, dan `error`.
+ */
+type MuatCompany =
+  | { readonly kind: 'memuat' }
+  | { readonly kind: 'siap'; readonly daftar: readonly CompanyDapatDiakses[] }
+  | { readonly kind: 'galat'; readonly pesan: string }
+
 export function App(): ReactNode {
   const [masuk, setMasuk] = useState(() => sesi.accessToken() !== null)
-  const [companies, setCompanies] = useState<readonly CompanyDapatDiakses[]>([])
+  const [muat, setMuat] = useState<MuatCompany>({ kind: 'memuat' })
   const [companyId, setCompanyId] = useState<string>(
     () => localStorage.getItem(KUNCI_COMPANY) ?? '',
   )
   const [galat, setGalat] = useState<string | null>(null)
   const route = useRoute()
 
+  const keluar = useCallback((): void => {
+    void api.keluar().then(() => {
+      setMasuk(false)
+      setMuat({ kind: 'memuat' })
+    })
+  }, [])
+
   const muatCompanies = useCallback(async (): Promise<void> => {
+    setMuat({ kind: 'memuat' })
     try {
       const jawaban = await api.get<CompanyDapatDiakses[]>('/v1/me/companies')
-      setCompanies(jawaban.data)
+      setMuat({ kind: 'siap', daftar: jawaban.data })
 
       // Company tersimpan yang tidak lagi dapat diakses harus dilupakan, bukan
       // dipertahankan sampai setiap permintaan menjawab 403.
@@ -133,12 +160,24 @@ export function App(): ReactNode {
         setCompanyId(pertama)
         localStorage.setItem(KUNCI_COMPANY, pertama)
       }
-    } catch {
-      // Token kedaluwarsa adalah sebab paling umum. Keluar, jangan tampilkan
-      // aplikasi kosong yang setiap tombolnya gagal.
-      sesi.hapus()
-      setMasuk(false)
-      setGalat('Sesi berakhir. Silakan masuk lagi.')
+    } catch (kesalahan) {
+      /*
+       * Sesi mati sudah ditangani terpusat di klien API, dan layar masuk akan
+       * menggantikan yang ini — tidak ada yang perlu ditampilkan di sini.
+       *
+       * Sisanya adalah kegagalan yang dapat dicoba lagi: server sedang mati,
+       * jaringan putus, 500. Sebelumnya semuanya diperlakukan sebagai token
+       * kedaluwarsa dan pengguna dikeluarkan, sehingga satu gangguan jaringan
+       * sesaat membuang sesi yang sebenarnya masih sah.
+       */
+      if (kesalahan instanceof ApiError && kesalahan.status === 401) return
+      setMuat({
+        kind: 'galat',
+        pesan:
+          kesalahan instanceof ApiError
+            ? kesalahan.message
+            : 'Tidak dapat menghubungi server.',
+      })
     }
   }, [companyId])
 
@@ -146,7 +185,26 @@ export function App(): ReactNode {
     if (masuk) void muatCompanies()
   }, [masuk])
 
-  const company = companies.find((item) => item.id === companyId)
+  // Satu penangan untuk seluruh aplikasi: permintaan mana pun yang ditolak
+  // karena sesinya mati membawa pengguna ke halaman masuk.
+  useEffect(() => {
+    onSesiHabis(() => {
+      setMasuk(false)
+      setMuat({ kind: 'memuat' })
+      setGalat('Sesi Anda berakhir. Silakan masuk lagi.')
+    })
+    return () => onSesiHabis(null)
+  }, [])
+
+  const companies = muat.kind === 'siap' ? muat.daftar : []
+
+  /*
+   * Cadangan ke company pertama menutup satu keadaan mustahil yang dulu
+   * berakhir di layar yang sama dengan "sedang memuat": daftar terisi, tetapi
+   * `companyId` belum sempat menunjuk salah satunya. Dengan cadangan ini,
+   * `company` kosong berarti tepat satu hal — daftarnya memang kosong.
+   */
+  const company = companies.find((item) => item.id === companyId) ?? companies[0]
 
   const konteks = useMemo(
     () => ({
@@ -185,15 +243,65 @@ export function App(): ReactNode {
     )
   }
 
+  if (muat.kind === 'memuat') {
+    return (
+      <PreferencesProvider>
+        <main className={styles.masuk}>
+          <p role="status">Memuat company…</p>
+        </main>
+      </PreferencesProvider>
+    )
+  }
+
+  /*
+   * Gagal memuat bukan alasan mengeluarkan pengguna. Sesinya masih sah; yang
+   * gagal permintaannya. Karena itu tersedia "Coba lagi" — dan "Keluar", supaya
+   * tidak ada layar yang menjadi jalan buntu.
+   */
+  if (muat.kind === 'galat') {
+    return (
+      <PreferencesProvider>
+        <main className={styles.masuk}>
+          <h1>Tidak dapat memuat daftar company</h1>
+          <p className={styles.noticeDanger} role="alert">
+            {muat.pesan}
+          </p>
+          <div className={styles.row}>
+            <Button variant="secondary" onClick={() => void muatCompanies()}>
+              Coba lagi
+            </Button>
+            <Button variant="ghost" onClick={keluar}>
+              Keluar
+            </Button>
+          </div>
+        </main>
+      </PreferencesProvider>
+    )
+  }
+
+  /*
+   * Daftar kosong bagi pengguna yang sudah masuk: kondisi sah, bukan kegagalan
+   * dan bukan kelambatan. Yang disebut adalah apa adanya — akunnya berlaku,
+   * aksesnya yang belum ada — beserta siapa yang dapat memberikannya. Menahan
+   * indikator memuat di sini akan menjanjikan sesuatu yang tidak akan datang.
+   */
   if (company === undefined) {
     return (
       <PreferencesProvider>
-        <main>
+        <main className={styles.masuk}>
+          <h1>Belum ada company untuk akun ini</h1>
           <p>
-            {companies.length === 0
-              ? 'Memuat company…'
-              : 'Anda belum punya akses ke company mana pun.'}
+            Anda sudah masuk, tetapi akun Anda belum diberi akses ke company mana pun.
+            Mintalah admin tenant Anda menambahkan aksesnya, lalu periksa lagi.
           </p>
+          <div className={styles.row}>
+            <Button variant="secondary" onClick={() => void muatCompanies()}>
+              Periksa lagi
+            </Button>
+            <Button variant="ghost" onClick={keluar}>
+              Keluar
+            </Button>
+          </div>
         </main>
       </PreferencesProvider>
     )
@@ -261,12 +369,7 @@ export function App(): ReactNode {
           }}
         />
         <p>
-          <Button
-            variant="ghost"
-            onClick={() => {
-              void api.keluar().then(() => setMasuk(false))
-            }}
-          >
+          <Button variant="ghost" onClick={keluar}>
             Keluar
           </Button>
         </p>

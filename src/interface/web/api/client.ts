@@ -46,6 +46,8 @@ export const sesi = {
   simpan(access: string, refresh: string): void {
     localStorage.setItem(KUNCI_TOKEN, access)
     localStorage.setItem(KUNCI_REFRESH, refresh)
+    // Sesi baru berarti pemberitahuan berikutnya boleh lewat lagi.
+    sudahDiberitahu = false
   },
   hapus(): void {
     localStorage.removeItem(KUNCI_TOKEN)
@@ -54,6 +56,24 @@ export const sesi = {
   refreshToken(): string | null {
     return localStorage.getItem(KUNCI_REFRESH)
   },
+}
+
+/**
+ * Sesi yang ditolak server ditangani di satu tempat, bukan di tiap layar.
+ *
+ * Sebelumnya setiap halaman menangkap galatnya sendiri dan menampilkan "Sesi
+ * tidak berlaku." sebagai teks merah di tengah halaman. Pengguna membacanya,
+ * menekan "Coba lagi", dan mendapat pesan yang sama — tanpa satu pun jalan ke
+ * halaman masuk. Token yang mati di tengah pemakaian adalah kondisi aplikasi,
+ * bukan kegagalan satu layar, jadi ia diputuskan di sini.
+ */
+type SesiHabis = () => void
+
+let saatSesiHabis: SesiHabis | null = null
+let sudahDiberitahu = false
+
+export function onSesiHabis(penangan: SesiHabis | null): void {
+  saatSesiHabis = penangan
 }
 
 interface Opsi {
@@ -84,6 +104,25 @@ async function panggil<T>(path: string, opsi: Opsi = {}): Promise<T> {
   const isi = (await jawaban.json().catch(() => null)) as
     | { success: boolean; message?: string; data?: unknown; errors?: ApiErrorDetail[] }
     | null
+
+  /*
+   * 401 pada permintaan yang MEMBAWA token berarti sesinya sudah mati.
+   *
+   * 401 pada permintaan tanpa token bukan hal yang sama: itu jawaban wajar
+   * untuk kata sandi yang salah di halaman masuk, dan layar itu yang berhak
+   * menampilkannya. Membedakan keduanya di sini mencegah kegagalan masuk
+   * memicu "sesi Anda berakhir" pada orang yang memang belum pernah masuk.
+   *
+   * Galatnya tetap dilempar. Pemanggil berhak tahu permintaannya gagal;
+   * yang berubah hanya siapa yang memutuskan ke mana pengguna dibawa.
+   */
+  if (jawaban.status === 401 && opsi.tanpaToken !== true && token !== null) {
+    sesi.hapus()
+    if (!sudahDiberitahu) {
+      sudahDiberitahu = true
+      saatSesiHabis?.()
+    }
+  }
 
   if (!jawaban.ok || isi === null || isi.success === false) {
     throw new ApiError(

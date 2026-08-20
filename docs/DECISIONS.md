@@ -1034,6 +1034,32 @@ Ini juga menjelaskan D-144. Bundel server yang dibangun tangan itu sudah mengimp
 **Verifikasi kesehatan tidak menangkapnya, dan tidak dirancang untuk itu.** `/healthz` membuktikan ada proses yang menjawab, bukan bahwa yang menjawab dibangun dari commit ini. Gerbang yang menjawab pertanyaan berbeda dari yang kita kira sama saja dengan tidak ada gerbang.
 
 Langkah 3 sekarang `npm run build`, yang membangun keduanya dari pohon kerja yang sama.
+
+### D-146 · Sesi yang mati diputuskan di klien API, bukan di tiap layar
+**Status:** Berlaku
+Setiap layar dulu menangkap galatnya sendiri. 401 yang datang setelah aplikasi terbuka — token yang mati di tengah pemakaian — hanya menjadi teks merah "Sesi tidak berlaku." di layar itu, lengkap dengan tombol "Coba lagi" yang selamanya mengulang pesan yang sama. Tidak ada satu pun jalan ke halaman masuk.
+
+Token yang mati adalah kondisi aplikasi, bukan kegagalan satu layar. Keputusannya sekarang diambil sekali di `panggil()`, dan `onSesiHabis` memberitahu perakitan aplikasi.
+
+Syaratnya tiga, dan ketiganya perlu: `status === 401`, `tanpaToken !== true`, dan token benar-benar dikirim. **401 pada permintaan tanpa token bukan sesi yang mati** — itu jawaban wajar untuk kata sandi yang salah di halaman masuk, dan tanpa pembedaan ini kegagalan masuk akan memunculkan "sesi Anda berakhir" pada orang yang memang belum pernah masuk.
+
+**Yang ikut hilang: `catch` yang menelan semua galat sebagai token kedaluwarsa.** Satu gangguan jaringan sesaat dulu membuang sesi yang masih sah. Sekarang hanya 401 yang mengeluarkan; sisanya dapat dicoba lagi.
+
+### D-147 · Daftar kosong adalah keadaan tersendiri, bukan daftar yang belum terisi
+**Status:** Berlaku
+Gerbang company di `app.tsx` menyimpan `companies` sebagai array yang dimulai kosong, sehingga "belum dijawab" dan "dijawab, memang kosong" tidak dapat dibedakan:
+
+```
+companies.length === 0 ? 'Memuat company…' : 'Anda belum punya akses…'
+```
+
+Pengguna yang sudah masuk tetapi belum diberi akses ke company mana pun melihat "Memuat company…" tanpa batas waktu — indikator yang menjanjikan sesuatu yang tidak akan pernah datang. Cabang keduanya praktis tidak terjangkau.
+
+Diganti dengan tiga keadaan terpisah: `memuat`, `siap` beserta daftarnya, dan `galat` beserta pesannya. Ini pola yang sama dengan `TableState` yang sudah dipakai seluruh halaman daftar — `loading`, `empty`, `no_match`, `error`, `ready`. Gerbang ini satu-satunya tempat yang masih memakai array telanjang.
+
+Layar galat dan layar kosong keduanya membawa "Keluar", supaya tidak ada gerbang yang menjadi jalan buntu.
+
+**Premis laporan awalnya keliru dan diperiksa lebih dulu.** Dugaannya `/v1/me/companies` menjawab 200 dengan daftar kosong bagi pengguna yang belum masuk. Diuji di produksi, ketiga varian permintaan tanpa sesi menjawab 401 — rutenya memanggil `requireUser` sebelum apa pun. Yang menggantung justru pengguna yang sudah masuk.
 ---
 
 ## Sengaja Ditunda
