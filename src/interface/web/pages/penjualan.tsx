@@ -13,6 +13,7 @@ import { Button } from '../components/button.js'
 import { Select } from '../components/combobox.js'
 import { ErrorSummary, type FieldError } from '../components/form/form.js'
 import { DateField } from '../components/pickers.js'
+import { FilterBar, type FilterChip } from '../components/filter-bar.js'
 import { DataTable } from '../components/table/data-table.js'
 import { emptyLine, LineItemEditor, type EditableLine } from '../components/table/line-item-editor.js'
 import type { Column, TableState } from '../components/table/types.js'
@@ -33,6 +34,21 @@ interface Konteks {
   readonly currency: string
 }
 
+/** Sumbu kedua dan ketiga — Information Architecture §3. */
+const LABEL_PELUNASAN: Record<string, string> = {
+  unpaid: 'Belum dibayar',
+  partially_paid: 'Dibayar sebagian',
+  paid: 'Lunas',
+  overdue: 'Jatuh tempo',
+  written_off: 'Dihapusbukukan',
+}
+
+const LABEL_PEMENUHAN: Record<string, string> = {
+  not_fulfilled: 'Belum dikirim',
+  partially_fulfilled: 'Terkirim sebagian',
+  fulfilled: 'Terkirim',
+}
+
 const STATUS_DIKENAL = new Set([
   'draft',
   'submitted',
@@ -51,8 +67,51 @@ function status(nilai: string): DocumentStatus {
 
 // ── Daftar ─────────────────────────────────────────────────────────────────
 
+/**
+ * Quick filter chips ditetapkan saat desain modul, bukan dipilih pengguna —
+ * Component_Specs_Composite §2. Ketiganya adalah pertanyaan yang benar-benar
+ * dibawa orang ke daftar faktur.
+ */
+const CHIP_FAKTUR: readonly FilterChip[] = [
+  { id: 'draft', label: 'Draf' },
+  { id: 'pending_approval', label: 'Menunggu persetujuan' },
+  { id: 'posted', label: 'Terposting' },
+]
+
 export function DaftarFaktur({ konteks }: { readonly konteks: Konteks }): ReactNode {
   const [state, setState] = useState<TableState<SalesDocumentSummary>>({ kind: 'loading' })
+  const [semua, setSemua] = useState<readonly SalesDocumentSummary[]>([])
+  const [filterAktif, setFilterAktif] = useState<readonly string[]>([])
+
+  /**
+   * Penyaringan dan pemilihan STATE dipisah dari pemuatan.
+   *
+   * Bedanya penting: "belum ada faktur sama sekali" dan "ada faktur tetapi
+   * filternya tidak cocok" menuntut tindakan yang berbeda — membuat faktur
+   * pertama, atau menghapus filter. Menyamakan keduanya membuat orang yang
+   * salah menyetel filter menyimpulkan datanya hilang (§1.8).
+   */
+  function tampilkan(baris: readonly SalesDocumentSummary[], filter: readonly string[]): void {
+    if (baris.length === 0) {
+      setState({ kind: 'empty' })
+      return
+    }
+
+    const cocok =
+      filter.length === 0 ? baris : baris.filter((row) => filter.includes(row.lifecycleStatus))
+
+    if (cocok.length === 0) {
+      setState({
+        kind: 'no_match',
+        activeFilters: filter.map(
+          (id) => CHIP_FAKTUR.find((chip) => chip.id === id)?.label ?? id,
+        ),
+      })
+      return
+    }
+
+    setState({ kind: 'ready', rows: cocok, total: cocok.length, nextCursor: null })
+  }
 
   async function muat(): Promise<void> {
     setState({ kind: 'loading' })
@@ -60,16 +119,8 @@ export function DaftarFaktur({ konteks }: { readonly konteks: Konteks }): ReactN
       const jawaban = await api.get<SalesDocumentSummary[]>(
         `${perusahaan(konteks.companyId)}/sales-documents`,
       )
-      setState(
-        jawaban.data.length === 0
-          ? { kind: 'empty' }
-          : {
-              kind: 'ready',
-              rows: jawaban.data,
-              total: jawaban.data.length,
-              nextCursor: jawaban.meta?.next_cursor ?? null,
-            },
-      )
+      setSemua(jawaban.data)
+      tampilkan(jawaban.data, filterAktif)
     } catch (galat) {
       setState({
         kind: 'error',
@@ -81,6 +132,11 @@ export function DaftarFaktur({ konteks }: { readonly konteks: Konteks }): ReactN
   useEffect(() => {
     void muat()
   }, [konteks.companyId])
+
+  function ubahFilter(berikut: readonly string[]): void {
+    setFilterAktif(berikut)
+    tampilkan(semua, berikut)
+  }
 
   const columns: readonly Column<SalesDocumentSummary>[] = useMemo(
     () => [
@@ -127,9 +183,19 @@ export function DaftarFaktur({ konteks }: { readonly konteks: Konteks }): ReactN
 
   return (
     <div className={styles.stack}>
-      <div className={styles.row}>
-        <Button onClick={() => pergiKe('penjualan/baru')}>Faktur baru</Button>
-      </div>
+      <FilterBar
+        label="Saring faktur menurut status"
+        chips={CHIP_FAKTUR}
+        activeIds={filterAktif}
+        onToggle={(id) =>
+          ubahFilter(
+            filterAktif.includes(id)
+              ? filterAktif.filter((aktif) => aktif !== id)
+              : [...filterAktif, id],
+          )
+        }
+        onClearAll={() => ubahFilter([])}
+      />
 
       <DataTable
         caption="Faktur Penjualan"
@@ -137,11 +203,16 @@ export function DaftarFaktur({ konteks }: { readonly konteks: Konteks }): ReactN
         state={state}
         rowId={(row) => row.id}
         rowHref={(row) => href(`penjualan/${row.id}`)}
-        filter={{}}
+        filter={Object.fromEntries(filterAktif.map((id) => [id, 'aktif']))}
+        activeFilterLabels={filterAktif.map(
+          (id) => CHIP_FAKTUR.find((chip) => chip.id === id)?.label ?? id,
+        )}
         sort={[]}
         companyName={konteks.companyName}
+        emptyAction={<Button onClick={() => pergiKe('penjualan/baru')}>Buat faktur pertama</Button>}
         onSortChange={() => undefined}
         onRetry={() => void muat()}
+        onClearFilters={() => ubahFilter([])}
       />
     </div>
   )
@@ -237,11 +308,28 @@ export function DetailFaktur({
           <div className={styles.metaLabel}>Tanggal</div>
           <div className={styles.metaValue}>{dokumen.documentDate}</div>
         </div>
+        {/*
+          Tiga sumbu status DITAMPILKAN TERPISAH dengan label jelas —
+          Information Architecture §3 dan Screen_Specs §5. Di daftar hanya
+          gabungan dua yang pertama; di detail ketiganya.
+
+          Menggabungkannya menjadi satu enum menyembunyikan keadaan yang benar
+          dan sering terjadi: faktur yang sudah diposting, belum dibayar, dan
+          barangnya sudah dikirim. Satu label tidak dapat menyatakan itu.
+        */}
         <div>
-          <div className={styles.metaLabel}>Status</div>
+          <div className={styles.metaLabel}>Siklus hidup</div>
           <div className={styles.metaValue}>
             <StatusBadge status={status(dokumen.lifecycleStatus)} />
           </div>
+        </div>
+        <div>
+          <div className={styles.metaLabel}>Pelunasan</div>
+          <div className={styles.metaValue}>{LABEL_PELUNASAN[dokumen.settlementStatus] ?? dokumen.settlementStatus}</div>
+        </div>
+        <div>
+          <div className={styles.metaLabel}>Pemenuhan</div>
+          <div className={styles.metaValue}>{LABEL_PEMENUHAN[dokumen.fulfillmentStatus] ?? dokumen.fulfillmentStatus}</div>
         </div>
         <div>
           <div className={styles.metaLabel}>Total</div>

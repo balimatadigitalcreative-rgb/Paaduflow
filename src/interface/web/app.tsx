@@ -26,6 +26,7 @@ import {
 import { DaftarFaktur, DetailFaktur, FakturBaru } from './pages/penjualan.js'
 import { pergiKe, useRoute } from './router.js'
 import { AppShell } from './shell/app-shell.js'
+import { ToastProvider } from './components/toast.js'
 import { PreferencesProvider } from './shell/preferences.js'
 import type { ModuleLink, PaletteItem, SidebarItem } from './shell/types.js'
 
@@ -92,6 +93,20 @@ const JUDUL: Record<string, { judul: string; remah: readonly string[] }> = {
   'pajak/masukan': { judul: 'Faktur Pajak Masukan', remah: ['Pajak', 'Faktur Pajak Masukan'] },
   'pajak/terbitkan': { judul: 'Terbitkan Faktur Pajak', remah: ['Pajak', 'Terbitkan'] },
   'pajak/rekonsiliasi': { judul: 'Rekonsiliasi Pajak', remah: ['Pajak', 'Rekonsiliasi'] },
+}
+
+/**
+ * Aksi primer per halaman — Component_Specs_Composite §7.
+ *
+ * Satu saja. Bila terasa ada dua, hierarkinya belum diputuskan. Diletakkan di
+ * sini, bukan di badan halaman, karena page header adalah tempatnya menurut
+ * Layout_System §3 — dan tempat yang tetap membuatnya dapat ditemukan tanpa
+ * dicari ulang di setiap modul.
+ */
+const AKSI_PRIMER: Record<string, { readonly label: string; readonly tujuan: string }> = {
+  penjualan: { label: 'Faktur baru', tujuan: 'penjualan/baru' },
+  'pajak/kode': { label: 'Terbitkan faktur pajak', tujuan: 'pajak/terbitkan' },
+  'pajak/keluaran': { label: 'Terbitkan faktur pajak', tujuan: 'pajak/terbitkan' },
 }
 
 const KUNCI_COMPANY = 'paadu.company_id'
@@ -190,9 +205,11 @@ export function App(): ReactNode {
   const judul = JUDUL[kunciHalaman] ?? JUDUL[bagian] ?? JUDUL.dasbor!
 
   const periode = periodOf(new Date(), company.fiscal_year_start_month)
+  const aksiPrimer = AKSI_PRIMER[kunciHalaman]
 
   return (
     <PreferencesProvider>
+      <ToastProvider>
       <AppShell
         switcher={{
           tenant: {
@@ -223,6 +240,13 @@ export function App(): ReactNode {
         paletteItems={paletteItems}
         pageTitle={judul.judul}
         breadcrumb={judul.remah}
+        {...(aksiPrimer === undefined
+          ? {}
+          : {
+              primaryAction: (
+                <Button onClick={() => pergiKe(aksiPrimer.tujuan)}>{aksiPrimer.label}</Button>
+              ),
+            })}
         fiscalPeriod={formatPeriod(periode)}
         onSelectModule={(id) => {
           const pertama = SIDEBAR[id]?.[0]?.id ?? id
@@ -247,6 +271,7 @@ export function App(): ReactNode {
           </Button>
         </p>
       </AppShell>
+      </ToastProvider>
     </PreferencesProvider>
   )
 }

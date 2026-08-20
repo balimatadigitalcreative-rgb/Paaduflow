@@ -33,6 +33,19 @@ export interface AppShellProps {
   readonly breadcrumb: readonly string[]
   /** Lapis 2: konteks diulang di titik kerja. */
   readonly fiscalPeriod: string
+  /**
+   * Susunan page header ditetapkan Component_Specs_Composite §7 dan sama di
+   * seluruh produk: breadcrumb → judul → badge status → baris konteks → aksi
+   * primer → tab. Slot berikut mengisi tiga yang belum ada.
+   *
+   * Ketiganya opsional karena tidak setiap halaman punya status atau tab —
+   * tetapi urutannya tidak dapat diubah halaman, dan itulah gunanya di sini
+   * alih-alih digambar ulang per layar.
+   */
+  readonly statusBadges?: ReactNode
+  /** Satu saja. Bila terasa ada dua, hierarkinya belum diputuskan (§7). */
+  readonly primaryAction?: ReactNode
+  readonly tabs?: ReactNode
   readonly children: ReactNode
   readonly panel?: ReactNode
   onSelectModule(moduleId: string): void
@@ -228,12 +241,22 @@ export function AppShell(props: AppShellProps): ReactNode {
                 </ol>
               </nav>
 
-              <h1 className={styles.pageTitle}>{props.pageTitle}</h1>
+              <div className={styles.titleRow}>
+                <div className={styles.titleGroup}>
+                  <h1 className={styles.pageTitle}>{props.pageTitle}</h1>
+                  {props.statusBadges}
+                </div>
+                {props.primaryAction === undefined ? null : (
+                  <div className={styles.primaryAction}>{props.primaryAction}</div>
+                )}
+              </div>
 
               <p className={styles.contextRow}>
                 <strong>{companyAktif?.legalName}</strong> · {props.fiscalPeriod} ·{' '}
                 {companyAktif?.currency}
               </p>
+
+              {props.tabs}
             </div>
 
             <div className={styles.body}>{props.children}</div>

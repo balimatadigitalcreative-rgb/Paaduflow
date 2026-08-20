@@ -428,3 +428,23 @@
     transition-duration: var(--duration-instant);
   }
 }
+
+/* Judul dan aksi primer sebaris — Component_Specs_Composite §7.
+   Aksi primer di kanan, dan hanya satu. */
+.titleRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.titleGroup {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.primaryAction {
+  flex-shrink: 0;
+}
