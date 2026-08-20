@@ -271,9 +271,20 @@ langkah(2, 'npm ci --include=dev')
 const pasang = await ssh(`cd ${APP_DIR} && npm ci --include=dev`, { tampilkan: true })
 if (pasang.kode !== 0) berhenti('npm ci', pasang)
 
-langkah(3, 'npm run build:web')
-const bangun = await ssh(`cd ${APP_DIR} && npm run build:web`, { tampilkan: true })
-if (bangun.kode !== 0) berhenti('npm run build:web', bangun)
+/*
+ * `npm run build`, bukan `build:web`.
+ *
+ * Sampai 20 Agustus 2026 langkah ini hanya membangun frontend, sehingga
+ * `dist/server/main.js` di server tertinggal dari commit yang baru ditarik.
+ * Deploy berakhir hijau — kesehatan 200 — sementara yang melayani adalah
+ * bundel lama. Setiap perubahan backend hilang tanpa suara.
+ *
+ * Verifikasi kesehatan tidak menangkapnya, dan tidak bisa: ia membuktikan ada
+ * yang menjawab, bukan bahwa yang menjawab adalah commit ini.
+ */
+langkah(3, 'npm run build (web + server)')
+const bangun = await ssh(`cd ${APP_DIR} && npm run build`, { tampilkan: true })
+if (bangun.kode !== 0) berhenti('npm run build', bangun)
 
 langkah(4, 'Memeriksa migrasi tertunda')
 const tertunda = await ssh(

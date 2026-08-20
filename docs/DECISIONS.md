@@ -1020,6 +1020,20 @@ Dibuktikan dengan uji yang diminta: `rm -rf node_modules`, `npm ci --omit=dev`, 
 **Swagger tetap di `dependencies`, tidak dimatikan di produksi.** Ia bukan alat pengembangan: `/openapi.json` dibangkitkan dari skema rute yang sama yang memvalidasi permintaan (D-031), dan dokumen yang lahir dari kode yang berjalan tidak bisa basi. Mematikannya di produksi berarti dokumen API hanya benar di laptop — tempat yang paling tidak membutuhkannya.
 
 Bila kelak permukaannya ingin ditutup dari publik, yang dibatasi adalah **aksesnya** lewat reverse proxy atau izin, bukan keberadaannya. Menghapus rute berarti menghapus kemampuan memverifikasi apa yang benar-benar dilayani server.
+
+### D-145 · Deploy membangun bundel server, bukan hanya frontend
+**Status:** Berlaku
+Langkah build di `tools/deploy/deploy.js` menjalankan `npm run build:web`. Itu hanya membangun frontend. `dist/server/main.js` tidak pernah dibangun ulang, sehingga tertinggal dari commit yang baru saja ditarik.
+
+**Deploy tetap berakhir hijau.** Verifikasi kesehatan mengembalikan 200, PM2 melaporkan `online`, dan commit di server benar. Yang melayani tetap bundel lama. Setiap perubahan backend — rute, kebijakan, perbaikan — hilang tanpa suara, dan yang tampak justru sebaliknya.
+
+Terbukti saat deploy 2c2e72a: `dist/web/index.html` bertanggal 08:31 UTC, `dist/server/main.js` bertanggal 07:56 UTC, dari build tangan yang tidak berhubungan.
+
+Ini juga menjelaskan D-144. Bundel server yang dibangun tangan itu sudah mengimpor `@fastify/static`, sementara `node_modules` di sana masih dari install yang lebih lama. Build dan install berasal dari dua momen berbeda karena deploy tidak pernah menyatukan keduanya.
+
+**Verifikasi kesehatan tidak menangkapnya, dan tidak dirancang untuk itu.** `/healthz` membuktikan ada proses yang menjawab, bukan bahwa yang menjawab dibangun dari commit ini. Gerbang yang menjawab pertanyaan berbeda dari yang kita kira sama saja dengan tidak ada gerbang.
+
+Langkah 3 sekarang `npm run build`, yang membangun keduanya dari pohon kerja yang sama.
 ---
 
 ## Sengaja Ditunda
