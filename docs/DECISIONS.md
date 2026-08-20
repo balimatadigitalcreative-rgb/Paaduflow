@@ -1006,6 +1006,20 @@ Bila bentuk daftar di `main.ts` berubah dan tidak lagi terbaca, pemeriksaan **ga
 
 **Yang paling perlu diingat dari kejadian ini bukan tentang env.** Perbaikan `.env.example` sudah ditulis satu giliran sebelum deploy itu, tetapi tidak pernah di-commit — sehingga server menarik versi lama dan gagal karena celah yang sudah tertutup di komputer pengembang. Pekerjaan yang tidak di-commit tidak ada bagi siapa pun selain yang mengetiknya.
 
+
+### D-144 · `@fastify/swagger` adalah dependensi runtime, dan sudah berada di tempat yang benar
+**Status:** Berlaku
+Server di VPS mati dengan `Cannot find package '@fastify/swagger'`, dan dugaannya paket itu salah tempat di `devDependencies`.
+
+**Dugaan itu keliru, dan diperiksa sebelum apa pun dipindahkan.** Seluruh paket yang diimpor `src/interface/http`, `src/application`, `src/infrastructure`, dan `src/composition` — `@fastify/swagger`, `@fastify/type-provider-typebox`, `@fastify/static`, `@sinclair/typebox`, `fastify`, `pg`, `jose`, `otpauth`, `@node-rs/argon2` — sudah berada di `dependencies`. Tidak ada satu pun yang salah tempat.
+
+Dibuktikan dengan uji yang diminta: `rm -rf node_modules`, `npm ci --omit=dev`, lalu `npm run start`. Terpasang 97 paket, server menyala dan mendengarkan. Bila ada yang salah tempat, ia akan gagal persis di titik itu.
+
+**Sebab sebenarnya ada di server, bukan di manifes.** `node_modules` di sana tertinggal dari commit yang lebih lama — `@fastify/static` baru ditambahkan belakangan, dan `dist/server/main.js` yang dibangun sesudahnya mengimpor paket yang belum pernah dipasang. Deploy yang menjalankan `npm ci --include=dev` menutupnya. Ini bukan cacat pengemasan; ini akibat build dan install yang tidak sejalan.
+
+**Swagger tetap di `dependencies`, tidak dimatikan di produksi.** Ia bukan alat pengembangan: `/openapi.json` dibangkitkan dari skema rute yang sama yang memvalidasi permintaan (D-031), dan dokumen yang lahir dari kode yang berjalan tidak bisa basi. Mematikannya di produksi berarti dokumen API hanya benar di laptop — tempat yang paling tidak membutuhkannya.
+
+Bila kelak permukaannya ingin ditutup dari publik, yang dibatasi adalah **aksesnya** lewat reverse proxy atau izin, bukan keberadaannya. Menghapus rute berarti menghapus kemampuan memverifikasi apa yang benar-benar dilayani server.
 ---
 
 ## Sengaja Ditunda
