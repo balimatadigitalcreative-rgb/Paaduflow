@@ -29,6 +29,7 @@ import styles from './pages/pages.module.css'
 import { AppShell } from './shell/app-shell.js'
 import { ToastProvider } from './components/toast.js'
 import { PreferencesProvider } from './shell/preferences.js'
+import { PenyediaHeaderHalaman, type IsiHeaderHalaman } from './shell/page-header.js'
 import type { ModuleLink, PaletteItem, SidebarItem } from './shell/types.js'
 
 /**
@@ -137,6 +138,7 @@ export function App(): ReactNode {
     () => localStorage.getItem(KUNCI_COMPANY) ?? '',
   )
   const [galat, setGalat] = useState<string | null>(null)
+  const [header, setHeader] = useState<IsiHeaderHalaman>({})
   const route = useRoute()
 
   const keluar = useCallback((): void => {
@@ -195,6 +197,19 @@ export function App(): ReactNode {
     })
     return () => onSesiHabis(null)
   }, [])
+
+  /*
+   * Header dikosongkan saat rute berganti.
+   *
+   * Halaman baru mengisinya lewat efeknya sendiri, yang berjalan SETELAH render
+   * pertama. Tanpa pengosongan di sini, badge "Terposting" milik faktur
+   * sebelumnya sempat terlihat satu frame di atas judul halaman yang sudah
+   * berganti — dan badge status yang salah lebih buruk daripada tidak ada.
+   */
+  const jalur = route.path.join('/')
+  useEffect(() => {
+    setHeader({})
+  }, [jalur])
 
   const companies = muat.kind === 'siap' ? muat.daftar : []
 
@@ -348,6 +363,8 @@ export function App(): ReactNode {
         paletteItems={paletteItems}
         pageTitle={judul.judul}
         breadcrumb={judul.remah}
+        {...(header.badges === undefined ? {} : { statusBadges: header.badges })}
+        {...(header.tabs === undefined ? {} : { tabs: header.tabs })}
         {...(aksiPrimer === undefined
           ? {}
           : {
@@ -362,12 +379,14 @@ export function App(): ReactNode {
         }}
         onSelectItem={(id) => pergiKe(id)}
       >
-        <Halaman route={route} konteks={konteks} companies={companies} companyId={companyId}
-          onPilihCompany={(id) => {
-            setCompanyId(id)
-            localStorage.setItem(KUNCI_COMPANY, id)
-          }}
-        />
+        <PenyediaHeaderHalaman pasang={setHeader}>
+          <Halaman route={route} konteks={konteks} companies={companies} companyId={companyId}
+            onPilihCompany={(id) => {
+              setCompanyId(id)
+              localStorage.setItem(KUNCI_COMPANY, id)
+            }}
+          />
+        </PenyediaHeaderHalaman>
         <p>
           <Button variant="ghost" onClick={keluar}>
             Keluar

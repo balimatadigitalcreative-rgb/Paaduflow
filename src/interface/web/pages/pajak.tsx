@@ -209,6 +209,11 @@ export function KodePajak({
         filter={{}}
         sort={[]}
         companyName={konteks.companyName}
+        emptyAction={
+          <Button variant="secondary" onClick={() => void muat()}>
+            Muat ulang kode pajak
+          </Button>
+        }
         onSortChange={() => undefined}
         onRetry={() => void muat()}
       />
@@ -496,6 +501,9 @@ export function DaftarFakturKeluaran({ konteks }: { readonly konteks: Konteks })
       filter={{}}
       sort={[]}
       companyName={konteks.companyName}
+      emptyAction={
+        <Button onClick={() => pergiKe('pajak/terbitkan')}>Terbitkan faktur pajak</Button>
+      }
       onSortChange={() => undefined}
       onRetry={() => void muat()}
     />
@@ -1031,6 +1039,11 @@ export function DaftarFakturMasukan({ konteks }: { readonly konteks: Konteks }):
       filter={{}}
       sort={[]}
       companyName={konteks.companyName}
+      emptyAction={
+        <Button variant="secondary" onClick={() => pergiKe('pembelian/tagihan')}>
+          Buka faktur pembelian
+        </Button>
+      }
       onSortChange={() => undefined}
       onRetry={() => void muat()}
     />

@@ -13,6 +13,7 @@ import { formatAmount } from '#shared/money-format'
 import { api, ApiError, perusahaan } from '../api/client.js'
 import { Badge, StatusBadge, type DocumentStatus } from '../components/badge.js'
 import { Button } from '../components/button.js'
+import { FilterBar, type FilterChip } from '../components/filter-bar.js'
 import { DataTable } from '../components/table/data-table.js'
 import type { Column, TableState } from '../components/table/types.js'
 import { TextField } from '../components/text-field.js'
@@ -60,6 +61,26 @@ const LABEL_PENCOCOKAN: Record<string, { teks: string; nada: 'neutral' | 'succes
 
 // ── Daftar dokumen pembelian ───────────────────────────────────────────────
 
+/**
+ * Quick filter chips ditetapkan saat desain modul — Component_Specs_Composite §2.
+ *
+ * Berbeda per jenis dokumen, karena pertanyaan yang dibawa orang ke kedua daftar
+ * memang berbeda. Ke pesanan: mana yang masih menunggu persetujuan, mana yang
+ * barangnya belum datang. Ke tagihan: mana yang belum diposting, mana yang belum
+ * dibayar.
+ */
+const CHIP_PESANAN: readonly FilterChip[] = [
+  { id: 'draft', label: 'Draf' },
+  { id: 'pending_approval', label: 'Menunggu persetujuan' },
+  { id: 'approved', label: 'Disetujui' },
+]
+
+const CHIP_TAGIHAN: readonly FilterChip[] = [
+  { id: 'draft', label: 'Draf' },
+  { id: 'approved', label: 'Siap diposting' },
+  { id: 'posted', label: 'Terposting' },
+]
+
 export function DaftarPembelian({
   konteks,
   docType,
@@ -68,6 +89,34 @@ export function DaftarPembelian({
   readonly docType: 'purchase_order' | 'bill'
 }): ReactNode {
   const [state, setState] = useState<TableState<PurchaseDocumentSummary>>({ kind: 'loading' })
+  const [semua, setSemua] = useState<readonly PurchaseDocumentSummary[]>([])
+  const [filterAktif, setFilterAktif] = useState<readonly string[]>([])
+
+  const chips = docType === 'bill' ? CHIP_TAGIHAN : CHIP_PESANAN
+  const labelFilter = (id: string): string =>
+    chips.find((chip) => chip.id === id)?.label ?? id
+
+  /**
+   * "Belum ada dokumen" dan "ada dokumen, filternya tidak cocok" adalah dua
+   * keadaan berbeda dengan tindakan berbeda — §1.8. Menyamakan keduanya membuat
+   * orang yang salah menyetel filter menyimpulkan datanya hilang.
+   */
+  function tampilkan(baris: readonly PurchaseDocumentSummary[], filter: readonly string[]): void {
+    if (baris.length === 0) {
+      setState({ kind: 'empty' })
+      return
+    }
+
+    const cocok =
+      filter.length === 0 ? baris : baris.filter((row) => filter.includes(row.lifecycleStatus))
+
+    if (cocok.length === 0) {
+      setState({ kind: 'no_match', activeFilters: filter.map(labelFilter) })
+      return
+    }
+
+    setState({ kind: 'ready', rows: cocok, total: cocok.length, nextCursor: null })
+  }
 
   async function muat(): Promise<void> {
     setState({ kind: 'loading' })
@@ -75,16 +124,8 @@ export function DaftarPembelian({
       const jawaban = await api.get<PurchaseDocumentSummary[]>(
         `${perusahaan(konteks.companyId)}/purchase-documents?doc_type=${docType}`,
       )
-      setState(
-        jawaban.data.length === 0
-          ? { kind: 'empty' }
-          : {
-              kind: 'ready',
-              rows: jawaban.data,
-              total: jawaban.data.length,
-              nextCursor: jawaban.meta?.next_cursor ?? null,
-            },
-      )
+      setSemua(jawaban.data)
+      tampilkan(jawaban.data, filterAktif)
     } catch (galat) {
       setState({
         kind: 'error',
@@ -96,6 +137,11 @@ export function DaftarPembelian({
   useEffect(() => {
     void muat()
   }, [konteks.companyId, docType])
+
+  function ubahFilter(berikut: readonly string[]): void {
+    setFilterAktif(berikut)
+    tampilkan(semua, berikut)
+  }
 
   const columns: readonly Column<PurchaseDocumentSummary>[] = useMemo(() => {
     const dasar: Column<PurchaseDocumentSummary>[] = [
@@ -153,20 +199,53 @@ export function DaftarPembelian({
   }, [docType])
 
   return (
-    <DataTable
-      caption={docType === 'bill' ? 'Tagihan Vendor' : 'Pesanan Pembelian'}
-      columns={columns}
-      state={state}
-      rowId={(row) => row.id}
-      rowHref={(row) =>
-        href(docType === 'bill' ? `pembelian/tagihan/${row.id}` : `pembelian/pesanan/${row.id}`)
-      }
-      filter={{}}
-      sort={[]}
-      companyName={konteks.companyName}
-      onSortChange={() => undefined}
-      onRetry={() => void muat()}
-    />
+    <div className={styles.stack}>
+      <FilterBar
+        label={
+          docType === 'bill'
+            ? 'Saring tagihan menurut status'
+            : 'Saring pesanan menurut status'
+        }
+        chips={chips}
+        activeIds={filterAktif}
+        onToggle={(id) =>
+          ubahFilter(
+            filterAktif.includes(id)
+              ? filterAktif.filter((aktif) => aktif !== id)
+              : [...filterAktif, id],
+          )
+        }
+        onClearAll={() => ubahFilter([])}
+      />
+
+      {/*
+        Aksi state kosong mengarah ke langkah yang benar-benar pertama.
+        Pembelian bermula dari pesanan, bukan dari tagihan — menawarkan "buat
+        tagihan" di company yang belum punya apa pun akan mengantar orang ke
+        form yang gagal di field pertama.
+      */}
+      <DataTable
+        caption={docType === 'bill' ? 'Faktur Pembelian' : 'Pesanan Pembelian'}
+        columns={columns}
+        state={state}
+        rowId={(row) => row.id}
+        rowHref={(row) =>
+          href(docType === 'bill' ? `pembelian/tagihan/${row.id}` : `pembelian/pesanan/${row.id}`)
+        }
+        filter={Object.fromEntries(filterAktif.map((id) => [id, 'aktif']))}
+        activeFilterLabels={filterAktif.map(labelFilter)}
+        sort={[]}
+        companyName={konteks.companyName}
+        emptyAction={
+          <Button variant="secondary" onClick={() => pergiKe('pembelian/pesanan')}>
+            {docType === 'bill' ? 'Mulai dari pesanan pembelian' : 'Pelajari alur pembelian'}
+          </Button>
+        }
+        onSortChange={() => undefined}
+        onRetry={() => void muat()}
+        onClearFilters={() => ubahFilter([])}
+      />
+    </div>
   )
 }
 
@@ -408,6 +487,11 @@ export function DaftarPenerimaan({ konteks }: { readonly konteks: Konteks }): Re
       filter={{}}
       sort={[]}
       companyName={konteks.companyName}
+      emptyAction={
+        <Button variant="secondary" onClick={() => pergiKe('pembelian/pesanan')}>
+          Buka pesanan pembelian
+        </Button>
+      }
       onSortChange={() => undefined}
       onRetry={() => void muat()}
     />

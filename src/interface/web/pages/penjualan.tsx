@@ -8,7 +8,7 @@ import type {
 import { formatAmount } from '#shared/money-format'
 
 import { api, ApiError, perusahaan } from '../api/client.js'
-import { StatusBadge, type DocumentStatus } from '../components/badge.js'
+import { Badge, StatusBadge, type DocumentStatus } from '../components/badge.js'
 import { Button } from '../components/button.js'
 import { Select } from '../components/combobox.js'
 import { ErrorSummary, type FieldError } from '../components/form/form.js'
@@ -17,6 +17,8 @@ import { FilterBar, type FilterChip } from '../components/filter-bar.js'
 import { DataTable } from '../components/table/data-table.js'
 import { emptyLine, LineItemEditor, type EditableLine } from '../components/table/line-item-editor.js'
 import type { Column, TableState } from '../components/table/types.js'
+import { Tabs, TabPanel } from '../components/tabs.js'
+import { useHeaderHalaman } from '../shell/page-header.js'
 import { href, pergiKe } from '../router.js'
 import styles from './pages.module.css'
 
@@ -231,6 +233,7 @@ export function DetailFaktur({
   const [galat, setGalat] = useState<string | null>(null)
   const [pesan, setPesan] = useState<string | null>(null)
   const [sedang, setSedang] = useState(false)
+  const [tab, setTab] = useState('ringkasan')
 
   async function muat(): Promise<void> {
     try {
@@ -246,6 +249,52 @@ export function DetailFaktur({
   useEffect(() => {
     void muat()
   }, [documentId])
+
+  /*
+   * Tiga sumbu status tinggal di page header, bukan di dalam salah satu tab.
+   *
+   * Information Architecture §3 menuntut ketiganya terpisah dengan label jelas;
+   * Screen_Specs §5 menempatkannya di page header. Keduanya terpenuhi di sini,
+   * dan ada alasan praktis yang lebih kuat dari kepatuhan: status harus terbaca
+   * dari tab mana pun. Menaruhnya di dalam tab "Ringkasan" berarti orang yang
+   * sedang memeriksa baris tidak lagi melihat bahwa faktur ini sudah diposting.
+   *
+   * Urutan empat tab pertama baku di seluruh produk — Flow_Archetypes 1.
+   */
+  const jumlahTerkait = dokumen === null ? 0 : dokumen.journalId === null ? 0 : 1
+
+  useHeaderHalaman(
+    () =>
+      dokumen === null
+        ? {}
+        : {
+            badges: (
+              <>
+                <StatusBadge status={status(dokumen.lifecycleStatus)} />
+                <Badge tone={dokumen.settlementStatus === 'paid' ? 'success' : 'neutral'}>
+                  {LABEL_PELUNASAN[dokumen.settlementStatus] ?? dokumen.settlementStatus}
+                </Badge>
+                <Badge tone={dokumen.fulfillmentStatus === 'fulfilled' ? 'success' : 'neutral'}>
+                  {LABEL_PEMENUHAN[dokumen.fulfillmentStatus] ?? dokumen.fulfillmentStatus}
+                </Badge>
+              </>
+            ),
+            tabs: (
+              <Tabs
+                label="Bagian faktur"
+                activeId={tab}
+                onSelect={setTab}
+                items={[
+                  { id: 'ringkasan', label: 'Ringkasan' },
+                  { id: 'baris', label: 'Baris', count: dokumen.lines.length },
+                  { id: 'terkait', label: 'Dokumen terkait', count: jumlahTerkait },
+                  { id: 'aktivitas', label: 'Aktivitas' },
+                ]}
+              />
+            ),
+          },
+    [dokumen, tab, jumlahTerkait],
+  )
 
   /** Satu jalur untuk ketiga tindakan siklus hidup. */
   async function tindakan(
@@ -295,93 +344,103 @@ export function DetailFaktur({
         <p className={`${styles.notice} ${styles.noticeSuccess}`}>{pesan}</p>
       ) : null}
 
-      <div className={styles.meta}>
-        <div>
-          <div className={styles.metaLabel}>Nomor</div>
-          <div className={styles.metaValue}>{dokumen.number ?? '(belum bernomor)'}</div>
-        </div>
-        <div>
-          <div className={styles.metaLabel}>Customer</div>
-          <div className={styles.metaValue}>{dokumen.customerName}</div>
-        </div>
-        <div>
-          <div className={styles.metaLabel}>Tanggal</div>
-          <div className={styles.metaValue}>{dokumen.documentDate}</div>
-        </div>
-        {/*
-          Tiga sumbu status DITAMPILKAN TERPISAH dengan label jelas —
-          Information Architecture §3 dan Screen_Specs §5. Di daftar hanya
-          gabungan dua yang pertama; di detail ketiganya.
-
-          Menggabungkannya menjadi satu enum menyembunyikan keadaan yang benar
-          dan sering terjadi: faktur yang sudah diposting, belum dibayar, dan
-          barangnya sudah dikirim. Satu label tidak dapat menyatakan itu.
-        */}
-        <div>
-          <div className={styles.metaLabel}>Siklus hidup</div>
-          <div className={styles.metaValue}>
-            <StatusBadge status={status(dokumen.lifecycleStatus)} />
+      <TabPanel id="ringkasan" activeId={tab}>
+        <div className={styles.meta}>
+          <div>
+            <div className={styles.metaLabel}>Nomor</div>
+            <div className={styles.metaValue}>{dokumen.number ?? '(belum bernomor)'}</div>
+          </div>
+          <div>
+            <div className={styles.metaLabel}>Customer</div>
+            <div className={styles.metaValue}>{dokumen.customerName}</div>
+          </div>
+          <div>
+            <div className={styles.metaLabel}>Tanggal</div>
+            <div className={styles.metaValue}>{dokumen.documentDate}</div>
+          </div>
+          <div>
+            <div className={styles.metaLabel}>DPP</div>
+            <div className={styles.metaValue}>{formatAmount(dokumen.taxBase, dokumen.currency)}</div>
+          </div>
+          <div>
+            <div className={styles.metaLabel}>Pajak</div>
+            <div className={styles.metaValue}>{formatAmount(dokumen.taxTotal, dokumen.currency)}</div>
+          </div>
+          <div>
+            <div className={styles.metaLabel}>Total</div>
+            <div className={styles.metaValue}>{formatAmount(dokumen.total, dokumen.currency)}</div>
           </div>
         </div>
-        <div>
-          <div className={styles.metaLabel}>Pelunasan</div>
-          <div className={styles.metaValue}>{LABEL_PELUNASAN[dokumen.settlementStatus] ?? dokumen.settlementStatus}</div>
-        </div>
-        <div>
-          <div className={styles.metaLabel}>Pemenuhan</div>
-          <div className={styles.metaValue}>{LABEL_PEMENUHAN[dokumen.fulfillmentStatus] ?? dokumen.fulfillmentStatus}</div>
-        </div>
-        <div>
-          <div className={styles.metaLabel}>Total</div>
-          <div className={styles.metaValue}>{formatAmount(dokumen.total, dokumen.currency)}</div>
-        </div>
-        {dokumen.journalId !== null ? (
-          <div>
-            <div className={styles.metaLabel}>Jurnal</div>
-            <div className={styles.metaValue}>
-              <a href={href('akuntansi/buku-besar')}>Lihat di buku besar</a>
+      </TabPanel>
+
+      <TabPanel id="baris" activeId={tab}>
+        <table className={styles.matchTable}>
+          <caption>Baris faktur</caption>
+          <thead>
+            <tr>
+              <th scope="col">#</th>
+              <th scope="col">Deskripsi</th>
+              <th scope="col" data-numeric="true">Kuantitas</th>
+              <th scope="col" data-numeric="true">Harga satuan</th>
+              <th scope="col" data-numeric="true">DPP</th>
+              <th scope="col" data-numeric="true">Pajak</th>
+            </tr>
+          </thead>
+          <tbody>
+            {dokumen.lines.map((baris) => (
+              <tr key={baris.id}>
+                <td>{baris.lineNo}</td>
+                <td>
+                  {baris.itemCode === null
+                    ? baris.description
+                    : `${baris.itemCode} — ${baris.description}`}
+                </td>
+                <td data-numeric="true">
+                  {baris.qty} {baris.uom}
+                </td>
+                <td data-numeric="true">{formatAmount(baris.unitPrice, dokumen.currency)}</td>
+                <td data-numeric="true">{formatAmount(baris.netAmount, dokumen.currency)}</td>
+                <td data-numeric="true">{formatAmount(baris.taxAmount, dokumen.currency)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </TabPanel>
+
+      {/*
+        Jejak dua arah — Flow_Archetypes 3. Yang ada sekarang baru satu arah:
+        faktur menunjuk jurnalnya. Konversi penawaran → pesanan → faktur belum
+        dibangun, dan menampilkan tab kosong yang menjanjikannya akan lebih
+        menyesatkan daripada menyebutnya apa adanya.
+      */}
+      <TabPanel id="terkait" activeId={tab}>
+        {dokumen.journalId === null ? (
+          <p className={styles.notice}>
+            Belum ada dokumen terkait. Jurnal akan muncul di sini setelah faktur diposting.
+          </p>
+        ) : (
+          <div className={styles.meta}>
+            <div>
+              <div className={styles.metaLabel}>Jurnal</div>
+              <div className={styles.metaValue}>
+                <a href={href('akuntansi/buku-besar')}>Lihat di buku besar</a>
+              </div>
+            </div>
+            <div>
+              <div className={styles.metaLabel}>Diposting</div>
+              <div className={styles.metaValue}>{dokumen.postedAt ?? '—'}</div>
             </div>
           </div>
-        ) : null}
-      </div>
+        )}
+      </TabPanel>
 
-      <table className={styles.matchTable}>
-        <caption>Baris faktur</caption>
-        <thead>
-          <tr>
-            <th scope="col">#</th>
-            <th scope="col">Deskripsi</th>
-            <th scope="col" data-numeric="true">
-              Kuantitas
-            </th>
-            <th scope="col" data-numeric="true">
-              Harga satuan
-            </th>
-            <th scope="col" data-numeric="true">
-              DPP
-            </th>
-            <th scope="col" data-numeric="true">
-              Pajak
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {dokumen.lines.map((baris) => (
-            <tr key={baris.id}>
-              <td>{baris.lineNo}</td>
-              <td>
-                {baris.itemCode === null ? baris.description : `${baris.itemCode} — ${baris.description}`}
-              </td>
-              <td data-numeric="true">
-                {baris.qty} {baris.uom}
-              </td>
-              <td data-numeric="true">{formatAmount(baris.unitPrice, dokumen.currency)}</td>
-              <td data-numeric="true">{formatAmount(baris.netAmount, dokumen.currency)}</td>
-              <td data-numeric="true">{formatAmount(baris.taxAmount, dokumen.currency)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <TabPanel id="aktivitas" activeId={tab}>
+        <p className={styles.notice}>
+          Audit trail belum tersedia di antarmuka. Perubahan sudah tercatat di{' '}
+          <code>audit_log</code>, tetapi jalur bacanya belum dibangun — dicatat sebagai
+          keterbatasan, bukan sebagai fitur yang hilang diam-diam.
+        </p>
+      </TabPanel>
 
       <div className={styles.row}>
         {/*
