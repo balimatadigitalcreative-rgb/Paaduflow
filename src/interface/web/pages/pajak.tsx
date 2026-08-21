@@ -12,10 +12,13 @@ import { Checkbox } from '../components/choice.js'
 import { Select } from '../components/combobox.js'
 import { ErrorSummary, type FieldError } from '../components/form/form.js'
 import { DateField } from '../components/pickers.js'
+import { FilterBar, type FilterChip } from '../components/filter-bar.js'
+import { Tabs, TabPanel } from '../components/tabs.js'
+import { useHeaderHalaman } from '../shell/page-header.js'
 import { DataTable } from '../components/table/data-table.js'
 import type { Column, TableState } from '../components/table/types.js'
 import { TextField } from '../components/text-field.js'
-import { pergiKe } from '../router.js'
+import { href, pergiKe } from '../router.js'
 import styles from './pages.module.css'
 
 /**
@@ -411,8 +414,45 @@ interface FakturKeluaranDetail extends FakturKeluaranRingkas {
   }[]
 }
 
+/**
+ * Chip untuk faktur pajak keluaran - Component_Specs_Composite section 2.
+ *
+ * Ketiganya pertanyaan yang dibawa orang pajak ke daftar ini menjelang
+ * pelaporan masa: mana yang sudah terbit, mana yang dibatalkan, mana yang
+ * diganti. Status draf sengaja tidak masuk - faktur pajak draf tidak pernah
+ * dilaporkan, jadi ia bukan pertanyaan yang muncul di sini.
+ */
+const CHIP_KELUARAN: readonly FilterChip[] = [
+  { id: 'issued', label: 'Terbit' },
+  { id: 'cancelled', label: 'Batal' },
+  { id: 'replaced', label: 'Diganti' },
+]
+
 export function DaftarFakturKeluaran({ konteks }: { readonly konteks: Konteks }): ReactNode {
   const [state, setState] = useState<TableState<FakturKeluaranRingkas>>({ kind: 'loading' })
+  const [semua, setSemua] = useState<readonly FakturKeluaranRingkas[]>([])
+  const [filterAktif, setFilterAktif] = useState<readonly string[]>([])
+
+  const labelFilter = (id: string): string =>
+    CHIP_KELUARAN.find((chip) => chip.id === id)?.label ?? id
+
+  function tampilkan(baris: readonly FakturKeluaranRingkas[], filter: readonly string[]): void {
+    if (baris.length === 0) {
+      setState({ kind: 'empty' })
+      return
+    }
+    const cocok = filter.length === 0 ? baris : baris.filter((row) => filter.includes(row.status))
+    if (cocok.length === 0) {
+      setState({ kind: 'no_match', activeFilters: filter.map(labelFilter) })
+      return
+    }
+    setState({ kind: 'ready', rows: cocok, total: cocok.length, nextCursor: null })
+  }
+
+  function ubahFilter(berikut: readonly string[]): void {
+    setFilterAktif(berikut)
+    tampilkan(semua, berikut)
+  }
 
   async function muat(): Promise<void> {
     setState({ kind: 'loading' })
@@ -420,16 +460,8 @@ export function DaftarFakturKeluaran({ konteks }: { readonly konteks: Konteks })
       const jawaban = await api.get<FakturKeluaranRingkas[]>(
         `${perusahaan(konteks.companyId)}/output-tax-invoices`,
       )
-      setState(
-        jawaban.data.length === 0
-          ? { kind: 'empty' }
-          : {
-              kind: 'ready',
-              rows: jawaban.data,
-              total: jawaban.data.length,
-              nextCursor: jawaban.meta?.next_cursor ?? null,
-            },
-      )
+      setSemua(jawaban.data)
+      tampilkan(jawaban.data, filterAktif)
     } catch (galat) {
       setState({
         kind: 'error',
@@ -492,13 +524,29 @@ export function DaftarFakturKeluaran({ konteks }: { readonly konteks: Konteks })
   )
 
   return (
+    <div className={styles.stack}>
+      <FilterBar
+        label="Saring faktur pajak keluaran menurut status"
+        chips={CHIP_KELUARAN}
+        activeIds={filterAktif}
+        onToggle={(id) =>
+          ubahFilter(
+            filterAktif.includes(id)
+              ? filterAktif.filter((aktif) => aktif !== id)
+              : [...filterAktif, id],
+          )
+        }
+        onClearAll={() => ubahFilter([])}
+      />
+
     <DataTable
       caption="Faktur Pajak Keluaran"
       columns={columns}
       state={state}
       rowId={(row) => row.id}
       rowHref={(row) => `#/pajak/keluaran/${row.id}`}
-      filter={{}}
+      filter={Object.fromEntries(filterAktif.map((id) => [id, 'aktif']))}
+      activeFilterLabels={filterAktif.map(labelFilter)}
       sort={[]}
       companyName={konteks.companyName}
       emptyAction={
@@ -506,7 +554,9 @@ export function DaftarFakturKeluaran({ konteks }: { readonly konteks: Konteks })
       }
       onSortChange={() => undefined}
       onRetry={() => void muat()}
+      onClearFilters={() => ubahFilter([])}
     />
+    </div>
   )
 }
 
@@ -762,6 +812,7 @@ export function DetailFakturKeluaran({
 }): ReactNode {
   const [faktur, setFaktur] = useState<FakturKeluaranDetail | null>(null)
   const [galat, setGalat] = useState<string | null>(null)
+  const [tab, setTab] = useState('ringkasan')
 
   useEffect(() => {
     setGalat(null)
@@ -779,6 +830,47 @@ export function DetailFakturKeluaran({
         )
       })
   }, [konteks.companyId, invoiceId])
+
+  /*
+   * Faktur pajak punya SATU sumbu siklus hidup, dan itu memang jumlahnya.
+   *
+   * Tidak ada pelunasan dan tidak ada pemenuhan di sini - faktur pajak bukan
+   * dokumen komersial, ia dokumen pelaporan. Memaksakan tiga badge dengan
+   * mengarang dua sumbu akan membuat layar terlihat seragam dan berbohong.
+   *
+   * Dua badge sisanya karena itu menyebut hal yang benar-benar menentukan
+   * nasib faktur ini: masa pajaknya, dan apakah nomor serinya sudah terpakai.
+   */
+  useHeaderHalaman(
+    () =>
+      faktur === null
+        ? {}
+        : {
+            badges: (
+              <>
+                <StatusFaktur status={faktur.status} />
+                <Badge tone="neutral">Masa {faktur.taxPeriod}</Badge>
+                {faktur.serialNumber === null ? null : (
+                  <Badge tone="neutral">Seri {faktur.serialNumber}</Badge>
+                )}
+              </>
+            ),
+            tabs: (
+              <Tabs
+                label="Bagian faktur pajak"
+                activeId={tab}
+                onSelect={setTab}
+                items={[
+                  { id: 'ringkasan', label: 'Ringkasan' },
+                  { id: 'baris', label: 'Baris', count: faktur.sources.length },
+                  { id: 'terkait', label: 'Dokumen terkait', count: faktur.sources.length },
+                  { id: 'aktivitas', label: 'Aktivitas' },
+                ]}
+              />
+            ),
+          },
+    [faktur, tab],
+  )
 
   if (galat !== null) {
     return (
@@ -799,6 +891,7 @@ export function DetailFakturKeluaran({
 
   return (
     <div className={styles.stack}>
+      <TabPanel id="ringkasan" activeId={tab}>
       <div className={styles.meta}>
         <div>
           <div className={styles.metaLabel}>Company</div>
@@ -852,6 +945,9 @@ export function DetailFakturKeluaran({
         </p>
       ) : null}
 
+      </TabPanel>
+
+      <TabPanel id="baris" activeId={tab}>
       <table className={styles.matchTable}>
         <caption>
           Faktur penjualan yang dicakup — satu faktur pajak dapat mencakup lebih dari satu
@@ -883,6 +979,52 @@ export function DetailFakturKeluaran({
           )}
         </tbody>
       </table>
+      </TabPanel>
+
+      {/*
+        Jejak dua arah yang benar-benar ada - Flow_Archetypes 3. Satu faktur
+        pajak dapat menghimpun beberapa faktur penjualan, dan tab ini
+        menyebutkan seluruhnya beserta porsinya masing-masing.
+      */}
+      <TabPanel id="terkait" activeId={tab}>
+        {faktur.sources.length === 0 ? (
+          <p className={styles.notice}>
+            Faktur pajak ini tidak menunjuk faktur penjualan mana pun.
+          </p>
+        ) : (
+          <ul>
+            {faktur.sources.map((sumber) => (
+              <li key={sumber.salesDocumentId}>
+                <a href={href(`penjualan/${sumber.salesDocumentId}`)}>
+                  {sumber.salesDocumentNumber ?? '(belum bernomor)'}
+                </a>{' '}
+                — DPP {formatAmount(sumber.baseAmount, konteks.currency)}, PPN{' '}
+                {formatAmount(sumber.taxAmount, konteks.currency)}
+              </li>
+            ))}
+          </ul>
+        )}
+      </TabPanel>
+
+      <TabPanel id="aktivitas" activeId={tab}>
+        {faktur.cancelledAt === null ? (
+          <p className={styles.notice}>
+            Audit trail belum tersedia di antarmuka. Penerbitan dan pembatalan tercatat di{' '}
+            <code>audit_log</code>, tetapi jalur bacanya belum dibangun.
+          </p>
+        ) : (
+          <div className={styles.meta}>
+            <div>
+              <div className={styles.metaLabel}>Dibatalkan</div>
+              <div className={styles.metaValue}>{faktur.cancelledAt}</div>
+            </div>
+            <div>
+              <div className={styles.metaLabel}>Alasan</div>
+              <div className={styles.metaValue}>{faktur.cancelReason ?? '—'}</div>
+            </div>
+          </div>
+        )}
+      </TabPanel>
 
       <div>
         <Button variant="secondary" onClick={() => pergiKe('pajak/keluaran')}>
@@ -922,8 +1064,54 @@ interface FakturMasukan {
   readonly defects: readonly { readonly code: string; readonly detail: string }[]
 }
 
+/**
+ * Chip untuk faktur pajak masukan.
+ *
+ * Bukan status, melainkan dapat-tidaknya dikreditkan - itulah satu-satunya
+ * pertanyaan yang menentukan angka di SPT Masa. Vendor non-PKP dipisahkan
+ * sendiri karena ia sebab paling umum sebuah faktur tidak dapat dikreditkan,
+ * dan orang perlu melihat daftarnya untuk menagih perbaikan.
+ */
+const CHIP_MASUKAN: readonly FilterChip[] = [
+  { id: 'creditable', label: 'Dapat dikreditkan' },
+  { id: 'non_creditable', label: 'Tidak dapat dikreditkan' },
+  { id: 'non_pkp', label: 'Vendor non-PKP' },
+]
+
+function cocokMasukan(baris: FakturMasukan, id: string): boolean {
+  if (id === 'creditable') return baris.isCreditable
+  if (id === 'non_creditable') return !baris.isCreditable
+  return !baris.vendorIsPkp
+}
+
 export function DaftarFakturMasukan({ konteks }: { readonly konteks: Konteks }): ReactNode {
   const [state, setState] = useState<TableState<FakturMasukan>>({ kind: 'loading' })
+  const [semua, setSemua] = useState<readonly FakturMasukan[]>([])
+  const [filterAktif, setFilterAktif] = useState<readonly string[]>([])
+
+  const labelFilter = (id: string): string =>
+    CHIP_MASUKAN.find((chip) => chip.id === id)?.label ?? id
+
+  function tampilkan(baris: readonly FakturMasukan[], filter: readonly string[]): void {
+    if (baris.length === 0) {
+      setState({ kind: 'empty' })
+      return
+    }
+    const cocok =
+      filter.length === 0
+        ? baris
+        : baris.filter((row) => filter.some((id) => cocokMasukan(row, id)))
+    if (cocok.length === 0) {
+      setState({ kind: 'no_match', activeFilters: filter.map(labelFilter) })
+      return
+    }
+    setState({ kind: 'ready', rows: cocok, total: cocok.length, nextCursor: null })
+  }
+
+  function ubahFilter(berikut: readonly string[]): void {
+    setFilterAktif(berikut)
+    tampilkan(semua, berikut)
+  }
 
   async function muat(): Promise<void> {
     setState({ kind: 'loading' })
@@ -931,16 +1119,8 @@ export function DaftarFakturMasukan({ konteks }: { readonly konteks: Konteks }):
       const jawaban = await api.get<FakturMasukan[]>(
         `${perusahaan(konteks.companyId)}/input-tax-invoices`,
       )
-      setState(
-        jawaban.data.length === 0
-          ? { kind: 'empty' }
-          : {
-              kind: 'ready',
-              rows: jawaban.data,
-              total: jawaban.data.length,
-              nextCursor: jawaban.meta?.next_cursor ?? null,
-            },
-      )
+      setSemua(jawaban.data)
+      tampilkan(jawaban.data, filterAktif)
     } catch (galat) {
       setState({
         kind: 'error',
@@ -1027,6 +1207,21 @@ export function DaftarFakturMasukan({ konteks }: { readonly konteks: Konteks }):
   )
 
   return (
+    <div className={styles.stack}>
+      <FilterBar
+        label="Saring faktur pajak masukan menurut kredit"
+        chips={CHIP_MASUKAN}
+        activeIds={filterAktif}
+        onToggle={(id) =>
+          ubahFilter(
+            filterAktif.includes(id)
+              ? filterAktif.filter((aktif) => aktif !== id)
+              : [...filterAktif, id],
+          )
+        }
+        onClearAll={() => ubahFilter([])}
+      />
+
     <DataTable
       caption="Faktur Pajak Masukan"
       columns={columns}
@@ -1036,7 +1231,8 @@ export function DaftarFakturMasukan({ konteks }: { readonly konteks: Konteks }):
       // tidak ada lebih buruk daripada menautkan ke diri sendiri. Seluruh yang
       // perlu dibaca — termasuk apa yang kurang — sudah ada di baris ini.
       rowHref={() => '#/pajak/masukan'}
-      filter={{}}
+      filter={Object.fromEntries(filterAktif.map((id) => [id, 'aktif']))}
+      activeFilterLabels={filterAktif.map(labelFilter)}
       sort={[]}
       companyName={konteks.companyName}
       emptyAction={
@@ -1046,7 +1242,9 @@ export function DaftarFakturMasukan({ konteks }: { readonly konteks: Konteks }):
       }
       onSortChange={() => undefined}
       onRetry={() => void muat()}
+      onClearFilters={() => ubahFilter([])}
     />
+    </div>
   )
 }
 

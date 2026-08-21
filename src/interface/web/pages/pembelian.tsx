@@ -14,6 +14,8 @@ import { api, ApiError, perusahaan } from '../api/client.js'
 import { Badge, StatusBadge, type DocumentStatus } from '../components/badge.js'
 import { Button } from '../components/button.js'
 import { FilterBar, type FilterChip } from '../components/filter-bar.js'
+import { Tabs, TabPanel } from '../components/tabs.js'
+import { useHeaderHalaman } from '../shell/page-header.js'
 import { DataTable } from '../components/table/data-table.js'
 import type { Column, TableState } from '../components/table/types.js'
 import { TextField } from '../components/text-field.js'
@@ -251,6 +253,31 @@ export function DaftarPembelian({
 
 // ── Detail pesanan, dengan pencatatan penerimaan ───────────────────────────
 
+/**
+ * Menurunkan sumbu penerimaan dan penagihan dari kuantitas per baris.
+ *
+ * Tiga keadaan, bukan dua: belum sama sekali, sebagian, dan penuh. "Sebagian"
+ * adalah keadaan yang paling sering terjadi dan paling sering hilang kalau
+ * hanya ada penanda biner - dan justru itulah yang perlu dilihat orang
+ * pembelian sebelum menyetujui tagihan.
+ */
+function ringkasKuantitas(
+  dokumen: PurchaseDocumentDetail | null,
+  ambil: (baris: PurchaseDocumentDetail['lines'][number]) => number,
+  kata: string,
+): { readonly label: string; readonly penuh: boolean } {
+  if (dokumen === null || dokumen.lines.length === 0) {
+    return { label: `Belum ${kata}`, penuh: false }
+  }
+
+  const dipesan = dokumen.lines.reduce((jumlah, baris) => jumlah + baris.qty, 0)
+  const terpenuhi = dokumen.lines.reduce((jumlah, baris) => jumlah + ambil(baris), 0)
+
+  if (terpenuhi <= 0) return { label: `Belum ${kata}`, penuh: false }
+  if (terpenuhi >= dipesan) return { label: `${kata[0]!.toUpperCase()}${kata.slice(1)} penuh`, penuh: true }
+  return { label: `Sebagian ${kata}`, penuh: false }
+}
+
 export function DetailPesanan({
   konteks,
   documentId,
@@ -264,6 +291,7 @@ export function DetailPesanan({
   const [galat, setGalat] = useState<string | null>(null)
   const [pesan, setPesan] = useState<string | null>(null)
   const [sedang, setSedang] = useState(false)
+  const [tab, setTab] = useState('ringkasan')
 
   async function muat(): Promise<void> {
     try {
@@ -283,6 +311,56 @@ export function DetailPesanan({
       .then((jawaban) => setGudang(jawaban.data))
       .catch(() => undefined)
   }, [documentId])
+
+  /*
+   * Tiga sumbu status di page header, tab baku di bawahnya.
+   *
+   * `purchase_documents` TIDAK menyimpan `settlement_status` maupun
+   * `fulfillment_status` - ia hanya punya `lifecycle_status` dan
+   * `match_status`. Penyimpangan dari aturan tiga sumbu itu ada di skema, dan
+   * memperbaikinya adalah migrasi tersendiri, bukan pekerjaan layar.
+   *
+   * Yang dilakukan di sini: menurunkan kedua sumbu sisanya dari kuantitas per
+   * baris, yang memang sudah dikirim dan memang sumber kebenarannya. Angkanya
+   * dihitung dari data yang sama dengan yang ditampilkan tab Baris, jadi tidak
+   * ada dua rumus yang dapat menyimpang. Ini bukan pengganti kolomnya - ini
+   * cara jujur menampilkan apa yang benar-benar diketahui sistem hari ini.
+   */
+  const penerimaan = ringkasKuantitas(dokumen, (baris) => baris.qtyReceived, 'diterima')
+  const penagihan = ringkasKuantitas(dokumen, (baris) => baris.qtyBilled, 'ditagih')
+
+  useHeaderHalaman(
+    () =>
+      dokumen === null
+        ? {}
+        : {
+            badges: (
+              <>
+                <StatusBadge status={status(dokumen.lifecycleStatus)} />
+                <Badge tone={penerimaan.penuh ? 'success' : 'neutral'}>{penerimaan.label}</Badge>
+                <Badge tone={penagihan.penuh ? 'success' : 'neutral'}>{penagihan.label}</Badge>
+              </>
+            ),
+            tabs: (
+              <Tabs
+                label="Bagian pesanan"
+                activeId={tab}
+                onSelect={setTab}
+                items={[
+                  { id: 'ringkasan', label: 'Ringkasan' },
+                  { id: 'baris', label: 'Baris', count: dokumen.lines.length },
+                  {
+                    id: 'terkait',
+                    label: 'Dokumen terkait',
+                    count: dokumen.sourceDocumentId === null ? 0 : 1,
+                  },
+                  { id: 'aktivitas', label: 'Aktivitas' },
+                ]}
+              />
+            ),
+          },
+    [dokumen, tab, penerimaan.label, penagihan.label],
+  )
 
   async function catatPenerimaan(): Promise<void> {
     if (dokumen === null) return
@@ -339,6 +417,7 @@ export function DetailPesanan({
         <p className={`${styles.notice} ${styles.noticeSuccess}`}>{pesan}</p>
       ) : null}
 
+      <TabPanel id="ringkasan" activeId={tab}>
       <div className={styles.meta}>
         <div>
           <div className={styles.metaLabel}>Nomor</div>
@@ -351,17 +430,13 @@ export function DetailPesanan({
           </div>
         </div>
         <div>
-          <div className={styles.metaLabel}>Status</div>
-          <div className={styles.metaValue}>
-            <StatusBadge status={status(dokumen.lifecycleStatus)} />
-          </div>
-        </div>
-        <div>
           <div className={styles.metaLabel}>Total</div>
           <div className={styles.metaValue}>{formatAmount(dokumen.total, dokumen.currency)}</div>
         </div>
       </div>
+      </TabPanel>
 
+      <TabPanel id="baris" activeId={tab}>
       <table className={styles.matchTable}>
         <caption>
           Baris pesanan — kuantitas diterima dan ditagih dilacak per baris, bukan per dokumen
@@ -409,6 +484,34 @@ export function DetailPesanan({
           ))}
         </tbody>
       </table>
+      </TabPanel>
+
+      {/*
+        Jejak dua arah - Flow_Archetypes 3. Pesanan menunjuk dokumen sumbernya
+        bila ia lahir dari RFQ; arah sebaliknya belum dibangun.
+      */}
+      <TabPanel id="terkait" activeId={tab}>
+        {dokumen.sourceDocumentId === null ? (
+          <p className={styles.notice}>
+            Pesanan ini dibuat langsung, bukan dari RFQ. Penerimaan dan tagihan yang lahir
+            darinya belum ditautkan balik ke sini.
+          </p>
+        ) : (
+          <div className={styles.meta}>
+            <div>
+              <div className={styles.metaLabel}>Dokumen sumber</div>
+              <div className={styles.metaValue}>{dokumen.sourceDocumentId}</div>
+            </div>
+          </div>
+        )}
+      </TabPanel>
+
+      <TabPanel id="aktivitas" activeId={tab}>
+        <p className={styles.notice}>
+          Audit trail belum tersedia di antarmuka. Perubahan sudah tercatat di{' '}
+          <code>audit_log</code>, tetapi jalur bacanya belum dibangun.
+        </p>
+      </TabPanel>
 
       <div className={styles.row}>
         {dapatMenerima ? (
@@ -512,6 +615,7 @@ export function DetailTagihan({
   const [galat, setGalat] = useState<string[] | null>(null)
   const [pesan, setPesan] = useState<string | null>(null)
   const [sedang, setSedang] = useState(false)
+  const [tab, setTab] = useState('ringkasan')
 
   async function muat(): Promise<void> {
     try {
@@ -558,6 +662,57 @@ export function DetailTagihan({
     }
   }
 
+  /*
+   * Tiga sumbu untuk tagihan, dipilih menurut apa yang benar-benar disimpan.
+   *
+   * Sumbu kedua adalah HASIL PENCOCOKAN TIGA ARAH, bukan pelunasan. Itu bukan
+   * kompromi: pencocokan satu-satunya hal yang menentukan boleh-tidaknya
+   * tagihan ini diposting, dan ia pertanyaan yang dibawa orang ke layar ini.
+   * `purchase_documents` tidak menyimpan pelunasan sama sekali.
+   *
+   * Sumbu ketiga diturunkan dari kuantitas per baris - sumber yang sama dengan
+   * yang ditampilkan tab Baris, jadi tidak ada dua rumus yang dapat menyimpang.
+   *
+   * Dipanggil SEBELUM return bersyarat di bawah. Hook yang berada di belakang
+   * early return akan berubah jumlahnya saat dokumen selesai dimuat, dan itu
+   * menghentikan React - bukan sekadar melanggar aturan di atas kertas.
+   */
+  const label = panel === null ? undefined : LABEL_PENCOCOKAN[panel.matchStatus]
+  const penerimaan = ringkasKuantitas(dokumen, (baris) => baris.qtyReceived, 'diterima')
+
+  useHeaderHalaman(
+    () =>
+      panel === null || dokumen === null
+        ? {}
+        : {
+            badges: (
+              <>
+                <StatusBadge status={status(panel.lifecycleStatus)} />
+                <Badge tone={label?.nada ?? 'neutral'}>{label?.teks ?? panel.matchStatus}</Badge>
+                <Badge tone={penerimaan.penuh ? 'success' : 'neutral'}>{penerimaan.label}</Badge>
+              </>
+            ),
+            tabs: (
+              <Tabs
+                label="Bagian tagihan"
+                activeId={tab}
+                onSelect={setTab}
+                items={[
+                  { id: 'ringkasan', label: 'Ringkasan' },
+                  { id: 'baris', label: 'Baris', count: panel.lines.length },
+                  {
+                    id: 'terkait',
+                    label: 'Dokumen terkait',
+                    count: dokumen.sourceDocumentId === null ? 0 : 1,
+                  },
+                  { id: 'aktivitas', label: 'Aktivitas' },
+                ]}
+              />
+            ),
+          },
+    [panel, dokumen, tab, penerimaan.label, label],
+  )
+
   if (panel === null || dokumen === null) {
     return galat === null ? (
       <p>Memuat…</p>
@@ -566,7 +721,6 @@ export function DetailTagihan({
     )
   }
 
-  const label = LABEL_PENCOCOKAN[panel.matchStatus]
 
   return (
     <div className={styles.stack}>
@@ -584,6 +738,7 @@ export function DetailTagihan({
         <p className={`${styles.notice} ${styles.noticeSuccess}`}>{pesan}</p>
       ) : null}
 
+      <TabPanel id="ringkasan" activeId={tab}>
       <div className={styles.meta}>
         <div>
           <div className={styles.metaLabel}>Nomor</div>
@@ -592,12 +747,6 @@ export function DetailTagihan({
         <div>
           <div className={styles.metaLabel}>Vendor</div>
           <div className={styles.metaValue}>{dokumen.vendorName}</div>
-        </div>
-        <div>
-          <div className={styles.metaLabel}>Status</div>
-          <div className={styles.metaValue}>
-            <StatusBadge status={status(panel.lifecycleStatus)} />
-          </div>
         </div>
         <div>
           <div className={styles.metaLabel}>Pencocokan</div>
@@ -618,6 +767,9 @@ export function DetailTagihan({
         pada baris yang sama — itu seluruh gunanya. Selisihnya datang dari
         server beserta kalimat penjelasnya.
       */}
+      </TabPanel>
+
+      <TabPanel id="baris" activeId={tab}>
       <table className={styles.matchTable}>
         <caption>
           Pencocokan tiga arah — dipesan, diterima, dan ditagih pada baris yang sama
@@ -674,6 +826,34 @@ export function DetailTagihan({
           ))}
         </tbody>
       </table>
+      </TabPanel>
+
+      <TabPanel id="terkait" activeId={tab}>
+        {dokumen.sourceDocumentId === null ? (
+          <p className={styles.notice}>
+            Tagihan ini tidak menunjuk pesanan pembelian mana pun. Pencocokan tiga arah tetap
+            berjalan atas baris yang ada, tetapi jejak konversinya tidak tercatat.
+          </p>
+        ) : (
+          <div className={styles.meta}>
+            <div>
+              <div className={styles.metaLabel}>Pesanan pembelian</div>
+              <div className={styles.metaValue}>
+                <a href={href(`pembelian/pesanan/${dokumen.sourceDocumentId}`)}>
+                  Buka pesanan sumber
+                </a>
+              </div>
+            </div>
+          </div>
+        )}
+      </TabPanel>
+
+      <TabPanel id="aktivitas" activeId={tab}>
+        <p className={styles.notice}>
+          Audit trail belum tersedia di antarmuka. Persetujuan pengecualian tercatat di{' '}
+          <code>audit_log</code> beserta alasannya, tetapi jalur bacanya belum dibangun.
+        </p>
+      </TabPanel>
 
       <div className={styles.row}>
         {panel.lifecycleStatus === 'approved' ? (
