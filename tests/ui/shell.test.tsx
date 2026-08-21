@@ -156,8 +156,17 @@ test('kepadatan dan tema tersimpan sebagai preferensi pengguna', async () => {
   const pengguna = userEvent.setup()
   const { container } = render(<ShellDemo />)
 
-  await pengguna.selectOptions(screen.getByLabelText(/Kepadatan/), 'compact')
-  await pengguna.selectOptions(screen.getByLabelText(/Tema/), 'dark')
+  /*
+   * Keduanya kini di menu profil, bukan di top bar.
+   *
+   * Tema dan kepadatan adalah pengaturan, bukan navigasi. Top bar adalah chrome
+   * permanen: setiap kontrol di sana bersaing dengan pengalih company, satu
+   * kontrol yang paling tidak boleh terlewat (Layout_System §4).
+   */
+  await pengguna.click(screen.getByRole('button', { name: /Menu pengguna/i }))
+
+  await pengguna.click(screen.getByRole('radio', { name: 'Padat' }))
+  await pengguna.click(screen.getByRole('radio', { name: 'Gelap' }))
 
   const shell = container.firstElementChild as HTMLElement
   expect(shell.dataset.density).toBe('compact')

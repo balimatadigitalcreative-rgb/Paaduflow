@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react'
+import { IconChevronDown } from '@tabler/icons-react'
 import type { ReactNode } from 'react'
 
 import styles from './shell.module.css'
@@ -110,13 +111,27 @@ export function CompanySwitcher({
         aria-controls={open ? panelId : undefined}
         onClick={() => setOpen((sebelumnya) => !sebelumnya)}
       >
+        {/*
+          Avatar company memakai rounded square; avatar ORANG memakai lingkaran
+          — Component_Specs_AppShell §1. Pembedaan bentuk itu penting justru di
+          top bar, tempat keduanya bersebelahan.
+        */}
         <span className={styles.companyAvatar} aria-hidden="true">
           {initials(active?.legalName ?? '?')}
         </span>
-        <span>
-          <span className={styles.tenantName}>{tenant.name} / </span>
+
+        {/*
+          Company sebagai teks utama, tenant sebagai teks sekunder di bawahnya.
+          Sebelumnya keduanya dijejalkan satu baris dipisah garis miring, dan di
+          layar sempit yang terpotong justru nama company — satu hal yang paling
+          tidak boleh hilang (§1: pemicu adalah elemen terakhir yang dipotong).
+        */}
+        <span className={styles.companyTeks}>
           <span className={styles.companyName}>{active?.legalName}</span>
+          <span className={styles.tenantName}>{tenant.name}</span>
         </span>
+
+        <IconChevronDown className={styles.chevron} stroke={1.5} aria-hidden="true" />
       </button>
 
       {open ? (

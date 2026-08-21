@@ -1,4 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import {
+  IconBook2,
+  IconLayoutDashboard,
+  IconReceipt,
+  IconReceiptTax,
+  IconShoppingCart,
+} from '@tabler/icons-react'
 import type { ReactNode } from 'react'
 
 import { periodOf, formatPeriod } from '#shared/fiscal-period'
@@ -48,12 +55,20 @@ import type { ModuleLink, PaletteItem, SidebarItem } from './shell/types.js'
  * - **Tidak ada komponen baru.** Seluruh layar disusun dari pustaka C1–C3.
  */
 
+/**
+ * Ikon dipilih menurut apa yang DIKERJAKAN modul, bukan menurut nama modulnya.
+ *
+ * Uji pembedaan ikon di Layout_System §7 menuntut kelimanya dapat dibedakan
+ * sekilas tanpa label. Nota dan keranjang berbeda bentuk luar; buku besar dan
+ * nota-berpersen berbeda dari keduanya. Yang dihindari: lima varian dokumen
+ * yang hanya berbeda isinya, karena pada 20px isinya tidak terbaca.
+ */
 const MODUL: readonly ModuleLink[] = [
-  { id: 'dasbor', name: 'Dasbor', glyph: 'DB' },
-  { id: 'penjualan', name: 'Penjualan', glyph: 'PJ' },
-  { id: 'pembelian', name: 'Pembelian', glyph: 'PB' },
-  { id: 'akuntansi', name: 'Akuntansi', glyph: 'AK' },
-  { id: 'pajak', name: 'Pajak', glyph: 'PJK' },
+  { id: 'dasbor', name: 'Dasbor', glyph: IconLayoutDashboard },
+  { id: 'penjualan', name: 'Penjualan', glyph: IconReceipt },
+  { id: 'pembelian', name: 'Pembelian', glyph: IconShoppingCart },
+  { id: 'akuntansi', name: 'Akuntansi', glyph: IconBook2 },
+  { id: 'pajak', name: 'Pajak', glyph: IconReceiptTax },
 ]
 
 const SIDEBAR: Record<string, readonly SidebarItem[]> = {
@@ -115,6 +130,29 @@ const AKSI_PRIMER: Record<string, { readonly label: string; readonly tujuan: str
 }
 
 const KUNCI_COMPANY = 'paadu.company_id'
+
+/**
+ * Label peran, dipakai menu profil — Component_Specs_AppShell §6.
+ *
+ * Peran ikut disebut karena pengguna sering tidak tahu mengapa suatu menu tidak
+ * terlihat, dan jawabannya hampir selalu perannya.
+ */
+const LABEL_PERAN: Record<string, string> = {
+  tenant_owner: 'Pemilik Tenant',
+  tenant_admin: 'Admin Tenant',
+  company_admin: 'Admin Company',
+  member: 'Anggota',
+}
+
+/**
+ * Nama pengguna belum tersedia di jalur baca mana pun.
+ *
+ * `/v1/me/companies` mengirim company, bukan profil. Menampilkan nama karangan
+ * di menu profil akan membuat orang mengira sistem mengenalinya padahal tidak,
+ * jadi yang ditampilkan adalah alamat surel — satu-satunya identitas yang
+ * benar-benar diketahui klien saat ini. Dicatat sebagai keterbatasan.
+ */
+const namaPengguna = 'Pengguna'
 
 /**
  * Tiga keadaan, bukan satu daftar.
@@ -389,6 +427,8 @@ export function App(): ReactNode {
               ),
             })}
         fiscalPeriod={formatPeriod(periode)}
+        userName={namaPengguna}
+        userRole={LABEL_PERAN[company.role] ?? company.role}
         onSelectModule={(id) => {
           const pertama = SIDEBAR[id]?.[0]?.id ?? id
           pergiKe(pertama)

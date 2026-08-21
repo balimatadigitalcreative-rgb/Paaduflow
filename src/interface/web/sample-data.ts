@@ -1,3 +1,10 @@
+import {
+  IconBook2,
+  IconChecklist,
+  IconPackage,
+  IconReceipt,
+  IconShoppingCart,
+} from '@tabler/icons-react'
 import type {
   ModuleLink,
   PaletteItem,
@@ -45,11 +52,11 @@ export const TENANT: TenantSummary = {
 }
 
 export const MODULES: readonly ModuleLink[] = [
-  { id: 'penjualan', name: 'Penjualan', glyph: 'Pj' },
-  { id: 'pembelian', name: 'Pembelian', glyph: 'Pb' },
-  { id: 'persediaan', name: 'Persediaan', glyph: 'Ps' },
-  { id: 'akuntansi', name: 'Akuntansi', glyph: 'Ak' },
-  { id: 'persetujuan', name: 'Persetujuan', glyph: 'Pr', pendingCount: 3 },
+  { id: 'penjualan', name: 'Penjualan', glyph: IconReceipt },
+  { id: 'pembelian', name: 'Pembelian', glyph: IconShoppingCart },
+  { id: 'persediaan', name: 'Persediaan', glyph: IconPackage },
+  { id: 'akuntansi', name: 'Akuntansi', glyph: IconBook2 },
+  { id: 'persetujuan', name: 'Persetujuan', glyph: IconChecklist, pendingCount: 3 },
 ]
 
 export const SIDEBAR_ITEMS: readonly SidebarItem[] = [

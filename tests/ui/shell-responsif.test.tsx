@@ -144,7 +144,17 @@ test('pengalih company tetap ada di ponsel, tidak dipindah ke dalam menu', async
     .getAllByRole('button')
     .filter((tombol) => tombol.getAttribute('aria-haspopup') === 'dialog')
   expect(pemicu).toHaveLength(1)
-  expect(pemicu[0]!.textContent).toMatch(/\//)
+
+  /*
+   * Nama company DAN nama tenant keduanya hadir, tanpa dipisah garis miring.
+   *
+   * Format lama menjejalkan keduanya satu baris dipisah `/`, dan di layar
+   * sempit yang terpotong justru nama company — satu hal yang paling tidak
+   * boleh hilang (§1: pemicu adalah elemen terakhir yang dipotong).
+   */
+  const teks = pemicu[0]!.textContent ?? ''
+  expect(teks).toContain('PT Nusantara Jaya')
+  expect(teks).toContain('Nusantara Group')
 })
 
 test('drawer dibuka tombol menu, ditutup Escape, dan fokus kembali ke pemicunya', async () => {

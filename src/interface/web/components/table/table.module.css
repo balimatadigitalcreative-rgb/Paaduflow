@@ -263,3 +263,20 @@
     inline-size: 60%;
   }
 }
+
+/* Ikon state kosong. Lebih besar dari ikon biasa — ia penanda keadaan halaman,
+   bukan hiasan sebaris teks. Warnanya tersier supaya tidak bersaing dengan
+   judul dan tombol aksinya. */
+.emptyIkon {
+  inline-size: var(--space-10);
+  block-size: var(--space-10);
+  color: var(--text-tertiary);
+}
+
+/* Ikon di dalam tombol mengikuti ukuran ikon biasa dan mewarisi warna teks
+   tombolnya, sehingga varian primary dan secondary tidak perlu aturan sendiri. */
+.ikonTombol {
+  inline-size: var(--size-icon);
+  block-size: var(--size-icon);
+  flex-shrink: 0;
+}

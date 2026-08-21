@@ -666,3 +666,191 @@
     padding: var(--space-2) var(--space-3);
   }
 }
+
+/* ── Ikon ─────────────────────────────────────────────────────────────────*/
+
+/* Ukuran datang dari CSS, bukan dari prop `size`. Prop menaruh nilai visual di
+   JSX tempat aturan token tidak berlaku, dan ikon yang ukurannya ditulis di
+   dua puluh tempat akan menyimpang di salah satunya. */
+.ikon {
+  inline-size: var(--size-icon);
+  block-size: var(--size-icon);
+  flex-shrink: 0;
+}
+
+/* ── Top bar ──────────────────────────────────────────────────────────────*/
+
+.cariTrigger {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-block-size: var(--size-control-md);
+  padding-inline: var(--space-3);
+  background: var(--bg-surface-sunken);
+  border: var(--border-width-default) solid var(--border-default);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font: inherit;
+}
+
+.topBarIkon {
+  display: grid;
+  place-items: center;
+  inline-size: var(--size-control-md);
+  block-size: var(--size-control-md);
+  background: transparent;
+  border: var(--border-width-default) solid transparent;
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.topBarIkon[disabled] {
+  color: var(--text-disabled);
+  cursor: default;
+}
+
+/* ── Pengalih company ─────────────────────────────────────────────────────*/
+
+/* Dua baris di dalam satu pemicu setinggi kontrol: nama company di atas, nama
+   tenant di bawahnya dengan ukuran caption. Keduanya dipotong dengan ellipsis,
+   BUKAN dibungkus — pemicu yang tumbuh tinggi menggeser seluruh top bar. */
+.companyTeks {
+  display: grid;
+  min-inline-size: 0;
+  text-align: start;
+}
+
+.companyName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: var(--font-weight-medium);
+  line-height: var(--font-line-height-body-compact);
+}
+
+.tenantName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-secondary);
+  font-size: var(--font-size-caption);
+  line-height: var(--font-line-height-body-compact);
+}
+
+.chevron {
+  inline-size: var(--size-icon);
+  block-size: var(--size-icon);
+  flex-shrink: 0;
+  color: var(--text-tertiary);
+}
+
+/* ── Menu pengguna ────────────────────────────────────────────────────────*/
+
+.menuPengguna {
+  position: relative;
+}
+
+.menuBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-dropdown);
+  background: transparent;
+  border: 0;
+  cursor: default;
+}
+
+.menuPanel {
+  position: absolute;
+  inset-block-start: calc(100% + var(--space-2));
+  inset-inline-end: 0;
+  z-index: var(--z-popover);
+  inline-size: var(--size-container-narrow);
+  max-inline-size: calc(100vw - var(--space-6));
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--bg-surface-raised);
+  border: var(--border-width-default) solid var(--border-default);
+  border-radius: var(--radius-lg);
+}
+
+.menuIdentitas {
+  display: grid;
+  gap: var(--space-1);
+  padding-block-end: var(--space-3);
+  border-block-end: var(--border-width-default) solid var(--border-subtle);
+}
+
+.menuPeran {
+  color: var(--text-secondary);
+  font-size: var(--font-size-caption);
+}
+
+.menuGrup {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.menuLabel {
+  color: var(--text-secondary);
+  font-size: var(--font-size-caption);
+}
+
+.menuPilihan {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.menuOpsi {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-block-size: var(--size-control-md);
+  padding-inline: var(--space-3);
+  background: var(--bg-surface);
+  border: var(--border-width-default) solid var(--border-default);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font: inherit;
+}
+
+/* Pilihan aktif ditandai latar, warna, DAN bobot — bukan warna saja.
+   WCAG 1.4.1: warna tidak pernah menjadi satu-satunya pembeda. */
+.menuOpsi[aria-checked='true'] {
+  background: var(--bg-accent-subtle);
+  border-color: var(--border-focus);
+  color: var(--text-accent);
+  font-weight: var(--font-weight-medium);
+}
+
+.menuItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-block-size: var(--size-control-md);
+  padding-inline: var(--space-2);
+  background: transparent;
+  border: var(--border-width-default) solid transparent;
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  cursor: pointer;
+  font: inherit;
+  text-align: start;
+}
+
+.menuItem:hover {
+  background: var(--bg-surface-sunken);
+}
+
+.cariTrigger:focus-visible,
+.topBarIkon:focus-visible,
+.menuOpsi:focus-visible,
+.menuItem:focus-visible {
+  outline: var(--border-width-focus) solid var(--border-focus);
+  outline-offset: 2px;
+}

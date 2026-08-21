@@ -1,3 +1,5 @@
+import type { Icon } from '@tabler/icons-react'
+
 /**
  * Bentuk data yang dibutuhkan shell.
  *
@@ -25,8 +27,18 @@ export interface TenantSummary {
 export interface ModuleLink {
   readonly id: string
   readonly name: string
-  /** Satu atau dua huruf. Set ikon belum dipilih — Layout_System §7. */
-  readonly glyph: string
+  /**
+   * Ikon Tabler, outline — Design_Tokens dan Component_Specs_AppShell §2.
+   *
+   * Komponen, bukan nama string. Nama string menuntut peta nama-ke-ikon di
+   * suatu tempat, dan peta itu memaksa SELURUH set ikon ikut terbundel karena
+   * bundler tidak dapat tahu mana yang benar-benar dipakai. Komponen yang
+   * diimpor langsung dapat di-tree-shake.
+   *
+   * Ikon tidak pernah berdiri sendiri: `name` selalu ikut sebagai `aria-label`
+   * dan tooltip. Ikon tanpa label adalah teka-teki (§2).
+   */
+  readonly glyph: Icon
   /** Hanya untuk hal yang menunggu tindakan pengguna, bukan "ada data baru". */
   readonly pendingCount?: number
 }

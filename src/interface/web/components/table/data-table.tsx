@@ -1,3 +1,4 @@
+import { IconAlertTriangle, IconFileOff, IconFilterOff, IconRefresh } from '@tabler/icons-react'
 import { useState } from 'react'
 import type { ReactNode } from 'react'
 
@@ -274,9 +275,18 @@ function EmptyState({
   onRetry: (() => void) | undefined
   onClearFilters: (() => void) | undefined
 }): ReactNode {
+  /*
+   * Ikon di state kosong membuat halaman kosong terasa DISENGAJA, bukan rusak.
+   *
+   * Ketiganya berbeda, dan itu penting: halaman yang belum berisi, halaman yang
+   * gagal dimuat, dan halaman yang tersaring habis menuntut tindakan berbeda.
+   * Memakai satu ikon untuk ketiganya mengembalikan kebingungan yang §1.8 ada
+   * untuk mencegah.
+   */
   if (state.kind === 'empty') {
     return (
       <div className={styles.empty}>
+        <IconFileOff className={styles.emptyIkon} stroke={1.5} aria-hidden="true" />
         <p className={styles.emptyTitle}>Belum ada data di sini</p>
         <p>Dokumen yang Anda buat akan muncul di daftar ini.</p>
         <div className={styles.emptyActions}>{action}</div>
@@ -287,10 +297,12 @@ function EmptyState({
   if (state.kind === 'error') {
     return (
       <div className={styles.empty} role="alert">
+        <IconAlertTriangle className={styles.emptyIkon} stroke={1.5} aria-hidden="true" />
         <p className={styles.emptyTitle}>Gagal memuat data</p>
         <p>{state.message}</p>
         <div className={styles.emptyActions}>
           <Button variant="secondary" size="sm" onClick={onRetry}>
+            <IconRefresh className={styles.ikonTombol} stroke={1.5} aria-hidden="true" />
             Coba lagi
           </Button>
         </div>
@@ -302,6 +314,7 @@ function EmptyState({
   // pengguna yang salah menyetel filter akan menyimpulkan datanya hilang.
   return (
     <div className={styles.empty}>
+      <IconFilterOff className={styles.emptyIkon} stroke={1.5} aria-hidden="true" />
       <p className={styles.emptyTitle}>Tidak ada hasil untuk filter ini</p>
       <p>Filter yang sedang aktif:</p>
       <div className={styles.filterSummary}>
@@ -311,6 +324,7 @@ function EmptyState({
       </div>
       <div className={styles.emptyActions}>
         <Button variant="secondary" size="sm" onClick={onClearFilters}>
+          <IconFilterOff className={styles.ikonTombol} stroke={1.5} aria-hidden="true" />
           Hapus filter
         </Button>
       </div>

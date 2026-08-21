@@ -1,4 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
+import type { Icon } from '@tabler/icons-react'
+import {
+  IconBell,
+  IconDeviceDesktop,
+  IconLayoutGrid,
+  IconLogout,
+  IconMenu2,
+  IconMoon,
+  IconSearch,
+  IconSun,
+} from '@tabler/icons-react'
 import type { ReactNode } from 'react'
 
 import { CommandPalette } from './command-palette.js'
@@ -33,6 +44,15 @@ const MAX_BOTTOM_TABS = 5
 
 /** Enam detik — Component_Specs_AppShell §1 butir 5. */
 const UMUR_BANNER_MS = 6000
+
+/**
+ * Ketebalan garis ikon Tabler.
+ *
+ * Bawaannya 2, dan pada 20px itu terbaca tebal — set ini dirancang outline
+ * ringan. Ukurannya sendiri datang dari CSS (`--size-icon`), bukan dari prop,
+ * supaya ikon tidak pernah tampil dua ukuran berbeda dalam satu baris.
+ */
+const STROKE_IKON = 1.5
 
 /**
  * Apakah viewport berada di bawah 768px — Layout_System §5.
@@ -91,6 +111,9 @@ export interface AppShellProps {
   readonly tabs?: ReactNode
   readonly children: ReactNode
   readonly panel?: ReactNode
+  /** Ditampilkan di menu profil — §6 menuntut peran ikut disebut. */
+  readonly userName?: string
+  readonly userRole?: string
   onSelectModule(moduleId: string): void
   onSelectItem(itemId: string): void
 }
@@ -229,7 +252,7 @@ export function AppShell(props: AppShellProps): ReactNode {
           aria-controls="navigasi-modul"
           onClick={() => (drawerOpen ? tutupDrawer() : setDrawerOpen(true))}
         >
-          <span aria-hidden="true">☰</span>
+          <IconMenu2 className={styles.ikon} stroke={STROKE_IKON} />
         </button>
 
         <a href="#beranda" className={styles.mark}>
@@ -238,38 +261,41 @@ export function AppShell(props: AppShellProps): ReactNode {
 
         <CompanySwitcher {...props.switcher} onSwitch={pindahCompany} />
 
-        <button type="button" className={styles.navItem} onClick={() => setPaletteOpen(true)}>
-          Cari <span className={styles.paletteHint}>⌘K</span>
+        <button type="button" className={styles.cariTrigger} onClick={() => setPaletteOpen(true)}>
+          <IconSearch className={styles.ikon} stroke={STROKE_IKON} />
+          <span>Cari</span>
+          <span className={styles.paletteHint}>⌘K</span>
         </button>
 
         <span className={styles.topBarSpacer} />
 
-        <label className={styles.paletteHint}>
-          Tema
-          <select
-            value={preferences.theme}
-            onChange={(event) => setTheme(event.target.value as typeof preferences.theme)}
-          >
-            <option value="system">Ikuti sistem</option>
-            <option value="light">Terang</option>
-            <option value="dark">Gelap</option>
-          </select>
-        </label>
+        {/*
+          Notifikasi belum punya isi. Ia tetap dirender supaya susunan top bar
+          tidak berubah saat fiturnya masuk — top bar yang bergeser tempatnya
+          memaksa orang mencari ulang apa yang sudah dihafal.
+        */}
+        <button type="button" className={styles.topBarIkon} aria-label="Notifikasi" disabled>
+          <IconBell className={styles.ikon} stroke={STROKE_IKON} />
+        </button>
 
-        <label className={styles.paletteHint}>
-          Kepadatan
-          <select
-            value={preferences.density}
-            onChange={(event) => setDensity(event.target.value as typeof preferences.density)}
-          >
-            <option value="comfortable">Lega</option>
-            <option value="compact">Padat</option>
-          </select>
-        </label>
+        {/*
+          Tema dan kepadatan adalah PENGATURAN, bukan navigasi.
 
-        <span className={styles.userAvatar} aria-hidden="true">
-          AS
-        </span>
+          Keduanya sebelumnya terpampang di top bar sebagai select mentah. Top
+          bar adalah chrome permanen: setiap piksel di sana diambil dari data,
+          dan setiap kontrol di sana bersaing dengan pengalih company — satu
+          kontrol yang paling tidak boleh terlewat (Layout_System §4).
+
+          Sekarang keduanya di menu profil, tempat Component_Specs_AppShell §6
+          memang menempatkannya, bersama nama pengguna dan keluar.
+        */}
+        <MenuPengguna
+          preferences={preferences}
+          setTheme={setTheme}
+          setDensity={setDensity}
+          nama={props.userName}
+          peran={props.userRole}
+        />
       </header>
 
       {/*
@@ -300,7 +326,7 @@ export function AppShell(props: AppShellProps): ReactNode {
             aria-current={module.id === props.activeModule.id ? 'page' : undefined}
             onClick={() => props.onSelectModule(module.id)}
           >
-            <span aria-hidden="true">{module.glyph}</span>
+            <module.glyph className={styles.ikon} stroke={STROKE_IKON} />
             {module.pendingCount !== undefined && module.pendingCount > 0 ? (
               <span className={styles.railBadge}>
                 {module.pendingCount}
@@ -310,7 +336,7 @@ export function AppShell(props: AppShellProps): ReactNode {
           </button>
         ))}
         <button type="button" className={styles.railButton} aria-label="Semua modul" title="Semua modul">
-          <span aria-hidden="true">⋮⋮</span>
+          <IconLayoutGrid className={styles.ikon} stroke={STROKE_IKON} />
         </button>
       </nav>
       )}
@@ -432,7 +458,7 @@ export function AppShell(props: AppShellProps): ReactNode {
             aria-current={module.id === props.activeModule.id ? 'page' : undefined}
             onClick={() => props.onSelectModule(module.id)}
           >
-            <span aria-hidden="true">{module.glyph}</span>
+            <module.glyph className={styles.ikon} stroke={STROKE_IKON} />
             <span>{module.name}</span>
           </button>
         ))}
@@ -444,6 +470,156 @@ export function AppShell(props: AppShellProps): ReactNode {
         items={props.paletteItems}
         onClose={() => setPaletteOpen(false)}
       />
+    </div>
+  )
+}
+
+
+/**
+ * Menu profil — Component_Specs_AppShell §6.
+ *
+ * Isinya: nama pengguna, perannya, tema, kepadatan, lalu keluar. Peran ikut
+ * disebut karena pengguna sering tidak tahu mengapa suatu menu tidak terlihat,
+ * dan jawabannya hampir selalu perannya.
+ *
+ * Tema dan kepadatan dirender sebagai `radiogroup`, bukan `select`. Keduanya
+ * pilihan dari himpunan tetap yang pendek, dan radio menunjukkan seluruh
+ * pilihan sekaligus beserta mana yang aktif — select menyembunyikan keduanya di
+ * balik satu klik.
+ */
+function MenuPengguna({
+  preferences,
+  setTheme,
+  setDensity,
+  nama,
+  peran,
+}: {
+  readonly preferences: { theme: string; density: string }
+  setTheme: (nilai: 'system' | 'light' | 'dark') => void
+  setDensity: (nilai: 'comfortable' | 'compact') => void
+  readonly nama?: string | undefined
+  readonly peran?: string | undefined
+}): ReactNode {
+  const [open, setOpen] = useState(false)
+  const pemicu = useRef<HTMLButtonElement | null>(null)
+
+  useEffect(() => {
+    if (!open) return undefined
+    function onKeyDown(event: KeyboardEvent): void {
+      if (event.key !== 'Escape') return
+      setOpen(false)
+      pemicu.current?.focus()
+    }
+    globalThis.addEventListener?.('keydown', onKeyDown)
+    return () => globalThis.removeEventListener?.('keydown', onKeyDown)
+  }, [open])
+
+  const inisial = (nama ?? 'Pengguna')
+    .split(' ')
+    .slice(0, 2)
+    .map((bagian) => bagian.charAt(0).toUpperCase())
+    .join('')
+
+  return (
+    <div className={styles.menuPengguna}>
+      <button
+        ref={pemicu}
+        type="button"
+        className={styles.userAvatar}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label={`Menu pengguna${nama === undefined ? '' : ` — ${nama}`}`}
+        onClick={() => setOpen((sebelum) => !sebelum)}
+      >
+        {inisial}
+      </button>
+
+      {open ? (
+        <>
+          {/* Menutup dengan mengklik di luar adalah aksi, jadi ia tombol. */}
+          <button
+            type="button"
+            className={styles.menuBackdrop}
+            aria-label="Tutup menu pengguna"
+            onClick={() => {
+              setOpen(false)
+              pemicu.current?.focus()
+            }}
+          />
+
+          <div className={styles.menuPanel} role="menu" aria-label="Menu pengguna">
+            <div className={styles.menuIdentitas}>
+              <strong>{nama ?? 'Pengguna'}</strong>
+              {peran === undefined ? null : <span className={styles.menuPeran}>{peran}</span>}
+            </div>
+
+            <PilihanMenu
+              label="Tema"
+              nilai={preferences.theme}
+              onPilih={(nilai) => setTheme(nilai as 'system' | 'light' | 'dark')}
+              pilihan={[
+                { nilai: 'system', label: 'Ikuti sistem', Ikon: IconDeviceDesktop },
+                { nilai: 'light', label: 'Terang', Ikon: IconSun },
+                { nilai: 'dark', label: 'Gelap', Ikon: IconMoon },
+              ]}
+            />
+
+            <PilihanMenu
+              label="Kepadatan"
+              nilai={preferences.density}
+              onPilih={(nilai) => setDensity(nilai as 'comfortable' | 'compact')}
+              pilihan={[
+                { nilai: 'comfortable', label: 'Lega' },
+                { nilai: 'compact', label: 'Padat' },
+              ]}
+            />
+
+            <button type="button" className={styles.menuItem} role="menuitem">
+              <IconLogout className={styles.ikon} stroke={STROKE_IKON} />
+              <span>Keluar</span>
+            </button>
+          </div>
+        </>
+      ) : null}
+    </div>
+  )
+}
+
+function PilihanMenu({
+  label,
+  nilai,
+  pilihan,
+  onPilih,
+}: {
+  readonly label: string
+  readonly nilai: string
+  readonly pilihan: readonly {
+    nilai: string
+    label: string
+    Ikon?: Icon
+  }[]
+  onPilih: (nilai: string) => void
+}): ReactNode {
+  return (
+    <div className={styles.menuGrup} role="group" aria-label={label}>
+      <span className={styles.menuLabel}>{label}</span>
+      <div className={styles.menuPilihan} role="radiogroup" aria-label={label}>
+        {pilihan.map((satu) => (
+          <button
+            key={satu.nilai}
+            type="button"
+            role="radio"
+            aria-checked={satu.nilai === nilai}
+            className={styles.menuOpsi}
+            onClick={() => onPilih(satu.nilai)}
+          >
+            {satu.Ikon === undefined ? null : (
+              <satu.Ikon className={styles.ikon} stroke={STROKE_IKON} />
+            )}
+            <span>{satu.label}</span>
+          </button>
+        ))}
+      </div>
     </div>
   )
 }
