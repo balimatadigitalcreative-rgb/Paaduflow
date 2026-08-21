@@ -26,6 +26,7 @@
     "predev:web": "npm run tokens:build",
     "dev:web": "vite",
     "seed:dev": "node tools/seed/pengembangan.js",
+    "seed:demo": "node tools/seed/demo.js",
     "build": "npm run build:web && npm run build:server",
     "prebuild:web": "npm run tokens:build",
     "build:web": "vite build",
