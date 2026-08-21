@@ -358,6 +358,7 @@
   background: var(--bg-surface-raised);
   border: var(--border-width-default) solid var(--border-default);
   border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-raised);
 }
 
 .listMessage {
@@ -436,6 +437,7 @@
   font-size: var(--font-size-caption);
   white-space: nowrap;
   z-index: var(--z-tooltip);
+  box-shadow: var(--shadow-raised);
 }
 
 /* ── Skeleton ─────────────────────────────────────────────────────────────*/
@@ -533,30 +535,96 @@
 
 /* ── KPI card — Component_Specs_Composite §8 ──────────────────────────────*/
 
+/*
+ * Kartu KPI berada DI DALAM aliran halaman, jadi `bg-surface` — bukan
+ * `bg-surface-raised`. Color_System section 4: raised hanya untuk yang melayang
+ * dan hilang saat ditutup. Kartu tidak dapat ditutup, jadi ia bukan raised.
+ *
+ * Di mode terang, surface (#FFFFFF) di atas canvas (#F8F9FB) sudah memberi
+ * gradasi. Bayangan kartu ditambahkan sangat tipis di atasnya — cukup
+ * mengangkat, tidak lebih. Ini ERP, bukan aplikasi konsumen.
+ */
 .kpiCard {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
-  padding: var(--space-4);
+  gap: var(--space-2);
+  padding: var(--space-6);
   border: var(--border-width-hairline) solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  background: var(--bg-surface-raised);
+  border-radius: var(--radius-xl);
+  background: var(--bg-surface);
+  box-shadow: var(--shadow-card);
   text-decoration: none;
   color: inherit;
-  transition: border-color var(--duration-fast) var(--ease-standard);
+  overflow: hidden;
+  transition:
+    border-color var(--duration-fast) var(--ease-standard),
+    box-shadow var(--duration-fast) var(--ease-standard);
 }
 
+/*
+ * Aksen kategori: garis tipis di tepi atas kartu.
+ *
+ * Garis, bukan latar berwarna. Latar berwarna di empat kartu bersebelahan
+ * menghasilkan dasbor yang terbaca sebagai empat peringatan — dan Color_System
+ * section 1 melarang warna brand membawa status justru karena itu.
+ *
+ * Warnanya dari token peran yang sudah ada. Tidak ada token baru, dan tidak ada
+ * warna yang dikarang.
+ */
+.kpiCard::before {
+  content: '';
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline: 0;
+  block-size: var(--border-width-focus);
+  background: var(--text-accent);
+}
+
+.kpiCard[data-kategori='pendapatan']::before {
+  background: var(--text-success);
+}
+
+.kpiCard[data-kategori='piutang']::before {
+  background: var(--text-warning);
+}
+
+.kpiCard[data-kategori='tempo']::before {
+  background: var(--text-danger);
+}
+
+.kpiCard[data-kategori='tindakan']::before {
+  background: var(--text-accent);
+}
+
+/*
+ * Hover yang terasa, tanpa gerakan.
+ *
+ * Batas menguat dan bayangan naik satu tingkat. TIDAK ada `transform:
+ * translateY` — kartu yang bergeser saat disentuh kursor memindahkan target
+ * klik tepat saat orang hendak mengkliknya, dan di dasbor yang dibuka lima
+ * puluh kali sehari itu berhenti terasa hidup dan mulai terasa gelisah.
+ */
 .kpiCard:hover {
   border-color: var(--border-strong);
+  box-shadow: var(--shadow-raised);
 }
 
+/* Label lebih kecil dan lebih redup daripada angkanya. Yang dicari mata di
+   dasbor adalah angkanya; labelnya hanya menjelaskan angka mana. */
 .kpiLabel {
-  font-size: var(--font-size-body-sm);
+  font-size: var(--font-size-overline);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--font-line-height-overline);
+  letter-spacing: var(--font-tracking-overline);
+  text-transform: uppercase;
   color: var(--text-secondary);
 }
 
+/* Naik dari heading-3 ke heading-2. Angka kunci harus jelas lebih besar
+   daripada labelnya — jarak dua langkah di skala, bukan satu. */
 .kpiValue {
-  font-size: var(--font-size-heading-3);
+  font-size: var(--font-size-heading-2);
   font-weight: var(--font-weight-semibold);
   font-variant-numeric: tabular-nums;
   color: var(--text-primary);

@@ -280,3 +280,21 @@
   block-size: var(--size-icon);
   flex-shrink: 0;
 }
+
+/* ── Transisi ─────────────────────────────────────────────────────────────*/
+
+/*
+ * Hover baris tabel.
+ *
+ * `duration-fast` (100ms), bukan `normal`. Baris tabel dilewati kursor puluhan
+ * kali dalam satu gerakan; transisi yang lebih lambat dari itu menghasilkan
+ * jejak yang masih menyala di belakang kursor, dan mata mengira ada dua baris
+ * terpilih.
+ */
+.row td {
+  transition: background var(--duration-fast) var(--ease-standard);
+}
+
+.wrap tbody tr:hover td {
+  background: var(--bg-surface-sunken);
+}

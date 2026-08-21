@@ -129,6 +129,7 @@
   border: var(--border-width-default) solid var(--border-default);
   border-radius: var(--radius-lg);
   z-index: var(--z-dropdown);
+  box-shadow: var(--shadow-raised);
 }
 
 .groupLabel {
@@ -287,15 +288,20 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
-  font-size: var(--font-size-caption);
+  /* Overline, bukan caption: breadcrumb adalah JALUR, bukan isi. Huruf kapital
+     kecil membuatnya terbaca sebagai penunjuk lokasi, bukan sebagai kalimat. */
+  font-size: var(--font-size-overline);
+  line-height: var(--font-line-height-overline);
+  letter-spacing: var(--font-tracking-overline);
+  text-transform: uppercase;
   color: var(--text-secondary);
   margin-block-end: var(--space-2);
 }
 
 .pageTitle {
-  font-size: var(--font-size-heading-2);
-  line-height: var(--font-line-height-heading-2);
-  letter-spacing: var(--font-tracking-heading-2);
+  font-size: var(--font-size-heading-1);
+  line-height: var(--font-line-height-heading-1);
+  letter-spacing: var(--font-tracking-heading-1);
   font-weight: var(--font-weight-semibold);
   margin: 0;
 }
@@ -353,6 +359,7 @@
   border: var(--border-width-default) solid var(--border-default);
   border-radius: var(--radius-xl);
   z-index: var(--z-modal);
+  box-shadow: var(--shadow-overlay);
 }
 
 .paletteInput {
@@ -775,6 +782,7 @@
   background: var(--bg-surface-raised);
   border: var(--border-width-default) solid var(--border-default);
   border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-raised);
 }
 
 .menuIdentitas {
@@ -853,4 +861,76 @@
 .menuItem:focus-visible {
   outline: var(--border-width-focus) solid var(--border-focus);
   outline-offset: 2px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   HIERARKI TIPOGRAFI DAN RUANG NAPAS
+
+   Seluruh nilai dari skala yang sudah ada. Tidak ada ukuran yang dikarang.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Baris konteks company tetap terbaca jelas — ia lapis kedua dari empat lapis
+   indikator konteks, dan meredupkannya berarti melemahkan pertahanan. Nama
+   company-nya sendiri memakai warna teks utama. */
+.contextRow strong {
+  color: var(--text-primary);
+  font-weight: var(--font-weight-medium);
+}
+
+/* Page header diberi pembatas bawah, sehingga ia terbaca sebagai kepala
+   halaman alih-alih baris pertama isinya. Jaraknya diatur per density di
+   bawah. */
+.pageHeader {
+  border-block-end: var(--border-width-hairline) solid var(--border-subtle);
+}
+
+/*
+ * Ruang napas untuk mode LEGA saja.
+ *
+ * Mode padat tetap rapat, dan itu bukan kompromi: pengguna harian akan
+ * memilihnya, dan yang mereka cari adalah baris sebanyak mungkin di satu layar.
+ * Melonggarkan keduanya berarti mengorbankan pemakaian delapan jam demi satu
+ * demo tiga puluh menit.
+ */
+.shell[data-density='comfortable'] .body {
+  padding: var(--space-8);
+}
+
+.shell[data-density='comfortable'] .pageHeader {
+  padding-block-end: var(--space-6);
+}
+
+.shell[data-density='compact'] .body {
+  padding: var(--space-4);
+}
+
+/* Di bawah 1024px ruang layar lebih berharga daripada napas, di mode mana pun. */
+@media (max-width: 1023px) {
+  .shell[data-density='comfortable'] .body {
+    padding: var(--space-4);
+  }
+}
+
+/*
+ * Kemunculan lapisan mengambang.
+ *
+ * `duration-normal` dengan `ease-enter` — melambat di akhir, sesuai aturan
+ * Design_Tokens §8 untuk elemen yang masuk. Tidak ada animasi keluar: yang
+ * pergi tidak boleh membuat orang menunggu, dan menghilang seketika terasa
+ * benar justru karena tidak terasa apa-apa.
+ *
+ * Geraknya 4px, bukan lebih. Panel yang melompat dari jauh menarik mata ke
+ * lintasannya alih-alih ke isinya.
+ */
+@keyframes lapisanMasuk {
+  from {
+    opacity: 0;
+    transform: translateY(calc(var(--space-1) * -1));
+  }
+}
+
+.switcherPanel,
+.menuPanel,
+.palette {
+  animation: lapisanMasuk var(--duration-normal) var(--ease-enter);
 }

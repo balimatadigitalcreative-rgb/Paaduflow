@@ -45,6 +45,14 @@ export interface KpiCardProps {
   readonly series?: readonly number[]
   /** Dibaca screen reader sebagai keterangan tabel sparkline. */
   readonly seriesLabel?: string
+  /**
+   * Kategori kartu, menentukan warna garis aksen di tepi atasnya.
+   *
+   * Bukan warna, melainkan PERAN. Kartu tidak tahu warna apa pun; CSS yang
+   * memetakannya ke token peran, sehingga mode gelap dan brand tenant tidak
+   * perlu menyentuh komponen ini.
+   */
+  readonly kategori?: 'pendapatan' | 'piutang' | 'tempo' | 'tindakan'
 }
 
 export function KpiCard(props: KpiCardProps): ReactNode {
@@ -61,7 +69,7 @@ export function KpiCard(props: KpiCardProps): ReactNode {
   const tanda = changePercent === null ? '' : changePercent > 0 ? '+' : ''
 
   return (
-    <a className={styles.kpiCard} href={props.href}>
+    <a className={styles.kpiCard} href={props.href} data-kategori={props.kategori ?? 'tindakan'}>
       <span className={styles.kpiLabel}>{props.label}</span>
       <strong className={styles.kpiValue}>{props.value}</strong>
 

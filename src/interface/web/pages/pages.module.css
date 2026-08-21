@@ -308,3 +308,49 @@
     order: -1;
   }
 }
+
+/* ── Hierarki di dalam halaman ────────────────────────────────────────────*/
+
+/* Judul seksi jelas berbeda dari badan teks, tetapi jelas di bawah judul
+   halaman: heading-3 di antara heading-1 dan body. Tiga tingkat, bukan dua. */
+.stack h2 {
+  margin: 0;
+  font-size: var(--font-size-heading-3);
+  line-height: var(--font-line-height-heading-3);
+  letter-spacing: var(--font-tracking-heading-3);
+  font-weight: var(--font-weight-semibold);
+}
+
+/* Judul panel adalah tingkat keempat — di bawah judul seksi, di atas label.
+   Huruf kapital kecil supaya ia terbaca sebagai penanda blok, bukan sebagai
+   judul yang bersaing dengan seksinya. */
+.panelJudul {
+  font-size: var(--font-size-overline);
+  line-height: var(--font-line-height-overline);
+  letter-spacing: var(--font-tracking-overline);
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+/* Label sekunder lebih kecil DAN lebih redup. Salah satu saja tidak cukup:
+   ukuran sendirian masih bersaing, warna sendirian masih menuntut ruang. */
+.metaLabel {
+  font-size: var(--font-size-caption);
+  line-height: var(--font-line-height-caption);
+  color: var(--text-secondary);
+}
+
+/* Angka kunci di blok meta lebih besar daripada labelnya, dengan jarak dua
+   langkah — sama seperti kartu KPI, supaya keduanya terbaca sebagai keluarga
+   yang sama. */
+.metaValue {
+  font-size: var(--font-size-body-lg);
+  font-weight: var(--font-weight-medium);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Panel dasbor ikut mendapat bayangan kartu — sangat tipis, cukup memisahkan
+   dari kanvas. */
+.panelDasbor {
+  box-shadow: var(--shadow-card);
+}

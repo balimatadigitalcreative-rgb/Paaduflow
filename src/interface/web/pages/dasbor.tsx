@@ -43,6 +43,19 @@ const LABEL_PERAN: Record<string, string> = {
   member: 'Anggota',
 }
 
+/**
+ * Peta kartu ke kategori aksennya.
+ *
+ * Di sini, bukan di server: warna adalah keputusan tampilan, dan port dasbor
+ * tidak boleh tahu apa pun tentang garis di tepi kartu.
+ */
+const KATEGORI_KARTU: Record<string, 'pendapatan' | 'piutang' | 'tempo' | 'tindakan'> = {
+  pendapatan: 'pendapatan',
+  piutang: 'piutang',
+  'jatuh-tempo': 'tempo',
+  menunggu: 'tindakan',
+}
+
 const SINGKAT_BULAN = [
   'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
   'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des',
@@ -204,6 +217,7 @@ function RingkasanAngka({
             comparisonBasis={kartu.comparisonBasis}
             higherIsBetter={kartu.higherIsBetter}
             href={kartu.href}
+            kategori={KATEGORI_KARTU[kartu.id] ?? 'tindakan'}
             series={kartu.series}
             seriesLabel={`Riwayat ${kartu.label.toLowerCase()} dua belas bulan terakhir`}
           />
