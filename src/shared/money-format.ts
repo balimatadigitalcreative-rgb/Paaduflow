@@ -68,6 +68,42 @@ export function formatAmount(value: number, currency: string, locale = 'id-ID'):
   }).format(value)
 }
 
+/**
+ * Format akuntansi: negatif dalam kurung, nol dibedakan dari kosong.
+ *
+ * Tiga aturan, dan ketiganya berasal dari cara orang keuangan membaca kolom:
+ *
+ * 1. **Negatif dalam kurung**, bukan tanda minus (Typography_System §3.4).
+ *    Tanda minus setebal satu piksel hilang saat laporan difotokopi atau
+ *    dilihat sekilas, dan angka yang terbaca terbalik tandanya adalah kesalahan
+ *    yang tidak disadari siapa pun.
+ *
+ * 2. **Nol dan kosong berbeda.** `0` berarti pernah ada dan sekarang habis;
+ *    `—` berarti tidak pernah ada. Pembedaan ini kebenaran data, bukan gaya —
+ *    akun dengan saldo nol dan akun yang belum pernah tersentuh menuntut
+ *    tindakan yang berbeda.
+ *
+ * 3. **Presisi konsisten dalam satu kolom.** Desimalnya ditetapkan mata uang,
+ *    bukan nilainya, sehingga 1.000.000 dan 1.000.000,50 sejajar di kolom yang
+ *    sama. `formatAmount` memakai minimum 0 dan karena itu tidak sejajar;
+ *    fungsi ini tidak boleh dipakai bergantian dengannya dalam satu kolom.
+ */
+export function formatAccounting(
+  value: number | null | undefined,
+  currency: string,
+  locale = 'id-ID',
+): string {
+  if (value === null || value === undefined) return '—'
+
+  const desimal = currencyDecimals(currency)
+  const besaran = new Intl.NumberFormat(locale, {
+    minimumFractionDigits: desimal,
+    maximumFractionDigits: desimal,
+  }).format(Math.abs(value))
+
+  return value < 0 ? `(${besaran})` : besaran
+}
+
 /** Simbol mata uang sebagai affix — ia tidak pernah menjadi bagian dari nilai. */
 export function currencyAffix(currency: string): string {
   return currency.toUpperCase() === 'IDR' ? 'Rp' : currency.toUpperCase()

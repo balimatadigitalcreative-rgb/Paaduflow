@@ -207,6 +207,10 @@ export function DataTable<T>(props: DataTableProps<T>): ReactNode {
                       {props.columns.map((column) => (
                         <td
                           key={column.id}
+                          // Label kolom ikut dibawa sel supaya baris dapat
+                          // berubah menjadi kartu di ponsel tanpa kehilangan
+                          // header-nya — Layout_System §5.
+                          data-label={column.header}
                           className={column.align === 'end' ? styles.cellEnd : undefined}
                         >
                           {/* Baris dibuka lewat tautan di kolom identifier —

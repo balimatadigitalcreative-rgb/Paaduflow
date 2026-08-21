@@ -15,6 +15,8 @@ import { ErrorSummary, type FieldError } from '../components/form/form.js'
 import { DateField } from '../components/pickers.js'
 import { FilterBar, type FilterChip } from '../components/filter-bar.js'
 import { DataTable } from '../components/table/data-table.js'
+import { useTabel } from '../components/table/use-tabel.js'
+import { usePreferences } from '../shell/preferences.js'
 import { emptyLine, LineItemEditor, type EditableLine } from '../components/table/line-item-editor.js'
 import type { Column, TableState } from '../components/table/types.js'
 import { Tabs, TabPanel } from '../components/tabs.js'
@@ -184,12 +186,20 @@ export function DaftarFaktur({ konteks }: { readonly konteks: Konteks }): ReactN
     [],
   )
 
+  const { preferences } = usePreferences()
+  const tabel = useTabel(columns, (row) => [row.number, row.customerName])
+
   return (
     <div className={styles.stack}>
       <FilterBar
         label="Saring faktur menurut status"
         chips={CHIP_FAKTUR}
         activeIds={filterAktif}
+        search={{
+          value: tabel.kueri,
+          label: 'Cari nomor atau customer',
+          onChange: tabel.setKueri,
+        }}
         onToggle={(id) =>
           ubahFilter(
             filterAktif.includes(id)
@@ -203,17 +213,18 @@ export function DaftarFaktur({ konteks }: { readonly konteks: Konteks }): ReactN
       <DataTable
         caption="Faktur Penjualan"
         columns={columns}
-        state={state}
+        state={tabel.terapkan(state, [])}
         rowId={(row) => row.id}
         rowHref={(row) => href(`penjualan/${row.id}`)}
         filter={Object.fromEntries(filterAktif.map((id) => [id, 'aktif']))}
         activeFilterLabels={filterAktif.map(
           (id) => CHIP_FAKTUR.find((chip) => chip.id === id)?.label ?? id,
         )}
-        sort={[]}
+        sort={tabel.sort}
+        density={preferences.density}
         companyName={konteks.companyName}
         emptyAction={<Button onClick={() => pergiKe('penjualan/baru')}>Buat faktur pertama</Button>}
-        onSortChange={() => undefined}
+        onSortChange={tabel.setSort}
         onRetry={() => void muat()}
         onClearFilters={() => ubahFilter([])}
       />

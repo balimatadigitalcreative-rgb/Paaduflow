@@ -18,6 +18,8 @@ import { Tabs, TabPanel } from '../components/tabs.js'
 import { useToast } from '../components/toast.js'
 import { useHeaderHalaman } from '../shell/page-header.js'
 import { DataTable } from '../components/table/data-table.js'
+import { useTabel } from '../components/table/use-tabel.js'
+import { usePreferences } from '../shell/preferences.js'
 import type { Column, TableState } from '../components/table/types.js'
 import { TextField } from '../components/text-field.js'
 import { href, pergiKe } from '../router.js'
@@ -201,6 +203,9 @@ export function DaftarPembelian({
     return dasar
   }, [docType])
 
+  const { preferences } = usePreferences()
+  const tabel = useTabel(columns, (row) => [row.number, row.vendorName])
+
   return (
     <div className={styles.stack}>
       <FilterBar
@@ -211,6 +216,11 @@ export function DaftarPembelian({
         }
         chips={chips}
         activeIds={filterAktif}
+        search={{
+          value: tabel.kueri,
+          label: 'Cari nomor atau vendor',
+          onChange: tabel.setKueri,
+        }}
         onToggle={(id) =>
           ubahFilter(
             filterAktif.includes(id)
@@ -230,21 +240,22 @@ export function DaftarPembelian({
       <DataTable
         caption={docType === 'bill' ? 'Faktur Pembelian' : 'Pesanan Pembelian'}
         columns={columns}
-        state={state}
+        state={tabel.terapkan(state, filterAktif.map(labelFilter))}
         rowId={(row) => row.id}
         rowHref={(row) =>
           href(docType === 'bill' ? `pembelian/tagihan/${row.id}` : `pembelian/pesanan/${row.id}`)
         }
         filter={Object.fromEntries(filterAktif.map((id) => [id, 'aktif']))}
         activeFilterLabels={filterAktif.map(labelFilter)}
-        sort={[]}
+        sort={tabel.sort}
+        density={preferences.density}
         companyName={konteks.companyName}
         emptyAction={
           <Button variant="secondary" onClick={() => pergiKe('pembelian/pesanan')}>
             {docType === 'bill' ? 'Mulai dari pesanan pembelian' : 'Pelajari alur pembelian'}
           </Button>
         }
-        onSortChange={() => undefined}
+        onSortChange={tabel.setSort}
         onRetry={() => void muat()}
         onClearFilters={() => ubahFilter([])}
       />
@@ -591,22 +602,26 @@ export function DaftarPenerimaan({ konteks }: { readonly konteks: Konteks }): Re
     [],
   )
 
+  const { preferences } = usePreferences()
+  const tabel = useTabel(columns, (row) => [row.number, row.vendorName])
+
   return (
     <DataTable
       caption="Penerimaan Barang"
       columns={columns}
-      state={state}
+      state={tabel.terapkan(state, [])}
       rowId={(row) => row.id}
       rowHref={(row) => href(`pembelian/pesanan/${row.purchaseOrderId}`)}
       filter={{}}
-      sort={[]}
+      sort={tabel.sort}
+      density={preferences.density}
       companyName={konteks.companyName}
       emptyAction={
         <Button variant="secondary" onClick={() => pergiKe('pembelian/pesanan')}>
           Buka pesanan pembelian
         </Button>
       }
-      onSortChange={() => undefined}
+      onSortChange={tabel.setSort}
       onRetry={() => void muat()}
     />
   )
@@ -692,6 +707,22 @@ export function DetailTagihan({
    */
   const label = panel === null ? undefined : LABEL_PENCOCOKAN[panel.matchStatus]
   const penerimaan = ringkasKuantitas(dokumen, (baris) => baris.qtyReceived, 'diterima')
+
+  /*
+   * Alasan tagihan tertahan, atau null bila memang tidak ada.
+   *
+   * Disebut apa adanya termasuk selisihnya. "Gagal pencocokan" tidak dapat
+   * ditindaklanjuti; "vendor menagih 14% di atas pesanan" dapat — orang tahu
+   * harus menelepon siapa dan menanyakan apa.
+   */
+  const tertahan =
+    panel === null
+      ? null
+      : panel.matchStatus === 'exception'
+        ? 'Pencocokan tiga arah menemukan selisih yang belum disetujui. Periksa tab Baris, lalu setujui pengecualiannya bila selisihnya memang disepakati.'
+        : panel.matchStatus === 'not_matched'
+          ? 'Pencocokan tiga arah belum dijalankan atas tagihan ini.'
+          : null
 
   useHeaderHalaman(
     () =>
@@ -865,15 +896,37 @@ export function DetailTagihan({
         </p>
       </TabPanel>
 
-      <div className={styles.row}>
-        {panel.lifecycleStatus === 'approved' ? (
-          <Button loading={sedang} onClick={() => void posting()}>
-            Posting tagihan
+      {/*
+        Tombol posting NONAKTIF saat pencocokan berstatus exception, dengan
+        alasannya terlihat di sebelahnya.
+        
+        Server tetap menolaknya — itu penjaga yang sebenarnya. Tetapi tombol
+        aktif yang selalu gagal mengajari orang bahwa penolakan sistem ini acak,
+        dan orang yang percaya begitu akan mencari jalan memutar. Menonaktifkan
+        beserta sebabnya membuat kontrolnya terbaca sebagai keputusan, bukan
+        sebagai gangguan.
+      */}
+      <div className={styles.stack}>
+        {tertahan === null ? null : (
+          <p className={`${styles.notice} ${styles.noticeDanger}`} role="status">
+            <strong>Tagihan ini belum dapat diposting.</strong> {tertahan}
+          </p>
+        )}
+
+        <div className={styles.row}>
+          {panel.lifecycleStatus === 'approved' ? (
+            <Button
+              loading={sedang}
+              disabled={tertahan !== null}
+              onClick={() => void posting()}
+            >
+              Posting tagihan
+            </Button>
+          ) : null}
+          <Button variant="ghost" onClick={() => pergiKe('pembelian/tagihan')}>
+            Kembali ke daftar
           </Button>
-        ) : null}
-        <Button variant="ghost" onClick={() => pergiKe('pembelian/tagihan')}>
-          Kembali ke daftar
-        </Button>
+        </div>
       </div>
     </div>
   )

@@ -2,13 +2,15 @@ import { useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 
 import type { AccountSummary, LedgerEntry } from '#application/queries'
-import { formatAmount } from '#shared/money-format'
+import { formatAccounting } from '#shared/money-format'
 
 import { api, ApiError, perusahaan } from '../api/client.js'
 import { Button } from '../components/button.js'
 import { Select } from '../components/combobox.js'
 import { FilterBar, type FilterChip } from '../components/filter-bar.js'
 import { DataTable } from '../components/table/data-table.js'
+import { useTabel } from '../components/table/use-tabel.js'
+import { usePreferences } from '../shell/preferences.js'
 import type { Column, TableState } from '../components/table/types.js'
 import { href, pergiKe } from '../router.js'
 import styles from './pages.module.css'
@@ -107,12 +109,17 @@ export function BaganAkun({ konteks }: { readonly konteks: Konteks }): ReactNode
         // Saldo sudah bertanda menurut jenis akun di server — aset dan beban
         // bertambah di debit, sisanya di kredit. Kalau layar yang menentukan
         // tandanya, seluruh pendapatan akan tampil negatif.
-        cell: (row) => formatAmount(row.balance, konteks.currency),
+        // Saldo akun dapat negatif, dan negatif di laporan keuangan ditulis
+        // dalam kurung — tanda minus hilang saat difotokopi.
+        cell: (row) => formatAccounting(row.balance, konteks.currency),
         sortValue: (row) => row.balance,
       },
     ],
     [konteks.currency],
   )
+
+  const { preferences } = usePreferences()
+  const tabel = useTabel(columns, (row) => [row.code, row.name])
 
   return (
     <div className={styles.stack}>
@@ -120,6 +127,11 @@ export function BaganAkun({ konteks }: { readonly konteks: Konteks }): ReactNode
         label="Saring akun menurut klasifikasi"
         chips={CHIP_AKUN}
         activeIds={filterAktif}
+        search={{
+          value: tabel.kueri,
+          label: 'Cari kode atau nama akun',
+          onChange: tabel.setKueri,
+        }}
         onToggle={(id) =>
           ubahFilter(
             filterAktif.includes(id)
@@ -138,19 +150,20 @@ export function BaganAkun({ konteks }: { readonly konteks: Konteks }): ReactNode
       <DataTable
         caption="Bagan Akun"
         columns={columns}
-        state={state}
+        state={tabel.terapkan(state, filterAktif.map(labelFilter))}
         rowId={(row) => row.id}
         rowHref={(row) => href(`akuntansi/buku-besar/${row.id}`)}
         filter={Object.fromEntries(filterAktif.map((id) => [id, 'aktif']))}
         activeFilterLabels={filterAktif.map(labelFilter)}
-        sort={[]}
+        sort={tabel.sort}
+        density={preferences.density}
         companyName={konteks.companyName}
         emptyAction={
           <Button variant="secondary" onClick={() => void muat()}>
             Muat ulang bagan akun
           </Button>
         }
-        onSortChange={() => undefined}
+        onSortChange={tabel.setSort}
         onRetry={() => void muat()}
         onClearFilters={() => ubahFilter([])}
       />
@@ -287,26 +300,36 @@ export function BukuBesar({
         id: 'debit',
         header: 'Debit',
         align: 'end',
-        cell: (row) => (row.debit === 0 ? '' : formatAmount(row.debit, konteks.currency)),
+        /*
+         * Sisi yang tidak dipakai menjadi em dash, bukan sel kosong.
+         *
+         * Satu baris jurnal punya debit ATAU kredit, tidak keduanya. Sel kosong
+         * terbaca sebagai data yang hilang; em dash terbaca sebagai "tidak
+         * berlaku di sini". Nol yang sungguhan tetap tampil sebagai 0.
+         */
+        cell: (row) => formatAccounting(row.debit === 0 ? null : row.debit, konteks.currency),
         sortValue: (row) => row.debit,
       },
       {
         id: 'credit',
         header: 'Kredit',
         align: 'end',
-        cell: (row) => (row.credit === 0 ? '' : formatAmount(row.credit, konteks.currency)),
+        cell: (row) => formatAccounting(row.credit === 0 ? null : row.credit, konteks.currency),
         sortValue: (row) => row.credit,
       },
       {
         id: 'running',
         header: 'Saldo berjalan',
         align: 'end',
-        cell: (row) => formatAmount(row.runningBalance, konteks.currency),
+        cell: (row) => formatAccounting(row.runningBalance, konteks.currency),
         sortValue: (row) => row.runningBalance,
       },
     ],
     [konteks.currency],
   )
+
+  const { preferences } = usePreferences()
+  const tabel = useTabel(columns, (row) => [row.journalNumber, row.accountCode, row.accountName, row.description])
 
   return (
     <div className={styles.stack}>
@@ -329,7 +352,7 @@ export function BukuBesar({
       <DataTable
         caption="Buku Besar"
         columns={columns}
-        state={state}
+        state={tabel.terapkan(state, [])}
         rowId={(row) => row.id}
         rowHref={(row) => jalurSumber(row)}
         filter={terpilih === '' ? {} : { account: terpilih }}
@@ -338,12 +361,13 @@ export function BukuBesar({
             ? []
             : [akun.find((item) => item.id === terpilih)?.name ?? 'Akun terpilih']
         }
-        sort={[]}
+        sort={tabel.sort}
+        density={preferences.density}
         companyName={konteks.companyName}
         emptyAction={
           <Button onClick={() => pergiKe('penjualan/baru')}>Buat faktur pertama</Button>
         }
-        onSortChange={() => undefined}
+        onSortChange={tabel.setSort}
         onRetry={() => void muat(terpilih)}
         onClearFilters={() => {
           setTerpilih('')

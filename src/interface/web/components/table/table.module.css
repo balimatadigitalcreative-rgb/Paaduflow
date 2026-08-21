@@ -185,3 +185,81 @@
   outline: var(--border-width-focus) solid var(--border-focus);
   outline-offset: 2px;
 }
+
+/* ── Tabel menjadi kartu di bawah 768px — Layout_System §5 ────────────────
+
+   Tabel keuangan sembilan kolom di layar 390px tidak dapat diselamatkan dengan
+   menggulir mendatar: pengguna kehilangan kolom identifier begitu ia menggeser,
+   dan angka tanpa nomor dokumennya tidak berarti apa-apa.
+
+   Setiap baris karena itu menjadi kartu, dan tiap sel membawa label kolomnya
+   sendiri lewat `data-label`. Header tabel disembunyikan — ia sudah diulang di
+   tiap sel.
+
+   Yang TIDAK berubah: urutan kolom, isi sel, dan makna alignment angka. Kartu
+   ini tabel yang dilipat, bukan tampilan kedua yang harus dipelihara terpisah. */
+@media (max-width: 767px) {
+  .table,
+  .table tbody,
+  .table tr,
+  .table td {
+    display: block;
+    inline-size: 100%;
+  }
+
+  /* Header disembunyikan dari mata, TIDAK dari screen reader: pembaca layar
+     tetap membacakan hubungan sel dengan header lewat struktur tabelnya. */
+  .table thead {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .table tbody tr {
+    margin-block-end: var(--space-3);
+    padding: var(--space-3);
+    border: var(--border-width-default) solid var(--border-default);
+    border-radius: var(--radius-lg);
+    background: var(--bg-surface-raised);
+  }
+
+  .table tbody td {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding-inline: 0;
+    border: 0;
+  }
+
+  /* Label kolom di kiri, nilainya di kanan. Angka tetap rata kanan, jadi
+     seluruh nominal dalam satu kartu tetap sejajar satu sama lain. */
+  .table tbody td::before {
+    content: attr(data-label);
+    color: var(--text-secondary);
+    font-size: var(--font-size-caption);
+    white-space: nowrap;
+  }
+
+  /* Sel kosong tetap menampilkan labelnya. Menyembunyikannya membuat kartu
+     berubah tinggi antar baris, dan kolom yang hilang terbaca sebagai data yang
+     tidak ada — padahal ia kosong karena memang tidak berlaku. */
+  .table tbody td:empty::after {
+    content: '—';
+    color: var(--text-tertiary);
+  }
+
+  /* Kolom identifier tetap paling menonjol: ia satu-satunya jalan ke detail. */
+  .table tbody td:first-child {
+    padding-block-end: var(--space-2);
+    border-block-end: var(--border-width-hairline) solid var(--border-subtle);
+    font-weight: var(--font-weight-medium);
+  }
+
+  .skeletonCell {
+    inline-size: 60%;
+  }
+}

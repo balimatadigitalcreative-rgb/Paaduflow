@@ -707,3 +707,21 @@
   clip-path: inset(50%);
   white-space: nowrap;
 }
+
+/* Pencarian di filter bar. `type="search"` supaya peramban memberi tombol
+   hapus bawaan dan papan ketik ponsel menampilkan tombol "cari". */
+.filterSearch {
+  min-inline-size: var(--size-container-narrow);
+  max-inline-size: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: var(--border-width-default) solid var(--border-default);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font: inherit;
+}
+
+.filterSearch:focus-visible {
+  outline: var(--border-width-focus) solid var(--border-focus);
+  outline-offset: 2px;
+}

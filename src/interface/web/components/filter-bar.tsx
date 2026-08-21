@@ -22,6 +22,18 @@ export interface FilterBarProps {
   readonly chips: readonly FilterChip[]
   readonly activeIds: readonly string[]
   readonly label: string
+  /**
+   * Pencarian teks bebas, bila daftarnya cukup besar untuk membutuhkannya.
+   *
+   * Diletakkan di sini, bukan di tiap halaman, supaya posisinya sama di seluruh
+   * modul. Pencarian yang berpindah tempat antar layar adalah pencarian yang
+   * dicari lebih dulu sebelum dipakai.
+   */
+  readonly search?: {
+    readonly value: string
+    readonly label: string
+    onChange(value: string): void
+  }
   onToggle(id: string): void
   onClearAll(): void
 }
@@ -30,6 +42,7 @@ export function FilterBar({
   chips,
   activeIds,
   label,
+  search,
   onToggle,
   onClearAll,
 }: FilterBarProps): ReactNode {
@@ -37,6 +50,17 @@ export function FilterBar({
 
   return (
     <div className={styles.filterBar} role="group" aria-label={label}>
+      {search === undefined ? null : (
+        <input
+          type="search"
+          className={styles.filterSearch}
+          value={search.value}
+          aria-label={search.label}
+          placeholder={search.label}
+          onChange={(event) => search.onChange(event.target.value)}
+        />
+      )}
+
       {chips.map((chip) => {
         const aktif = activeIds.includes(chip.id)
         return (

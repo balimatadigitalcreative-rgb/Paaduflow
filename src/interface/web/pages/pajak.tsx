@@ -16,6 +16,8 @@ import { FilterBar, type FilterChip } from '../components/filter-bar.js'
 import { Tabs, TabPanel } from '../components/tabs.js'
 import { useHeaderHalaman } from '../shell/page-header.js'
 import { DataTable } from '../components/table/data-table.js'
+import { useTabel } from '../components/table/use-tabel.js'
+import { usePreferences } from '../shell/preferences.js'
 import type { Column, TableState } from '../components/table/types.js'
 import { TextField } from '../components/text-field.js'
 import { href, pergiKe } from '../router.js'
@@ -181,6 +183,9 @@ export function KodePajak({
 
   const dipilih = ubahId === undefined ? null : (versi.find((baris) => baris.id === ubahId) ?? null)
 
+  const { preferences } = usePreferences()
+  const tabel = useTabel(columns, (row) => [row.code, row.name])
+
   return (
     <div className={styles.stack}>
       {sukses !== null ? (
@@ -206,18 +211,19 @@ export function KodePajak({
       <DataTable
         caption="Kode Pajak — seluruh versi"
         columns={columns}
-        state={state}
+        state={tabel.terapkan(state, [])}
         rowId={(row) => row.id}
         rowHref={(row) => `#/pajak/kode/${row.id}`}
         filter={{}}
-        sort={[]}
+        sort={tabel.sort}
+        density={preferences.density}
         companyName={konteks.companyName}
         emptyAction={
           <Button variant="secondary" onClick={() => void muat()}>
             Muat ulang kode pajak
           </Button>
         }
-        onSortChange={() => undefined}
+        onSortChange={tabel.setSort}
         onRetry={() => void muat()}
       />
     </div>
@@ -523,12 +529,20 @@ export function DaftarFakturKeluaran({ konteks }: { readonly konteks: Konteks })
     [konteks.currency],
   )
 
+  const { preferences } = usePreferences()
+  const tabel = useTabel(columns, (row) => [row.formattedNumber, row.customerName])
+
   return (
     <div className={styles.stack}>
       <FilterBar
         label="Saring faktur pajak keluaran menurut status"
         chips={CHIP_KELUARAN}
         activeIds={filterAktif}
+        search={{
+          value: tabel.kueri,
+          label: 'Cari nomor atau customer',
+          onChange: tabel.setKueri,
+        }}
         onToggle={(id) =>
           ubahFilter(
             filterAktif.includes(id)
@@ -542,17 +556,18 @@ export function DaftarFakturKeluaran({ konteks }: { readonly konteks: Konteks })
     <DataTable
       caption="Faktur Pajak Keluaran"
       columns={columns}
-      state={state}
+      state={tabel.terapkan(state, filterAktif.map(labelFilter))}
       rowId={(row) => row.id}
       rowHref={(row) => `#/pajak/keluaran/${row.id}`}
       filter={Object.fromEntries(filterAktif.map((id) => [id, 'aktif']))}
       activeFilterLabels={filterAktif.map(labelFilter)}
-      sort={[]}
+      sort={tabel.sort}
+      density={preferences.density}
       companyName={konteks.companyName}
       emptyAction={
         <Button onClick={() => pergiKe('pajak/terbitkan')}>Terbitkan faktur pajak</Button>
       }
-      onSortChange={() => undefined}
+      onSortChange={tabel.setSort}
       onRetry={() => void muat()}
       onClearFilters={() => ubahFilter([])}
     />
@@ -1206,12 +1221,20 @@ export function DaftarFakturMasukan({ konteks }: { readonly konteks: Konteks }):
     [konteks.currency],
   )
 
+  const { preferences } = usePreferences()
+  const tabel = useTabel(columns, (row) => [row.supplierNumber, row.vendorName])
+
   return (
     <div className={styles.stack}>
       <FilterBar
         label="Saring faktur pajak masukan menurut kredit"
         chips={CHIP_MASUKAN}
         activeIds={filterAktif}
+        search={{
+          value: tabel.kueri,
+          label: 'Cari nomor atau vendor',
+          onChange: tabel.setKueri,
+        }}
         onToggle={(id) =>
           ubahFilter(
             filterAktif.includes(id)
@@ -1225,7 +1248,7 @@ export function DaftarFakturMasukan({ konteks }: { readonly konteks: Konteks }):
     <DataTable
       caption="Faktur Pajak Masukan"
       columns={columns}
-      state={state}
+      state={tabel.terapkan(state, filterAktif.map(labelFilter))}
       rowId={(row) => row.id}
       // Belum ada layar detail faktur masukan, dan menautkan ke halaman yang
       // tidak ada lebih buruk daripada menautkan ke diri sendiri. Seluruh yang
@@ -1233,14 +1256,15 @@ export function DaftarFakturMasukan({ konteks }: { readonly konteks: Konteks }):
       rowHref={() => '#/pajak/masukan'}
       filter={Object.fromEntries(filterAktif.map((id) => [id, 'aktif']))}
       activeFilterLabels={filterAktif.map(labelFilter)}
-      sort={[]}
+      sort={tabel.sort}
+      density={preferences.density}
       companyName={konteks.companyName}
       emptyAction={
         <Button variant="secondary" onClick={() => pergiKe('pembelian/tagihan')}>
           Buka faktur pembelian
         </Button>
       }
-      onSortChange={() => undefined}
+      onSortChange={tabel.setSort}
       onRetry={() => void muat()}
       onClearFilters={() => ubahFilter([])}
     />
