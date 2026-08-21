@@ -1,4 +1,6 @@
 import type {
+  DashboardQueryPort,
+  DashboardSummary,
   AccountingQueryPort,
   AccountSummary,
   AccessibleCompany,
@@ -622,6 +624,207 @@ export class PostgresPurchaseQueries implements PurchaseQueryPort {
 }
 
 // ── Akuntansi ──────────────────────────────────────────────────────────────
+
+/**
+ * Dasbor eksekutif - Screen_Specs_HiFi section 3.
+ *
+ * Angkanya diambil dari BUKU BESAR, bukan dari daftar dokumen. Bedanya bukan
+ * gaya: buku besar hanya berisi yang sudah diposting, dan itulah satu-satunya
+ * angka yang boleh disebut "pendapatan". Menjumlahkan kolom total di
+ * `sales_documents` akan ikut menghitung draf dan dokumen yang dibatalkan, dan
+ * dasbor yang melebih-lebihkan pendapatan adalah dasbor yang berbahaya.
+ *
+ * Piutang adalah pengecualian yang disengaja, dan alasannya ada di bawah.
+ */
+export class PostgresDashboardQueries implements DashboardQueryPort {
+  constructor(
+    private readonly db: Queryable,
+    private readonly tenantId: string,
+  ) {}
+
+  async summary(companyId: string, today: string): Promise<DashboardSummary> {
+    const { rows: perusahaan } = await this.db.query<{ default_currency: string }>(
+      `SELECT default_currency FROM companies WHERE tenant_id = $1 AND id = $2`,
+      [this.tenantId, companyId],
+    )
+    const currency = perusahaan[0]?.default_currency ?? 'IDR'
+
+    /*
+     * Dua belas bulan pendapatan, dan bulan tanpa transaksi tetap muncul.
+     *
+     * `generate_series` yang di-LEFT JOIN, bukan GROUP BY atas jurnal saja.
+     * Bulan yang hilang dari sumbu akan memampatkan grafik dan membuat tren
+     * terlihat lebih mulus daripada kenyataannya - persis kebohongan visual
+     * yang paling sulit disadari orang yang melihatnya.
+     */
+    const { rows: bulanan } = await this.db.query<{ month: string; revenue: string }>(
+      `WITH sumbu AS (
+         SELECT to_char(bulan, 'YYYY-MM') AS month, bulan
+           FROM generate_series(
+                  date_trunc('month', $3::date) - interval '11 months',
+                  date_trunc('month', $3::date),
+                  interval '1 month'
+                ) AS bulan
+       )
+       SELECT s.month,
+              COALESCE(SUM(l.credit - l.debit), 0) AS revenue
+         FROM sumbu s
+         LEFT JOIN journals j
+                ON j.tenant_id = $1 AND j.company_id = $2
+               AND date_trunc('month', j.journal_date) = s.bulan
+         LEFT JOIN journal_lines l
+                ON l.tenant_id = j.tenant_id AND l.journal_id = j.id
+         LEFT JOIN accounts a
+                ON a.tenant_id = l.tenant_id AND a.id = l.account_id
+               AND a.type = 'revenue'
+        WHERE a.id IS NOT NULL OR l.id IS NULL
+        GROUP BY s.month, s.bulan
+        ORDER BY s.bulan`,
+      [this.tenantId, companyId, today],
+    )
+
+    const months = bulanan.map((row) => ({ month: row.month, revenue: Number(row.revenue) }))
+    const bulanIni = months[months.length - 1]?.revenue ?? 0
+    const bulanLalu = months[months.length - 2]?.revenue ?? 0
+
+    /*
+     * Piutang dibaca dari dokumen penjualan, bukan dari saldo akun piutang.
+     *
+     * Keduanya seharusnya sama, dan kalau berbeda itu temuan tersendiri.
+     * Dokumen dipilih karena hanya di sana ada tanggal jatuh tempo per faktur -
+     * saldo akun tidak tahu mana yang sudah lewat tempo, dan justru itu yang
+     * perlu diketahui orang yang membuka dasbor.
+     *
+     * Hanya dokumen yang sudah diposting yang dihitung. Draf bukan piutang.
+     */
+    const { rows: piutang } = await this.db.query<{
+      beredar: string
+      jatuh_tempo: string
+      beredar_bulan_lalu: string
+    }>(
+      `SELECT
+         COALESCE(SUM(total) FILTER (
+           WHERE settlement_status IN ('unpaid', 'partially_paid')
+         ), 0) AS beredar,
+         COALESCE(SUM(total) FILTER (
+           WHERE settlement_status IN ('unpaid', 'partially_paid')
+             AND due_date IS NOT NULL AND due_date < $3::date
+         ), 0) AS jatuh_tempo,
+         COALESCE(SUM(total) FILTER (
+           WHERE settlement_status IN ('unpaid', 'partially_paid')
+             AND document_date < date_trunc('month', $3::date)
+         ), 0) AS beredar_bulan_lalu
+       FROM sales_documents
+      WHERE tenant_id = $1 AND company_id = $2
+        AND lifecycle_status = 'posted'
+        AND deleted_at IS NULL`,
+      [this.tenantId, companyId, today],
+    )
+
+    const beredar = Number(piutang[0]?.beredar ?? 0)
+    const beredarLalu = Number(piutang[0]?.beredar_bulan_lalu ?? 0)
+    const jatuhTempo = Number(piutang[0]?.jatuh_tempo ?? 0)
+
+    /*
+     * Menunggu persetujuan dihitung dari kedua sisi, penjualan dan pembelian.
+     *
+     * "Perlu tindakan" berisi yang benar-benar butuh keputusan orang - bukan
+     * "ada data baru" (Screen_Specs section 3). Dokumen yang menunggu
+     * persetujuan adalah contoh paling murni dari itu.
+     */
+    const { rows: menunggu } = await this.db.query<{ jumlah: string }>(
+      `SELECT (
+         (SELECT count(*) FROM sales_documents
+           WHERE tenant_id = $1 AND company_id = $2 AND deleted_at IS NULL
+             AND lifecycle_status IN ('submitted', 'pending_approval'))
+       + (SELECT count(*) FROM purchase_documents
+           WHERE tenant_id = $1 AND company_id = $2 AND deleted_at IS NULL
+             AND lifecycle_status IN ('submitted', 'pending_approval'))
+       ) AS jumlah`,
+      [this.tenantId, companyId],
+    )
+    const awaitingApproval = Number(menunggu[0]?.jumlah ?? 0)
+
+    const labelBulanLalu = namaBulan(months[months.length - 2]?.month ?? null)
+
+    return {
+      currency,
+      months,
+      awaitingApproval,
+      kpis: [
+        {
+          id: 'pendapatan',
+          label: 'Pendapatan bulan ini',
+          value: bulanIni,
+          currency,
+          changePercent: selisihPersen(bulanIni, bulanLalu),
+          comparisonBasis: labelBulanLalu === null ? 'Tidak ada periode pembanding' : `vs ${labelBulanLalu}`,
+          higherIsBetter: true,
+          href: '#/akuntansi/buku-besar',
+        },
+        {
+          id: 'piutang',
+          label: 'Piutang beredar',
+          value: beredar,
+          currency,
+          changePercent: selisihPersen(beredar, beredarLalu),
+          comparisonBasis: 'vs akhir bulan lalu',
+          // Piutang yang naik bukan kabar baik, meski panahnya ke atas.
+          higherIsBetter: false,
+          href: '#/penjualan',
+        },
+        {
+          id: 'jatuh-tempo',
+          label: 'Piutang jatuh tempo',
+          value: jatuhTempo,
+          currency,
+          // Tidak ada pembanding yang jujur untuk ini: jatuh tempo dihitung
+          // relatif terhadap hari ini, dan membandingkannya dengan bulan lalu
+          // akan membandingkan dua definisi yang berbeda.
+          changePercent: null,
+          comparisonBasis: 'Posisi hari ini',
+          higherIsBetter: false,
+          href: '#/penjualan',
+        },
+        {
+          id: 'menunggu',
+          label: 'Menunggu persetujuan',
+          value: awaitingApproval,
+          currency: null,
+          changePercent: null,
+          comparisonBasis: 'Posisi hari ini',
+          higherIsBetter: false,
+          href: '#/penjualan',
+        },
+      ],
+    }
+  }
+}
+
+/**
+ * Perubahan persen, dengan satu kasus yang sengaja dijawab null.
+ *
+ * Dari nol ke angka apa pun bukan "kenaikan tak hingga persen" - ia kenaikan
+ * yang tidak punya basis pembanding. Menampilkan angka untuk itu, berapa pun
+ * angkanya, adalah mengarang.
+ */
+function selisihPersen(sekarang: number, sebelumnya: number): number | null {
+  if (sebelumnya === 0) return null
+  return ((sekarang - sebelumnya) / Math.abs(sebelumnya)) * 100
+}
+
+const NAMA_BULAN = [
+  'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+  'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
+]
+
+function namaBulan(kunci: string | null): string | null {
+  if (kunci === null) return null
+  const [tahun, bulan] = kunci.split('-')
+  const indeks = Number(bulan) - 1
+  const nama = NAMA_BULAN[indeks]
+  return nama === undefined ? null : `${nama} ${tahun}`
+}
 
 export class PostgresAccountingQueries implements AccountingQueryPort {
   constructor(

@@ -252,6 +252,48 @@ export interface LedgerEntry {
   readonly runningBalance: number
 }
 
+// ── Dasbor ─────────────────────────────────────────────────────────────────
+
+/**
+ * Satu kartu KPI - Component_Specs_Composite section 8.
+ *
+ * `comparisonBasis` dan `href` WAJIB, dan itu disengaja pada tingkat tipe:
+ * persentase tanpa pembanding tidak bermakna, dan angka agregat tanpa jalan ke
+ * sumbernya melanggar pilar Terang. Keduanya tidak dapat lupa diisi karena
+ * kompilasi menolak.
+ *
+ * `changePercent` boleh null - periode pembanding yang tidak ada adalah
+ * keadaan sah, dan mengarang nol untuk itu akan menampilkan "0%" yang berbohong.
+ */
+export interface DashboardKpi {
+  readonly id: string
+  readonly label: string
+  readonly value: number
+  readonly currency: string | null
+  readonly changePercent: number | null
+  readonly comparisonBasis: string
+  readonly higherIsBetter: boolean
+  readonly href: string
+}
+
+export interface DashboardMonth {
+  /** `2026-08`. Bulan kalender, bukan periode fiskal. */
+  readonly month: string
+  readonly revenue: number
+}
+
+export interface DashboardSummary {
+  readonly currency: string
+  readonly kpis: readonly DashboardKpi[]
+  readonly months: readonly DashboardMonth[]
+  /** Jumlah dokumen yang benar-benar menunggu keputusan orang. */
+  readonly awaitingApproval: number
+}
+
+export interface DashboardQueryPort {
+  summary(companyId: string, today: string): Promise<DashboardSummary>
+}
+
 export interface AccountingQueryPort {
   chartOfAccounts(companyId: string): Promise<readonly AccountSummary[]>
   generalLedger(

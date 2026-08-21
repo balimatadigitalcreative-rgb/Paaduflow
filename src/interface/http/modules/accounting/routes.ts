@@ -53,6 +53,40 @@ export function registerAccountingRoutes(app: PaaduServer, services: AppServices
     return reply.status(hasil.status).send(hasil.body)
   }
 
+  /**
+   * Dasbor - Screen_Specs_HiFi section 3.
+   *
+   * Izin yang dituntut sama dengan bagan akun. Itu disengaja: dasbor
+   * menampilkan angka pendapatan dan piutang agregat, dan siapa pun yang boleh
+   * melihat angka itu di sini boleh melihatnya di buku besar. Izin yang lebih
+   * longgar di dasbor akan menjadi pintu belakang ke laporan keuangan.
+   *
+   * `today` datang dari server, bukan dari klien. Tanggal yang dikirim browser
+   * dapat diatur, dan "piutang jatuh tempo" yang dihitung dari tanggal palsu
+   * adalah angka yang salah tanpa jejak.
+   */
+  app.get(
+    '/v1/companies/:companyId/dashboard',
+    { schema: { params: JalurCompany } },
+    async (request, reply) =>
+      baca(
+        request,
+        reply,
+        request.params.companyId,
+        'akuntansi.bagan.baca',
+        async (scoped, companyId) => ({
+          status: 200,
+          body: {
+            success: true,
+            data: await scoped.dashboard.summary(
+              companyId,
+              new Date().toISOString().slice(0, 10),
+            ),
+          },
+        }),
+      ),
+  )
+
   app.get(
     '/v1/companies/:companyId/accounts',
     { schema: { params: JalurCompany } },

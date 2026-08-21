@@ -16,6 +16,7 @@ import type { Pool } from 'pg'
 import { createIdentityModule } from './identity.js'
 import {
   PostgresAccountingQueries,
+  PostgresDashboardQueries,
   PostgresCompanyDirectory,
   PostgresMasterData,
   PostgresPurchaseQueries,
@@ -118,6 +119,7 @@ export function createAppServices(options: AppServicesOptions): AppServices {
             queries: new PostgresSalesQueries(db, context.tenantId),
           },
           accounting: { queries: new PostgresAccountingQueries(db, context.tenantId) },
+          dashboard: new PostgresDashboardQueries(db, context.tenantId),
           masterData: new PostgresMasterData(db, context.tenantId),
           tax: {
             ...createTax(db, context.tenantId),

@@ -1,3 +1,4 @@
+import type { DashboardQueryPort } from '#application/queries'
 import type { IdempotencyStore } from '#shared/idempotency'
 
 import type {
@@ -98,6 +99,14 @@ export interface CompanyScopedServices {
   readonly purchasing: PurchasingScopedServices
   readonly sales: SalesScopedServices
   readonly accounting: AccountingScopedServices
+  /**
+   * Dasbor berdiri sendiri, bukan di bawah `accounting`.
+   *
+   * Angkanya memang sebagian besar berasal dari buku besar, tetapi ia juga
+   * membaca dokumen penjualan dan pembelian. Menempatkannya di bawah salah satu
+   * modul akan membuat modul itu tampak memiliki data yang bukan miliknya.
+   */
+  readonly dashboard: DashboardQueryPort
   /** Pelanggan, vendor, barang, gudang — dibutuhkan setiap formulir. */
   readonly masterData: MasterDataPort
   readonly tax: TaxScopedServices
