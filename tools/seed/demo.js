@@ -28,6 +28,8 @@ import { randomUUID } from 'node:crypto'
 import { hash } from '@node-rs/argon2'
 import pg from 'pg'
 
+import { jelaskanKekurangan, pasangKonteks, periksaKemampuan } from './konteks.js'
+
 /**
  * Kata sandi demo. Panjang, dapat dibaca lewat telepon, dan tetap contoh.
  *
@@ -274,33 +276,10 @@ export async function seedDemo(connectionString) {
   await client.connect()
 
   try {
-    const { rows: sudahAda } = await client.query(
-      `SELECT id FROM tenants WHERE slug = $1`,
-      [SLUG_TENANT],
-    )
-
-    /*
-     * Menolak, bukan menimpa.
-     *
-     * `journals` dan `journal_lines` append-only: peran aplikasi tidak punya
-     * DELETE di sana, dan itu memang disengaja. Seed yang "membersihkan lebih
-     * dulu" akan menuntut hak yang seluruh sistem ini dibangun untuk menolak.
-     * Lebih jujur berhenti dan menyebutkan apa yang harus dilakukan.
-     */
-    if (sudahAda.length > 0) {
-      throw new Error(
-        [
-          `Tenant demo "${SLUG_TENANT}" sudah ada di basis data ini.`,
-          '',
-          '  Seed ini tidak menimpa apa pun. Jurnal bersifat append-only, dan',
-          '  membersihkannya lebih dulu menuntut hak DELETE yang sengaja tidak',
-          '  dimiliki peran aplikasi.',
-          '',
-          '  Pakai basis data kosong, atau buat ulang:',
-          '    dropdb <nama> && createdb <nama> && npm run migrate && npm run seed:demo',
-        ].join('\n'),
-      )
-    }
+    // Diperiksa DI AWAL, sebelum satu baris pun ditulis.
+    const kemampuan = await periksaKemampuan(client)
+    const kekurangan = jelaskanKekurangan(kemampuan, 'npm run seed:demo')
+    if (kekurangan !== null) throw new Error(kekurangan)
 
     await client.query('BEGIN')
 
@@ -309,10 +288,53 @@ export async function seedDemo(connectionString) {
     const passwordHash = await hash(KATA_SANDI)
 
     const tenantId = randomUUID()
-    await client.query(
-      `INSERT INTO tenants (id, name, slug, region) VALUES ($1, $2, $3, 'id-jkt')`,
-      [tenantId, 'Grup Demo Paadu', SLUG_TENANT],
-    )
+
+    /*
+     * Konteks dipasang SEBELUM baris tenant disisipkan.
+     *
+     * Kebijakan `tenants` menuntut `id = paadu.current_tenant_id()` pada WITH
+     * CHECK-nya. Konteks yang dipasang sesudahnya sudah terlambat — barisnya
+     * ditolak lebih dulu, dan itulah yang dulu memaksa seed dijalankan dengan
+     * kredensial pemilik basis data.
+     */
+    await pasangKonteks(client, { tenantId })
+
+    /*
+     * Penolakan berjalan dua kali disandarkan pada CONSTRAINT, bukan pada
+     * SELECT lebih dulu.
+     *
+     * Versi sebelumnya memeriksa `SELECT id FROM tenants WHERE slug = ...`.
+     * Itu bekerja sebagai superuser dan DIAM sebagai peran aplikasi: tanpa
+     * konteks tenant, RLS menyembunyikan baris yang dicari, penjaganya
+     * menyimpulkan belum ada, lalu seed gagal beberapa ratus baris kemudian
+     * dengan galat kunci ganda mentah.
+     *
+     * Constraint unik tidak dapat disembunyikan RLS. Ia sumber kebenaran yang
+     * benar di sini, dan menangkapnya menghasilkan pesan yang sama jelasnya
+     * untuk peran mana pun.
+     */
+    try {
+      await client.query(
+        `INSERT INTO tenants (id, name, slug, region) VALUES ($1, $2, $3, 'id-jkt')`,
+        [tenantId, 'Grup Demo Paadu', SLUG_TENANT],
+      )
+    } catch (error) {
+      if (error?.code === '23505') {
+        throw new Error(
+          [
+            `Tenant demo "${SLUG_TENANT}" sudah ada di basis data ini.`,
+            '',
+            '  Seed ini tidak menimpa apa pun. Jurnal bersifat append-only, dan',
+            '  membersihkannya lebih dulu menuntut hak DELETE yang sengaja tidak',
+            '  dimiliki peran aplikasi.',
+            '',
+            '  Pakai basis data kosong, atau buat ulang:',
+            '    dropdb <nama> && createdb <nama> && npm run migrate && npm run seed:demo',
+          ].join('\n'),
+        )
+      }
+      throw error
+    }
 
     const companies = COMPANY.map((spesifikasi) => ({ ...spesifikasi, id: randomUUID() }))
     for (const company of companies) {

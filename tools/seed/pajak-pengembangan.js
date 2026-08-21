@@ -30,6 +30,8 @@
 
 import pg from 'pg'
 
+import { pasangKonteks } from './konteks.js'
+
 /**
  * Angka isian. Dikumpulkan di satu tempat supaya siapa pun yang membaca berkas
  * ini melihatnya sebagai daftar yang harus diganti, bukan sebagai angka yang
@@ -86,12 +88,51 @@ function opsional(nama) {
  * pajak di company yang salah. Kesalahan itu tidak menggagalkan apa pun hari
  * ini; ia baru muncul di rekonsiliasi, sebagai selisih yang tidak ada sebabnya.
  */
-async function tepatSatu(client, { sql, params, apa, variabel }) {
+async function tepatSatu(client, { sql, params, apa, variabel, catatanRls = false }) {
   const { rows } = await client.query(sql, params)
 
   if (rows.length === 1) return rows[0].id
 
   if (rows.length === 0) {
+    /*
+     * Nol baris punya DUA sebab, dan menyamakannya menyesatkan.
+     *
+     * Basis data memang kosong — atau barisnya ada tetapi tersembunyi RLS
+     * karena konteks tenant belum terpasang. Yang kedua tidak dapat dihindari
+     * pada pencarian tenant itu sendiri: konteksnya membutuhkan tenantId yang
+     * justru sedang dicari.
+     *
+     * Pesan "tidak ada tenant di basis data ini" pada kasus kedua adalah
+     * kebohongan yang mahal — orang akan menjalankan seed:dev lagi dan
+     * menggandakan datanya.
+     */
+    if (catatanRls) {
+      const { rows: peran } = await client.query(
+        `SELECT current_user AS peran,
+                COALESCE((SELECT rolbypassrls FROM pg_roles WHERE rolname = current_user), false)
+                  AS bypassrls`,
+      )
+
+      if (peran[0].bypassrls === false) {
+        throw new Error(
+          [
+            `Tidak menemukan ${apa} sebagai peran "${peran[0].peran}".`,
+            '',
+            '  Ada dua kemungkinan, dan keduanya terlihat sama dari sini:',
+            '',
+            '    1. Basis data memang belum diisi — jalankan `npm run seed:dev`.',
+            '    2. Datanya ada, tetapi tersembunyi RLS karena konteks tenant',
+            '       belum terpasang. Pencarian tenant tidak dapat memasang',
+            '       konteks lebih dulu: konteksnya membutuhkan tenant yang',
+            '       justru sedang dicari.',
+            '',
+            `  Untuk kasus kedua, sebutkan tenant-nya langsung lewat ${variabel}.`,
+            '  `npm run seed:dev` mencetak nilainya di akhir.',
+          ].join('\n'),
+        )
+      }
+    }
+
     throw new Error(
       `Tidak ada ${apa} di basis data ini. Jalankan \`npm run seed:dev\` lebih dulu.`,
     )
@@ -128,7 +169,16 @@ async function main() {
   await client.connect()
 
   try {
-    // Yang tidak disebut, dicari. Yang tidak dapat dipastikan, ditolak.
+    /*
+     * Penemuan otomatis berjalan SEBELUM konteks dipasang, dan itu tidak dapat
+     * dihindari: konteks membutuhkan tenantId, sedangkan tenantId justru yang
+     * sedang dicari.
+     *
+     * Di bawah RLS, `SELECT ... FROM tenants` tanpa konteks memulangkan nol
+     * baris — bukan galat, melainkan daftar kosong. Tanpa penjelasan di bawah,
+     * pesannya akan berbunyi "tidak ada tenant di basis data ini", yang salah
+     * dan menyesatkan: tenant-nya ada, ia hanya tidak terlihat.
+     */
     const tenantId =
       opsional('TENANT_ID') ??
       (await tepatSatu(client, {
@@ -136,7 +186,21 @@ async function main() {
         params: [],
         apa: 'tenant',
         variabel: 'TENANT_ID',
+        catatanRls: true,
       }))
+
+    /*
+     * Transaksi dibuka SEBELUM konteks dipasang, dan urutannya tidak boleh
+     * dibalik.
+     *
+     * `set_config(..., true)` adalah SET LOCAL — ia terikat transaksi yang
+     * sedang berjalan. Di luar transaksi, setiap pernyataan adalah transaksinya
+     * sendiri, jadi konteksnya hilang seketika setelah dipasang dan seluruh
+     * kueri berikutnya kembali tidak melihat apa-apa. Kegagalannya sunyi:
+     * bukan galat, melainkan nol baris.
+     */
+    await client.query('BEGIN')
+    await pasangKonteks(client, { tenantId })
 
     const companyId =
       opsional('COMPANY_ID') ??
@@ -164,8 +228,6 @@ async function main() {
           )),
       },
     }
-
-    await client.query('BEGIN')
 
     await client.query(
       `INSERT INTO company_tax_profiles

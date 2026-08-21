@@ -1084,6 +1084,26 @@ Satu tabel yang memulangkan nol sudah cukup mengosongkan seluruh join.
 **Diperbaiki dengan kebijakan terpisah, bukan dengan melonggarkan `tenant_isolation`.** Melonggarkan USING pada kebijakan yang ada akan ikut melonggarkan UPDATE dan DELETE, karena USING menentukan baris mana yang boleh disasar. Pengguna dengan konteks tenant T1 dan akses ke company di T2 lalu dapat meng-UPDATE baris T2 itu dengan `tenant_id = T1`; WITH CHECK-nya lolos, dan company berpindah tenant. `bootstrap_akses_sendiri` di 0024 memakai `FOR SELECT`, sehingga jalur baca melebar dan jalur tulis tidak bergerak sama sekali.
 
 Yang dibuka persis sebesar yang sudah terbuka di `company_access`: baris yang aksesnya memang sudah dimiliki pengguna. Tanpa `app.user_id`, `paadu.current_user_id()` bernilai NULL dan kebijakan ini tidak menyumbang baris apa pun.
+
+### D-149 · Seed memasang konteks tenant sendiri, dan tidak menuntut BYPASSRLS
+**Status:** Berlaku
+Ketiga seed — `seed:dev`, `seed:demo`, `seed:tax-dev` — gagal dengan `new row violates row-level security policy for table "tenants"` bila dijalankan memakai `DATABASE_URL` biasa. Praktik yang terbentuk: menjalankannya dengan `MIGRATION_DATABASE_URL` yang punya BYPASSRLS.
+
+**Itu menukar hak yang besar untuk pekerjaan yang kecil.** Mengisi data contoh adalah pekerjaan biasa. Menuntut BYPASSRLS untuk itu berarti setiap orang yang ingin menjalankan demo harus memegang kredensial yang dapat membaca dan menulis seluruh tenant di server — dan kredensial migrasi sengaja dipisahkan dari runtime justru supaya tidak beredar (D-146 di README).
+
+Yang sebenarnya dibutuhkan hanya konteks, persis seperti yang dilakukan `unit-of-work.ts` di setiap permintaan. `tools/seed/konteks.js` memasangnya lewat `set_config(..., true)`.
+
+**Urutannya mengikat.** Konteks harus dipasang SEBELUM baris tenant disisipkan, karena kebijakan `tenants` menuntut `id = paadu.current_tenant_id()` pada WITH CHECK-nya. Dan `BEGIN` harus mendahului keduanya: `set_config(..., true)` adalah SET LOCAL, dan di luar transaksi ia hilang seketika — kegagalannya sunyi, bukan galat melainkan nol baris. Seed pajak sempat salah di titik itu.
+
+**Dua kegagalan sunyi ikut ditemukan dan ditutup.**
+
+Pertama, penolakan `seed:demo` berjalan dua kali bersandar pada `SELECT ... WHERE slug = ...`. Itu bekerja sebagai superuser dan diam sebagai peran aplikasi: tanpa konteks tenant, RLS menyembunyikan baris yang dicari, penjaganya menyimpulkan belum ada, lalu gagal beberapa ratus baris kemudian dengan galat kunci ganda mentah. Sekarang bersandar pada constraint unik, yang tidak dapat disembunyikan RLS.
+
+Kedua, penemuan otomatis tenant di `seed:tax-dev` memulangkan nol baris di bawah RLS dan melaporkannya sebagai "tidak ada tenant di basis data ini". Itu kebohongan yang mahal — orang akan menjalankan `seed:dev` lagi dan menggandakan datanya. Pesannya kini menyebutkan kedua kemungkinan beserta jalan keluarnya.
+
+**Kekurangan hak dijelaskan di awal.** `periksaKemampuan` memeriksa INSERT pada dua puluh tabel yang benar-benar ditulis seed, sebelum satu baris pun disisipkan, dan pesannya menyebut peran yang dipakai, tabel yang ditolak, dan perintah `GRANT` yang memperbaikinya.
+
+**Kenapa tidak pernah ketahuan:** seluruh uji menyemai lewat koneksi superuser, sehingga RLS dilewati dan kebijakannya tidak pernah benar-benar diuji. Titik buta yang sama dengan D-148. `tests/integration/seed-demo.test.ts` kini menyemai sebagai `paadu_app`, sehingga setiap penegasan di dalamnya ikut membuktikan seed berjalan tanpa kredensial pemilik.
 ---
 
 ## Sengaja Ditunda

@@ -27,6 +27,8 @@ import { randomUUID } from 'node:crypto'
 import { hash } from '@node-rs/argon2'
 import pg from 'pg'
 
+import { jelaskanKekurangan, pasangKonteks, periksaKemampuan } from './konteks.js'
+
 const KATA_SANDI = 'kata sandi contoh yang panjang'
 
 const AKUN_ADMIN = { email: 'admin@contoh.test', nama: 'Ayu Admin', peran: 'company_admin' }
@@ -125,10 +127,26 @@ export async function seed(databaseUrl) {
   await client.connect()
 
   try {
+    // Diperiksa DI AWAL, sebelum satu baris pun ditulis. Kekurangan hak yang
+    // baru terlihat di tengah transaksi panjang hanya menghasilkan galat RLS
+    // mentah yang tidak menyebutkan cara memperbaikinya.
+    const kemampuan = await periksaKemampuan(client)
+    const kekurangan = jelaskanKekurangan(kemampuan, 'npm run seed:dev')
+    if (kekurangan !== null) throw new Error(kekurangan)
+
     await client.query('BEGIN')
 
     // ── Tenant dan company ───────────────────────────────────────────────
     const tenantId = randomUUID()
+
+    /*
+     * Konteks dipasang SEBELUM baris tenant disisipkan — mekanisme yang sama
+     * dengan `unit-of-work.ts`. Kebijakan `tenants` menuntut
+     * `id = paadu.current_tenant_id()` pada WITH CHECK-nya, jadi konteks yang
+     * dipasang sesudahnya sudah terlambat.
+     */
+    await pasangKonteks(client, { tenantId })
+
     await client.query(
       `INSERT INTO tenants (id, name, slug, region) VALUES ($1, $2, $3, 'id-jkt')`,
       [tenantId, 'Grup Contoh', `contoh-${tenantId.slice(0, 8)}`],

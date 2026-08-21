@@ -10,6 +10,12 @@ import { FakeBreachList, FakeMailer } from './harness.js'
 // Alat, bukan bagian aplikasi. Diimpor apa adanya dari JavaScript.
 import { seedDemo } from '../../tools/seed/demo.js'
 
+/** Menempelkan peran aplikasi ke connection string. */
+function sebagaiApp(url: string | undefined): string {
+  const dasar = url ?? ''
+  return dasar + (dasar.includes('?') ? '&' : '?') + 'options=-c%20role%3Dpaadu_app'
+}
+
 /**
  * `seed:demo` — angkanya harus berjumlah.
  *
@@ -65,7 +71,17 @@ beforeAll(async () => {
   })
   await app.ready()
 
-  hasil = await seedDemo(connectionString)
+  /*
+   * Disemai sebagai `paadu_app`, BUKAN sebagai superuser.
+   *
+   * Seluruh uji di berkas ini sebelumnya menyemai lewat koneksi superuser,
+   * sehingga RLS dilewati dan seed tidak pernah benar-benar diuji di bawah
+   * kebijakan yang berlaku di produksi. Itu titik buta yang sama dengan D-148.
+   *
+   * Menyemai dengan peran aplikasi membuat setiap penegasan di bawah ikut
+   * membuktikan bahwa seed berjalan tanpa kredensial pemilik basis data.
+   */
+  hasil = await seedDemo(sebagaiApp(connectionString))
 
   const { rows } = await admin.query<{ id: string }>(
     `SELECT id FROM sales_documents WHERE tenant_id = $1`,
@@ -216,7 +232,9 @@ test('pembelian punya penerimaan sebagian dan satu tagihan exception', async () 
 test('menolak berjalan dua kali, alih-alih menimpa jurnal', async () => {
   // Jurnal append-only. Seed yang "membersihkan lebih dulu" menuntut hak DELETE
   // yang seluruh sistem ini dibangun untuk menolak.
-  await expect(seedDemo(process.env.TEST_DATABASE_URL)).rejects.toThrow(/sudah ada/i)
+  await expect(seedDemo(sebagaiApp(process.env.TEST_DATABASE_URL))).rejects.toThrow(
+    /sudah ada/i,
+  )
 })
 
 test('kedua company punya tahun fiskal berbeda', () => {
