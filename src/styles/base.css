@@ -1,0 +1,45 @@
+/**
+ * Dasar dokumen.
+ *
+ * `tokens.css` hanya mendefinisikan custom property — ia tidak menerapkan satu
+ * pun ke elemen. Selama ini yang menerapkan font adalah `.shell`, sehingga
+ * seluruh yang dirender DI LUAR shell — halaman masuk, layar gerbang company,
+ * layar galat — jatuh ke bawaan peramban, yaitu serif. Itu sebabnya aplikasi
+ * ini terasa belum didesain sebelum orang sempat masuk.
+ *
+ * Berkas ini menerapkannya di akar, sehingga tidak ada lagi bagian yang dapat
+ * lupa mewarisinya.
+ */
+
+html {
+  /* Mencegah iOS memperbesar teks saat perangkat diputar ke lanskap. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg-canvas);
+  color: var(--text-primary);
+  font-family: var(--font-family-sans);
+  font-size: var(--font-size-body);
+  line-height: var(--font-line-height-body);
+
+  /*
+   * Angka tabular di seluruh dokumen, bukan hanya di tabel.
+   *
+   * Nominal muncul di kartu KPI, di blok total, dan di teks berjalan. Angka
+   * yang lebarnya berubah antar digit membuat dua nominal bersebelahan tidak
+   * sejajar, dan mata harus membaca ulang tiap baris.
+   */
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+}
+
+code,
+kbd,
+samp,
+pre {
+  font-family: var(--font-family-mono);
+  font-size: 1em;
+}
