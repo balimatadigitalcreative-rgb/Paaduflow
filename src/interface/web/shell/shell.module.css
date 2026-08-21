@@ -446,3 +446,223 @@
 .primaryAction {
   flex-shrink: 0;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PERILAKU RESPONSIF — Layout_System §5, Component_Specs_AppShell §8
+
+   Empat perilaku, bukan empat tata letak yang berbeda. Yang berubah hanya
+   apakah rail, sidebar, dan panel kanan berada di aliran dokumen atau melayang
+   di atasnya. Isinya sama persis di keempatnya, dan itu disengaja: pengguna
+   yang berpindah dari laptop ke ponsel tidak sedang mempelajari produk kedua.
+
+   Ditulis desktop-first karena ≥1280 adalah target utama (Layout_System §5).
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Tombol yang hanya muncul di viewport sempit. Disembunyikan, bukan tidak
+   dirender, supaya urutan fokus tidak berubah saat layar diputar. */
+.menuButton,
+.bottomBar,
+.drawerBackdrop {
+  display: none;
+}
+
+/* ── 1024–1279 · panel kanan menjadi overlay ──────────────────────────────
+   Rail dan sidebar tetap di aliran. Yang menyerah lebih dulu adalah panel
+   kanan, karena ia yang paling jarang dibutuhkan bersamaan dengan tabel. */
+@media (max-width: 1279px) {
+  .panel {
+    position: fixed;
+    inset-block: var(--size-topbar) 0;
+    inset-inline-end: 0;
+    inline-size: var(--size-panel);
+    max-inline-size: 100vw;
+    z-index: var(--z-dropdown);
+    overflow-y: auto;
+  }
+}
+
+/* ── 768–1023 · rail dan sidebar menjadi drawer ───────────────────────────
+   Keduanya keluar dari grid sekaligus. Memisahkannya — rail tetap, sidebar
+   drawer — akan menyisakan 56px chrome permanen di layar yang justru paling
+   kekurangan lebar. */
+@media (max-width: 1023px) {
+  .shell {
+    grid-template-columns: 1fr;
+  }
+
+  .menuButton {
+    display: grid;
+    place-items: center;
+    inline-size: var(--size-control-md);
+    block-size: var(--size-control-md);
+    background: transparent;
+    border: var(--border-width-default) solid transparent;
+    border-radius: var(--radius-md);
+    color: var(--text-secondary);
+    cursor: pointer;
+  }
+
+  .rail,
+  .sidebar {
+    position: fixed;
+    inset-block: var(--size-topbar) 0;
+    inset-inline-start: 0;
+    z-index: var(--z-modal);
+    transform: translateX(-100%);
+    transition: transform var(--duration-fast) var(--ease-standard);
+  }
+
+  .rail {
+    inline-size: var(--size-sidebar-collapsed);
+  }
+
+  .sidebar {
+    inset-inline-start: var(--size-sidebar-collapsed);
+    inline-size: var(--size-sidebar);
+    max-inline-size: calc(100vw - var(--size-sidebar-collapsed));
+  }
+
+  .shell[data-drawer='true'] .rail,
+  .shell[data-drawer='true'] .sidebar {
+    transform: translateX(0);
+  }
+
+  /* Sidebar tidak dapat diciutkan saat menjadi drawer: ia sudah tersembunyi
+     secara bawaan, dan menciutkan sesuatu yang tersembunyi tidak punya arti. */
+  .sidebar[data-collapsed='true'] {
+    inline-size: var(--size-sidebar);
+  }
+
+  .drawerBackdrop {
+    display: block;
+    position: fixed;
+    inset: var(--size-topbar) 0 0;
+    z-index: var(--z-backdrop);
+    /* Scrim memakai pola yang sama dengan backdrop command palette: warna
+       kanvas dengan opasitas token, bukan rgba yang dikarang. */
+    background: var(--bg-canvas);
+    opacity: var(--opacity-scrim-light);
+    border: 0;
+    cursor: pointer;
+  }
+
+  .body {
+    padding: var(--space-4);
+  }
+}
+
+/* ── <768 · bottom tab bar, maksimal 5 tujuan ─────────────────────────────
+   Rail berpindah ke bawah layar karena di ponsel ibu jari berada di sana, dan
+   navigasi yang menuntut jangkauan ke pojok atas adalah navigasi yang tidak
+   dipakai. Sidebar tetap drawer; panel kanan menjadi lembar bawah. */
+@media (max-width: 767px) {
+  .bottomBar {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    position: fixed;
+    inset-inline: 0;
+    inset-block-end: 0;
+    z-index: var(--z-nav);
+    background: var(--bg-surface);
+    border-block-start: var(--border-width-default) solid var(--border-default);
+    /* Ruang untuk home indicator iOS dan bilah navigasi Android. Tanpa ini,
+       tujuan terakhir tertimpa chrome sistem dan tidak dapat ditekan. */
+    padding-block-end: env(safe-area-inset-bottom, 0px);
+  }
+
+  .bottomItem {
+    display: grid;
+    place-items: center;
+    gap: var(--space-1);
+    min-block-size: var(--size-touch-min);
+    padding-block: var(--space-2);
+    background: transparent;
+    border: 0;
+    border-block-start: var(--border-width-focus) solid transparent;
+    color: var(--text-secondary);
+    font-size: var(--font-size-caption);
+    cursor: pointer;
+  }
+
+  .bottomItem[aria-current='page'] {
+    border-block-start-color: var(--border-focus);
+    color: var(--text-accent);
+    font-weight: var(--font-weight-medium);
+  }
+
+  /* Rail tidak pernah muncul sebagai drawer di ponsel — bottom bar sudah
+     menggantikannya. Dua navigasi modul sekaligus hanya membingungkan. */
+  .rail {
+    display: none;
+  }
+
+  .sidebar {
+    inset-inline-start: 0;
+    inline-size: min(var(--size-sidebar), 80vw);
+    max-inline-size: none;
+  }
+
+  /* Panel kanan menjadi lembar bawah, bukan panel samping. Panel 360px di
+     layar 390px menyisakan 30px untuk konten yang sedang dibicarakannya. */
+  .panel {
+    inset-block: auto 0;
+    inset-inline: 0;
+    inline-size: 100%;
+    max-block-size: 70vh;
+    border-inline-start: 0;
+    border-block-start: var(--border-width-default) solid var(--border-default);
+    border-start-start-radius: var(--radius-lg);
+    border-start-end-radius: var(--radius-lg);
+  }
+
+  /* Konten diberi ruang di bawah supaya baris terakhir tidak tertutup bottom
+     bar. Dihitung dari tinggi target sentuh, bukan dari angka yang dikarang. */
+  .body {
+    padding: var(--space-4);
+    padding-block-end: calc(var(--size-touch-min) + var(--space-6));
+  }
+
+  .drawerBackdrop {
+    inset-block-end: 0;
+  }
+
+  .topBar {
+    padding-inline: var(--space-2);
+    gap: var(--space-2);
+  }
+
+  /* Baris konteks company tidak pernah dipotong, bahkan di 390px. Ia lapis
+     kedua dari empat lapis indikator konteks — Layout_System §4. */
+  .contextRow {
+    white-space: normal;
+  }
+}
+
+/* ── Viewport sentuh ──────────────────────────────────────────────────────
+   Target 44px mutlak, dan mode compact TIDAK tersedia — Layout_System §6.
+   Menyusutkan target sentuh menukar keselamatan data demi beberapa piksel. */
+@media (pointer: coarse) {
+  .navItem,
+  .railButton,
+  .menuButton,
+  .companyTrigger,
+  .companyOption,
+  .paletteItem,
+  .bottomItem {
+    min-block-size: var(--size-touch-min);
+  }
+
+  .railButton,
+  .menuButton {
+    inline-size: var(--size-touch-min);
+  }
+
+  /* Density compact diabaikan sepenuhnya di perangkat sentuh, termasuk bila
+     preferensi pengguna menyimpannya dari sesi di laptop. */
+  .shell[data-density='compact'] .navItem,
+  .shell[data-density='compact'] .pageHeader {
+    min-block-size: var(--size-touch-min);
+    padding: var(--space-2) var(--space-3);
+  }
+}

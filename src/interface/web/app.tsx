@@ -354,6 +354,19 @@ export function App(): ReactNode {
           onSwitch: (id) => {
             setCompanyId(id)
             localStorage.setItem(KUNCI_COMPANY, id)
+
+            /*
+             * Kembali ke akar modul, bukan bertahan di halaman yang sama —
+             * Component_Specs_AppShell §1 butir 3.
+             *
+             * ID dokumen tidak berlaku lintas company. Bertahan di
+             * `penjualan/<id>` setelah berpindah akan meminta dokumen milik
+             * company lain: paling baik 404, paling buruk layar yang terlihat
+             * normal padahal menampilkan entitas legal yang salah.
+             */
+            const modulSekarang = route.path[0] ?? 'dasbor'
+            const tujuan = SIDEBAR[modulSekarang]?.[0]?.id ?? modulSekarang
+            pergiKe(tujuan)
           },
         }}
         modules={MODUL}

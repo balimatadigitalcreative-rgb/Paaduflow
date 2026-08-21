@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 
 import { CommandPalette } from './command-palette.js'
@@ -21,6 +21,49 @@ import {
  * yang menentukan, karena itulah satu-satunya urutan yang tidak akan menyimpang
  * saat tata letak berubah.
  */
+
+/**
+ * Lima tujuan di bottom tab bar — Layout_System §5.
+ *
+ * Batasnya perhatian orang, bukan lebar layar. Menambah tujuan keenam di layar
+ * yang kebetulan lebih lebar hanya membuat navigasi berubah bentuk antar
+ * perangkat, dan yang hafal satu berhenti hafal yang lain.
+ */
+const MAX_BOTTOM_TABS = 5
+
+/** Enam detik — Component_Specs_AppShell §1 butir 5. */
+const UMUR_BANNER_MS = 6000
+
+/**
+ * Apakah viewport berada di bawah 768px — Layout_System §5.
+ *
+ * Dipakai untuk merender bottom tab bar ATAU module rail, tidak pernah
+ * keduanya. Menyembunyikan salah satunya dengan CSS saja menyisakan dua
+ * landmark navigasi bernama sama di pohon aksesibilitas pada peramban yang
+ * memperlakukan `display:none` berbeda, dan dua navigasi bernama "Modul"
+ * membuat screen reader menyebutkan keduanya berurutan.
+ *
+ * `matchMedia` dijaga karena lingkungan uji tidak selalu menyediakannya.
+ * Bila tidak ada, jawabannya "bukan ponsel" — kegagalan yang aman, karena
+ * rail yang muncul di layar sempit masih dapat dipakai, sedangkan bottom bar
+ * di layar lebar akan menutupi konten.
+ */
+function useLayarSempit(): boolean {
+  const [sempit, setSempit] = useState(false)
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return undefined
+
+    const kueri = window.matchMedia('(max-width: 767px)')
+    const dengar = (): void => setSempit(kueri.matches)
+    dengar()
+
+    kueri.addEventListener('change', dengar)
+    return () => kueri.removeEventListener('change', dengar)
+  }, [])
+
+  return sempit
+}
 
 export interface AppShellProps {
   readonly switcher: CompanySwitcherProps
@@ -57,6 +100,22 @@ export function AppShell(props: AppShellProps): ReactNode {
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [contextMessage, setContextMessage] = useState<string | null>(null)
 
+  /*
+   * Drawer navigasi untuk viewport di bawah 1024px.
+   *
+   * Satu state untuk rail DAN sidebar, bukan dua. Keduanya keluar dari aliran
+   * dokumen bersamaan (Component_Specs_AppShell §8), jadi memisahkannya hanya
+   * menciptakan keadaan yang tidak dapat dicapai pengguna — sidebar terbuka
+   * tanpa rail-nya.
+   *
+   * `null` berarti belum pernah dibuka; itu dibedakan dari `false` supaya
+   * fokus tidak dipaksa kembali ke pemicu saat halaman pertama dimuat.
+   */
+  const layarSempit = useLayarSempit()
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  const pemicuDrawer = useRef<HTMLButtonElement | null>(null)
+  const drawerPertama = useRef<HTMLButtonElement | null>(null)
+
   const tersemat = props.modules.slice(0, MAX_PINNED_MODULES)
   const companyAktif =
     props.switcher.tenant.companies.find((c) => c.id === props.switcher.activeCompanyId) ??
@@ -80,22 +139,64 @@ export function AppShell(props: AppShellProps): ReactNode {
         event.preventDefault()
         toggleSidebar()
       }
+      // Esc menutup lapisan teratas — §7. Drawer ditutup lebih dulu daripada
+      // palette karena ia yang menutupi seluruh layar di viewport sempit.
+      if (event.key === 'Escape') {
+        setDrawerOpen((terbuka) => {
+          if (terbuka) pemicuDrawer.current?.focus()
+          return false
+        })
+      }
     }
 
     globalThis.addEventListener?.('keydown', onKeyDown)
     return () => globalThis.removeEventListener?.('keydown', onKeyDown)
   }, [toggleSidebar])
 
+  /*
+   * Fokus dipindahkan ke dalam drawer saat ia dibuka, dan dikembalikan ke
+   * pemicunya saat ditutup — Component_Specs_AppShell §8.
+   *
+   * Tanpa ini, pengguna keyboard yang membuka drawer tetap berada di top bar
+   * dan harus menekan Tab melewati seluruh chrome untuk mencapai navigasi yang
+   * baru saja ia minta.
+   */
+  useEffect(() => {
+    if (drawerOpen) drawerPertama.current?.focus()
+  }, [drawerOpen])
+
+  function tutupDrawer(): void {
+    setDrawerOpen(false)
+    pemicuDrawer.current?.focus()
+  }
+
+  /*
+   * Banner konteks menetap enam detik, lalu hilang sendiri — §1 butir 5.
+   *
+   * Enam detik, bukan selamanya: banner yang menuntut ditutup manual akan
+   * ditutup tanpa dibaca dalam seminggu, dan lapis ketiga berhenti bekerja.
+   * Tetap dapat ditutup lebih awal.
+   */
+  useEffect(() => {
+    if (contextMessage === null) return undefined
+    const jam = setTimeout(() => setContextMessage(null), UMUR_BANNER_MS)
+    return () => clearTimeout(jam)
+  }, [contextMessage])
+
   function pindahCompany(companyId: string): void {
     props.switcher.onSwitch(companyId)
     const company = props.switcher.tenant.companies.find((item) => item.id === companyId)
     setContextMessage(`Konteks berpindah ke ${company?.legalName ?? 'company lain'}.`)
+    // Drawer ditutup supaya banner konteks tidak tertutup olehnya di ponsel —
+    // lapis ketiga tidak berguna bila tidak terlihat.
+    setDrawerOpen(false)
   }
 
   return (
     <div
       className={styles.shell}
       data-density={preferences.density}
+      data-drawer={drawerOpen}
       {...(preferences.theme === 'system' ? {} : { 'data-theme': preferences.theme })}
     >
       <div className={styles.skipLinks}>
@@ -108,6 +209,29 @@ export function AppShell(props: AppShellProps): ReactNode {
       </div>
 
       <header className={styles.topBar}>
+        {/*
+          Tombol menu hanya terlihat di bawah 1024px lewat CSS, tetapi selalu
+          dirender. Menghapusnya dari DOM saat layar melebar akan mengubah
+          urutan fokus tepat ketika perangkat diputar.
+
+          Namanya TETAP "Navigasi", dan keadaannya disampaikan `aria-expanded`.
+          Menggantinya menjadi "Tutup navigasi" saat terbuka membuat dua tombol
+          berbeda bernama sama — tombol ini dan backdrop-nya — sehingga
+          pengguna screen reader yang menelusuri daftar tombol tidak punya cara
+          membedakan keduanya.
+        */}
+        <button
+          type="button"
+          ref={pemicuDrawer}
+          className={styles.menuButton}
+          aria-label="Navigasi"
+          aria-expanded={drawerOpen}
+          aria-controls="navigasi-modul"
+          onClick={() => (drawerOpen ? tutupDrawer() : setDrawerOpen(true))}
+        >
+          <span aria-hidden="true">☰</span>
+        </button>
+
         <a href="#beranda" className={styles.mark}>
           Paadu
         </a>
@@ -148,11 +272,27 @@ export function AppShell(props: AppShellProps): ReactNode {
         </span>
       </header>
 
+      {/*
+        Backdrop hanya terlihat di bawah 1024px dan hanya saat drawer terbuka.
+        Ia tombol, bukan div: menutup drawer dengan mengklik di luarnya adalah
+        aksi, dan aksi harus dapat dicapai keyboard maupun screen reader.
+      */}
+      {drawerOpen ? (
+        <button
+          type="button"
+          className={styles.drawerBackdrop}
+          aria-label="Tutup navigasi"
+          onClick={tutupDrawer}
+        />
+      ) : null}
+
+      {layarSempit ? null : (
       <nav id="navigasi-modul" className={styles.rail} aria-label="Modul">
-        {tersemat.map((module) => (
+        {tersemat.map((module, nomor) => (
           <button
             key={module.id}
             type="button"
+            {...(nomor === 0 ? { ref: drawerPertama } : {})}
             className={styles.railButton}
             // Ikon wajib punya label. Ikon tanpa label adalah teka-teki.
             aria-label={module.name}
@@ -173,6 +313,7 @@ export function AppShell(props: AppShellProps): ReactNode {
           <span aria-hidden="true">⋮⋮</span>
         </button>
       </nav>
+      )}
 
       <nav
         className={styles.sidebar}
@@ -269,6 +410,34 @@ export function AppShell(props: AppShellProps): ReactNode {
           )}
         </div>
       </div>
+
+      {/*
+        Bottom tab bar — Layout_System §5, maksimal lima tujuan.
+        Hanya terlihat di bawah 768px lewat CSS.
+
+        Lima, bukan "sebanyak yang muat". Batasnya bukan lebar layar melainkan
+        berapa tujuan yang dapat dikenali orang tanpa membaca satu per satu, dan
+        angka itu tidak berubah walau layarnya melebar.
+
+        Label ikut ditampilkan, tidak hanya ikon. Ikon tanpa label adalah
+        teka-teki (§2), dan di ponsel tidak ada hover untuk memunculkan tooltip.
+      */}
+      {layarSempit ? (
+      <nav id="navigasi-modul" className={styles.bottomBar} aria-label="Modul">
+        {props.modules.slice(0, MAX_BOTTOM_TABS).map((module) => (
+          <button
+            key={module.id}
+            type="button"
+            className={styles.bottomItem}
+            aria-current={module.id === props.activeModule.id ? 'page' : undefined}
+            onClick={() => props.onSelectModule(module.id)}
+          >
+            <span aria-hidden="true">{module.glyph}</span>
+            <span>{module.name}</span>
+          </button>
+        ))}
+      </nav>
+      ) : null}
 
       <CommandPalette
         open={paletteOpen}
