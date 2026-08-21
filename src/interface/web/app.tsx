@@ -449,7 +449,11 @@ function Halaman({
   }
 
   if (bagian === 'akuntansi') {
-    if (kedua === 'buku-besar') return <BukuBesar konteks={konteks} />
+    // Akun yang sedang dilihat dibawa di PATH — `akuntansi/buku-besar/<id>`.
+    // Query string tidak dikenal router ini sama sekali.
+    if (kedua === 'buku-besar') {
+      return <BukuBesar konteks={konteks} {...(ketiga === undefined ? {} : { accountId: ketiga })} />
+    }
     return <BaganAkun konteks={konteks} />
   }
 

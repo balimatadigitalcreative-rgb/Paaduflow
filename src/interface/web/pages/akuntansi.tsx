@@ -10,7 +10,7 @@ import { Select } from '../components/combobox.js'
 import { FilterBar, type FilterChip } from '../components/filter-bar.js'
 import { DataTable } from '../components/table/data-table.js'
 import type { Column, TableState } from '../components/table/types.js'
-import { pergiKe } from '../router.js'
+import { href, pergiKe } from '../router.js'
 import styles from './pages.module.css'
 
 /**
@@ -140,7 +140,7 @@ export function BaganAkun({ konteks }: { readonly konteks: Konteks }): ReactNode
         columns={columns}
         state={state}
         rowId={(row) => row.id}
-        rowHref={(row) => `#/akuntansi/buku-besar?account=${row.id}`}
+        rowHref={(row) => href(`akuntansi/buku-besar/${row.id}`)}
         filter={Object.fromEntries(filterAktif.map((id) => [id, 'aktif']))}
         activeFilterLabels={filterAktif.map(labelFilter)}
         sort={[]}
@@ -158,9 +158,36 @@ export function BaganAkun({ konteks }: { readonly konteks: Konteks }): ReactNode
   )
 }
 
-export function BukuBesar({ konteks }: { readonly konteks: Konteks }): ReactNode {
+/**
+ * Dari satu baris buku besar kembali ke dokumen yang melahirkannya.
+ *
+ * Ini pilar Terang, dan ia tidak opsional: angka agregat tanpa jalan ke
+ * sumbernya tidak dapat dipertanggungjawabkan (Flow_Archetypes 6).
+ *
+ * Jalurnya lewat SEGMEN PATH, bukan query. Router memecah hash dengan `/` dan
+ * tidak mengurai `?` sama sekali — `buku-besar?account=xxx` menjadi satu segmen
+ * utuh yang tidak cocok dengan apa pun, dan kliknya berakhir di halaman yang
+ * sama. Persis itu yang terjadi di sini sebelum diperbaiki.
+ */
+function jalurSumber(baris: LedgerEntry): string {
+  if (baris.sourceId === null) return href('akuntansi/buku-besar')
+  if (baris.sourceType === 'sales_document') return href(`penjualan/${baris.sourceId}`)
+  if (baris.sourceType === 'purchase_document') return href(`pembelian/tagihan/${baris.sourceId}`)
+  // `goods_receipt` belum punya halaman detail sendiri; daftarnya yang terdekat.
+  if (baris.sourceType === 'goods_receipt') return href('pembelian/penerimaan')
+  return href('akuntansi/buku-besar')
+}
+
+export function BukuBesar({
+  konteks,
+  accountId,
+}: {
+  readonly konteks: Konteks
+  /** Datang dari rute — `akuntansi/buku-besar/<id>`. */
+  readonly accountId?: string
+}): ReactNode {
   const [akun, setAkun] = useState<readonly AccountSummary[]>([])
-  const [terpilih, setTerpilih] = useState('')
+  const [terpilih, setTerpilih] = useState(accountId ?? '')
   const [state, setState] = useState<TableState<LedgerEntry>>({ kind: 'loading' })
 
   useEffect(() => {
@@ -217,12 +244,22 @@ export function BukuBesar({ konteks }: { readonly konteks: Konteks }): ReactNode
   }
 
   useEffect(() => {
-    // Filter akun dibaca dari query hash, supaya tautan dari bagan akun
-    // membuka buku besar yang sudah tersaring.
-    const dari = new URLSearchParams(window.location.hash.split('?')[1] ?? '').get('account') ?? ''
-    setTerpilih(dari)
-    void muat(dari)
-  }, [konteks.companyId])
+    /*
+     * Akun datang dari SEGMEN PATH, bukan dari query hash.
+     *
+     * Baris ini sebelumnya mengurai `?account=` dengan URLSearchParams, dan
+     * tidak pernah sekali pun berjalan: router memecah hash dengan `/` dan
+     * tidak mengenal `?`, sehingga `buku-besar?account=xxx` menjadi satu segmen
+     * utuh yang tidak cocok dengan perbandingan mana pun. Halaman ini bahkan
+     * tidak dirender — klik dari bagan akun berakhir kembali di bagan akun.
+     *
+     * Kode yang benar di atas kode yang tidak pernah dijalankan tetap tidak
+     * berguna. Yang diperbaiki rutenya, dan filternya mengikuti.
+     */
+    const diminta = accountId ?? ''
+    setTerpilih(diminta)
+    void muat(diminta)
+  }, [konteks.companyId, accountId])
 
   const columns: readonly Column<LedgerEntry>[] = useMemo(
     () => [
@@ -294,7 +331,7 @@ export function BukuBesar({ konteks }: { readonly konteks: Konteks }): ReactNode
         columns={columns}
         state={state}
         rowId={(row) => row.id}
-        rowHref={(row) => `#/akuntansi/buku-besar?account=${row.journalId}`}
+        rowHref={(row) => jalurSumber(row)}
         filter={terpilih === '' ? {} : { account: terpilih }}
         activeFilterLabels={
           terpilih === ''

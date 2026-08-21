@@ -207,3 +207,84 @@ test('kedua company punya tahun fiskal berbeda', () => {
   const bulan = hasil.ringkasan.map((baris) => baris.company.bulanAwalFiskal)
   expect(new Set(bulan).size).toBe(2)
 })
+
+/**
+ * Alur demo langkah pertama, dijalankan apa adanya.
+ *
+ * Ini momen yang paling menentukan di depan calon pelanggan: buat faktur,
+ * posting, lalu angkanya sudah ada di buku besar tanpa sinkronisasi apa pun.
+ * Naskah demo yang ditulis dari membaca kode akan gagal di ruangan; yang ini
+ * dijalankan.
+ */
+test('akun direktur dapat membuat, mengajukan, menyetujui, dan memposting faktur', async () => {
+  const companyId = hasil.ringkasan[0]!.company.id
+  const awalan = `/v1/companies/${companyId}`
+  const bearer = { authorization: `Bearer ${token}` }
+
+  const { rows: pelanggan } = await admin.query<{ id: string }>(
+    `SELECT id FROM customers WHERE tenant_id = $1 AND company_id = $2 LIMIT 1`,
+    [hasil.tenantId, companyId],
+  )
+
+  const dibuat = await app.inject({
+    method: 'POST',
+    url: `${awalan}/sales-documents`,
+    headers: bearer,
+    payload: {
+      customer_id: pelanggan[0]!.id,
+      document_date: new Date().toISOString().slice(0, 10),
+      currency: 'IDR',
+      lines: [
+        {
+          item_id: null,
+          warehouse_id: null,
+          description: 'Kopi Arabika Gayo 1 kg',
+          qty: 40,
+          uom: 'kg',
+          unit_price: 185_000,
+          discount_percent: 0,
+          tax_rate_percent: 11,
+        },
+      ],
+    },
+  })
+  expect(dibuat.statusCode, dibuat.body).toBe(201)
+  const documentId = dibuat.json().data.id as string
+
+  const periode = new Date().toISOString().slice(0, 7)
+  const diajukan = await app.inject({
+    method: 'POST',
+    url: `${awalan}/sales-documents/${documentId}/submit`,
+    headers: bearer,
+    payload: { period_key: periode },
+  })
+  expect(diajukan.statusCode, diajukan.body).toBe(200)
+  // Nomor resmi diberikan saat submit, bukan saat draf dibuat - D-007.
+  expect(diajukan.json().data.number).toBeTruthy()
+
+  const disetujui = await app.inject({
+    method: 'POST',
+    url: `${awalan}/sales-documents/${documentId}/approve`,
+    headers: bearer,
+  })
+  expect(disetujui.statusCode, disetujui.body).toBe(200)
+
+  const sebelum = await dasbor(companyId)
+  const pendapatanSebelum = sebelum.months[11]!.revenue
+
+  const diposting = await app.inject({
+    method: 'POST',
+    url: `${awalan}/sales-documents/${documentId}/post`,
+    headers: bearer,
+  })
+  expect(diposting.statusCode, diposting.body).toBe(200)
+  expect(diposting.json().data.journal_id).toBeTruthy()
+
+  /*
+   * Inti klaimnya: tidak ada langkah sinkronisasi di antara keduanya.
+   * Dasbor membaca dari jurnal yang sama yang ditulis posting, di transaksi
+   * yang sama - jadi angkanya sudah berubah pada permintaan berikutnya.
+   */
+  const sesudah = await dasbor(companyId)
+  expect(sesudah.months[11]!.revenue).toBe(pendapatanSebelum + 40 * 185_000)
+})

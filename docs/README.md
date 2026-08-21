@@ -103,3 +103,12 @@ Tujuh pola muncul berkali-kali. Memahaminya sekali berarti memahami sebagian bes
 - Nilai hex brand asli — seluruh sistem memakai perkiraan `#3A34B5`
 - Nama typeface wordmark
 - File SVG mark sumber
+
+---
+
+## Operasional
+
+| Dokumen | Isi |
+|---|---|
+| `DECISIONS.md` | Keputusan arsitektur dan penyimpangan dari dokumen desain |
+| `DEMO.md` | Naskah demo sepuluh menit untuk calon pelanggan — setiap langkahnya diuji di `tests/integration/seed-demo.test.ts` |
