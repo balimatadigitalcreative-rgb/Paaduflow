@@ -36,6 +36,32 @@ export function CommandPalette({ open, items, onClose }: CommandPaletteProps): R
     return PALETTE_ORDER.flatMap((group) => cocok.filter((item) => item.group === group))
   }, [items, query])
 
+  /*
+   * Fokus dikembalikan ke tempat asalnya saat palette ditutup — §7.
+   *
+   * Yang diingat adalah elemen yang sedang fokus saat palette DIBUKA, bukan
+   * tombol pemicunya. Palette punya dua jalur masuk: tombol "Cari" di top bar
+   * dan pintasan Cmd+K dari mana saja. Mengembalikan fokus ke tombol pemicu
+   * pada jalur kedua akan melempar pengguna keyboard dari tengah tabel ke top
+   * bar — hukuman untuk memakai pintasan.
+   */
+  const asalFokus = useRef<HTMLElement | null>(null)
+
+  useEffect(() => {
+    if (open) {
+      asalFokus.current = document.activeElement as HTMLElement | null
+      return undefined
+    }
+
+    // Hanya dikembalikan bila elemennya masih ada di dokumen. Rute yang
+    // berganti saat palette terbuka membuat elemen asalnya hilang, dan
+    // memanggil focus() pada simpul yang sudah dilepas tidak melakukan apa pun
+    // sekaligus menyembunyikan bahwa fokus kini berada di body.
+    const asal = asalFokus.current
+    if (asal !== null && document.contains(asal)) asal.focus()
+    return undefined
+  }, [open])
+
   useEffect(() => {
     if (open) {
       setQuery('')
