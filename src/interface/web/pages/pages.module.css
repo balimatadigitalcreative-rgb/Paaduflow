@@ -172,3 +172,84 @@
   outline-offset: 2px;
   border-radius: var(--radius-sm);
 }
+
+/* ── Laporan ──────────────────────────────────────────────────────────────*/
+
+/* Hanya terlihat di bawah 768px. Laporan lebar tidak diperas sampai tidak
+   terbaca — ia mengatakan apa adanya bahwa layarnya kurang lebar, lalu tetap
+   menampilkan angkanya (Layout_System §5). */
+.hanyaSempit {
+  display: none;
+}
+
+/* Tabel laporan digulir mendatar DI DALAM wadahnya, bukan membuat seluruh
+   halaman bergeser. Halaman yang bergeser mendatar membawa serta page header
+   dan navigasinya, dan orang kehilangan jangkar visualnya. */
+.laporanGulir {
+  overflow-x: auto;
+}
+
+.lipat {
+  padding: 0 var(--space-1);
+  border: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font: inherit;
+}
+
+.lipat:focus-visible {
+  outline: var(--border-width-focus) solid var(--border-focus);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+/* Subtotal dibedakan latar, bobot, dan pembatas atas — Component_Specs §1.5.
+   Subtotal yang terlihat seperti baris data adalah salah baca yang berujung
+   salah angka. */
+.matchTable tr[data-subtotal='true'] th,
+.matchTable tr[data-subtotal='true'] td {
+  border-block-start: var(--border-width-default) solid var(--border-strong);
+  background: var(--bg-surface-sunken);
+  font-weight: var(--font-weight-medium);
+}
+
+.matchTable tfoot th,
+.matchTable tfoot td {
+  border-block-start: var(--border-width-default) solid var(--border-strong);
+  font-weight: var(--font-weight-semibold);
+}
+
+.visuallyHiddenInline {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+@media (max-width: 767px) {
+  .hanyaSempit {
+    display: block;
+  }
+}
+
+/* Indentasi hierarki laporan, empat tingkat. Jaraknya dari token spacing;
+   kedalamannya datang sebagai atribut data, bukan sebagai nilai visual yang
+   ditulis di JSX. */
+.barisLaporan {
+  padding-inline-start: var(--space-4);
+}
+
+.barisLaporan[data-kedalaman='1'] {
+  padding-inline-start: var(--space-6);
+}
+
+.barisLaporan[data-kedalaman='2'] {
+  padding-inline-start: var(--space-8);
+}
+
+.barisLaporan[data-kedalaman='3'] {
+  padding-inline-start: var(--space-10);
+}

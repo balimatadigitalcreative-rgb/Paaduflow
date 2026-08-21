@@ -268,7 +268,15 @@ export interface LedgerEntry {
 export interface DashboardKpi {
   readonly id: string
   readonly label: string
-  readonly value: number
+  /**
+   * Null berarti BELUM TERSEDIA, bukan nol.
+   *
+   * Nol adalah jawaban: tidak ada pendapatan bulan ini. Null adalah ketiadaan
+   * jawaban: belum ada satu pun jurnal, jadi tidak ada yang dapat dihitung.
+   * Menampilkan nol untuk yang kedua membuat company yang belum mulai memakai
+   * sistem terlihat seperti company yang bangkrut.
+   */
+  readonly value: number | null
   readonly currency: string | null
   readonly changePercent: number | null
   readonly comparisonBasis: string
@@ -292,6 +300,59 @@ export interface DashboardSummary {
 
 export interface DashboardQueryPort {
   summary(companyId: string, today: string): Promise<DashboardSummary>
+}
+
+// ── Laporan Laba Rugi ──────────────────────────────────────────────────────
+
+/**
+ * Satu baris laporan, beserta induknya — Screen_Specs_HiFi §9.
+ *
+ * Hierarkinya dikirim datar dengan `parentId`, bukan bersarang. Bersarang
+ * memaksa klien menulis rekursi untuk melipat, memfilter, dan menjumlah; datar
+ * membuat ketiganya menjadi operasi biasa atas daftar. Bentuk pohonnya disusun
+ * sekali di layar, di tempat ia memang dibutuhkan.
+ */
+export interface ProfitLossRow {
+  readonly accountId: string
+  readonly code: string
+  readonly name: string
+  /** `revenue` atau `expense`. Menentukan kelompok dan tanda. */
+  readonly type: string
+  readonly parentId: string | null
+  /** Nilai periode yang diminta. */
+  readonly amount: number
+  /** Nilai periode pembanding. Null bila pembandingnya tidak diminta. */
+  readonly comparison: number | null
+}
+
+export interface ProfitLossPeriod {
+  readonly from: string
+  readonly to: string
+  /** Disebut apa adanya di header laporan — "Agustus 2026". */
+  readonly label: string
+}
+
+export interface ProfitLossReport {
+  readonly currency: string
+  readonly period: ProfitLossPeriod
+  readonly comparison: ProfitLossPeriod | null
+  readonly rows: readonly ProfitLossRow[]
+  /**
+   * Waktu laporan dibangkitkan, dari server.
+   *
+   * Laporan keuangan dicetak dan diedarkan; tanpa waktu generate, dua salinan
+   * dengan angka berbeda tidak dapat diurutkan mana yang lebih baru
+   * (Flow_Archetypes 6).
+   */
+  readonly generatedAt: string
+}
+
+export interface ProfitLossQueryPort {
+  report(
+    companyId: string,
+    period: { from: string; to: string },
+    comparison: { from: string; to: string } | null,
+  ): Promise<ProfitLossReport>
 }
 
 export interface AccountingQueryPort {

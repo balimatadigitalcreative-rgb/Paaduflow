@@ -7,6 +7,7 @@ import { ApiError, api, onSesiHabis, sesi } from './api/client.js'
 import { Button } from './components/button.js'
 import { Dasbor, type CompanyDapatDiakses } from './pages/dasbor.js'
 import { BaganAkun, BukuBesar } from './pages/akuntansi.js'
+import { LabaRugi } from './pages/laba-rugi.js'
 import { HalamanMasuk } from './pages/masuk.js'
 import {
   DaftarPembelian,
@@ -68,6 +69,7 @@ const SIDEBAR: Record<string, readonly SidebarItem[]> = {
   ],
   akuntansi: [
     { id: 'akuntansi/bagan-akun', label: 'Bagan Akun', group: 'Data induk', permitted: true },
+    { id: 'akuntansi/laba-rugi', label: 'Laba Rugi', group: 'Laporan', permitted: true },
     { id: 'akuntansi/buku-besar', label: 'Buku Besar', group: 'Laporan', permitted: true },
   ],
   pajak: [
@@ -88,6 +90,7 @@ const JUDUL: Record<string, { judul: string; remah: readonly string[] }> = {
   'pembelian/penerimaan': { judul: 'Penerimaan Barang', remah: ['Pembelian', 'Penerimaan'] },
   'pembelian/tagihan': { judul: 'Faktur Pembelian', remah: ['Pembelian', 'Tagihan'] },
   'akuntansi/bagan-akun': { judul: 'Bagan Akun', remah: ['Akuntansi', 'Bagan Akun'] },
+  'akuntansi/laba-rugi': { judul: 'Laba Rugi', remah: ['Akuntansi', 'Laba Rugi'] },
   'akuntansi/buku-besar': { judul: 'Buku Besar', remah: ['Akuntansi', 'Buku Besar'] },
   'pajak/kode': { judul: 'Kode Pajak', remah: ['Pajak', 'Kode Pajak'] },
   'pajak/nomor-seri': { judul: 'Nomor Seri Faktur Pajak', remah: ['Pajak', 'Nomor Seri'] },
@@ -464,6 +467,7 @@ function Halaman({
   if (bagian === 'akuntansi') {
     // Akun yang sedang dilihat dibawa di PATH — `akuntansi/buku-besar/<id>`.
     // Query string tidak dikenal router ini sama sekali.
+    if (kedua === 'laba-rugi') return <LabaRugi konteks={konteks} />
     if (kedua === 'buku-besar') {
       return <BukuBesar konteks={konteks} {...(ketiga === undefined ? {} : { accountId: ketiga })} />
     }

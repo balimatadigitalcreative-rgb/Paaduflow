@@ -1,4 +1,4 @@
-import type { DashboardQueryPort } from '#application/queries'
+import type { DashboardQueryPort, ProfitLossQueryPort } from '#application/queries'
 import type { IdempotencyStore } from '#shared/idempotency'
 
 import type {
@@ -107,6 +107,7 @@ export interface CompanyScopedServices {
    * modul akan membuat modul itu tampak memiliki data yang bukan miliknya.
    */
   readonly dashboard: DashboardQueryPort
+  readonly profitLoss: ProfitLossQueryPort
   /** Pelanggan, vendor, barang, gudang — dibutuhkan setiap formulir. */
   readonly masterData: MasterDataPort
   readonly tax: TaxScopedServices

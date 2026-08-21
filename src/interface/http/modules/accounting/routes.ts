@@ -65,6 +65,56 @@ export function registerAccountingRoutes(app: PaaduServer, services: AppServices
    * dapat diatur, dan "piutang jatuh tempo" yang dihitung dari tanggal palsu
    * adalah angka yang salah tanpa jejak.
    */
+  /**
+   * Laba rugi — Flow_Archetypes 6.
+   *
+   * Periode dan pembandingnya adalah PARAMETER, bukan dua laporan terpisah.
+   * Memisahkannya menjadi dua endpoint akan menggandakan laporan setiap kali
+   * ada cara membandingkan yang baru, dan tidak satu pun dari keduanya dapat
+   * menjamin kedua angkanya dibaca dari keadaan basis data yang sama.
+   */
+  app.get(
+    '/v1/companies/:companyId/reports/profit-loss',
+    {
+      schema: {
+        params: JalurCompany,
+        querystring: Type.Object({
+          from: Type.String({ format: 'date' }),
+          to: Type.String({ format: 'date' }),
+          compare_from: Type.Optional(Type.String({ format: 'date' })),
+          compare_to: Type.Optional(Type.String({ format: 'date' })),
+        }),
+      },
+    },
+    async (request, reply) =>
+      baca(
+        request,
+        reply,
+        request.params.companyId,
+        'akuntansi.bagan.baca',
+        async (scoped, companyId) => {
+          const { from, to, compare_from: dariBanding, compare_to: sampaiBanding } =
+            request.query
+
+          // Pembanding hanya dipakai bila KEDUA ujungnya disebut. Satu ujung
+          // saja adalah permintaan yang tidak lengkap, dan menebak ujung yang
+          // lain menghasilkan rentang yang tidak diminta siapa pun.
+          const banding =
+            dariBanding !== undefined && sampaiBanding !== undefined
+              ? { from: dariBanding, to: sampaiBanding }
+              : null
+
+          return {
+            status: 200,
+            body: {
+              success: true,
+              data: await scoped.profitLoss.report(companyId, { from, to }, banding),
+            },
+          }
+        },
+      ),
+  )
+
   app.get(
     '/v1/companies/:companyId/dashboard',
     { schema: { params: JalurCompany } },

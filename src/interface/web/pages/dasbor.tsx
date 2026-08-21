@@ -186,9 +186,11 @@ function RingkasanAngka({
             key={kartu.id}
             label={kartu.label}
             value={
-              kartu.currency === null
-                ? kartu.value.toLocaleString('id-ID')
-                : formatAmount(kartu.value, kartu.currency)
+              kartu.value === null
+                ? '—'
+                : kartu.currency === null
+                  ? kartu.value.toLocaleString('id-ID')
+                  : formatAmount(kartu.value, kartu.currency)
             }
             changePercent={kartu.changePercent}
             comparisonBasis={kartu.comparisonBasis}

@@ -1,6 +1,9 @@
 import type {
   DashboardQueryPort,
   DashboardSummary,
+  ProfitLossQueryPort,
+  ProfitLossReport,
+  ProfitLossRow,
   AccountingQueryPort,
   AccountSummary,
   AccessibleCompany,
@@ -745,6 +748,19 @@ export class PostgresDashboardQueries implements DashboardQueryPort {
     )
     const awaitingApproval = Number(menunggu[0]?.jumlah ?? 0)
 
+    /*
+     * Company yang belum punya satu pun jurnal tidak punya angka pendapatan —
+     * bukan pendapatan nol. Bedanya terlihat di layar sebagai em dash, dan itu
+     * pembedaan yang diminta Component_Specs_Composite section 8.
+     */
+    const { rows: adaJurnal } = await this.db.query<{ ada: boolean }>(
+      `SELECT EXISTS (
+         SELECT 1 FROM journals WHERE tenant_id = $1 AND company_id = $2
+       ) AS ada`,
+      [this.tenantId, companyId],
+    )
+    const berjurnal = adaJurnal[0]?.ada === true
+
     const labelBulanLalu = namaBulan(months[months.length - 2]?.month ?? null)
 
     return {
@@ -755,7 +771,7 @@ export class PostgresDashboardQueries implements DashboardQueryPort {
         {
           id: 'pendapatan',
           label: 'Pendapatan bulan ini',
-          value: bulanIni,
+          value: berjurnal ? bulanIni : null,
           currency,
           changePercent: selisihPersen(bulanIni, bulanLalu),
           comparisonBasis: labelBulanLalu === null ? 'Tidak ada periode pembanding' : `vs ${labelBulanLalu}`,
@@ -824,6 +840,139 @@ function namaBulan(kunci: string | null): string | null {
   const indeks = Number(bulan) - 1
   const nama = NAMA_BULAN[indeks]
   return nama === undefined ? null : `${nama} ${tahun}`
+}
+
+/**
+ * Laba rugi — Screen_Specs_HiFi section 9, Flow_Archetypes 6.
+ *
+ * Angkanya dari BUKU BESAR, sama seperti dasbor. Laporan laba rugi yang
+ * dihitung dari daftar dokumen akan berbeda dari buku besar suatu hari, dan
+ * yang berbeda dari buku besar adalah yang salah.
+ *
+ * SELURUH akun pendapatan dan beban dikembalikan, termasuk yang nol. Akun yang
+ * hilang dari laporan tidak dapat dibedakan dari akun yang tidak ada, dan
+ * akuntan yang mencari beban yang seharusnya muncul akan menyimpulkan
+ * jurnalnya belum masuk.
+ */
+export class PostgresProfitLoss implements ProfitLossQueryPort {
+  constructor(
+    private readonly db: Queryable,
+    private readonly tenantId: string,
+  ) {}
+
+  async report(
+    companyId: string,
+    period: { from: string; to: string },
+    comparison: { from: string; to: string } | null,
+  ): Promise<ProfitLossReport> {
+    const { rows: perusahaan } = await this.db.query<{ default_currency: string }>(
+      `SELECT default_currency FROM companies WHERE tenant_id = $1 AND id = $2`,
+      [this.tenantId, companyId],
+    )
+    const currency = perusahaan[0]?.default_currency ?? 'IDR'
+
+    /*
+     * Tanda dihitung menurut jenis akun, bukan seragam.
+     *
+     * Pendapatan bertambah di kredit, beban bertambah di debit. Menampilkan
+     * `debit - credit` untuk keduanya membuat seluruh pendapatan tampil negatif,
+     * dan orang akan mengira laporannya rusak.
+     *
+     * Dua rentang dijumlahkan dalam SATU kueri lewat FILTER. Dua kueri terpisah
+     * akan membaca jurnal dua kali dan, lebih buruk, dapat melihat keadaan yang
+     * berbeda bila ada posting yang masuk di antaranya.
+     */
+    const { rows } = await this.db.query<{
+      account_id: string
+      code: string
+      name: string
+      type: string
+      parent_id: string | null
+      amount: string
+      comparison: string | null
+    }>(
+      `SELECT a.id AS account_id, a.code, a.name, a.type::text, a.parent_id,
+              COALESCE(SUM(
+                CASE WHEN j.journal_date BETWEEN $3::date AND $4::date
+                     THEN CASE WHEN a.type = 'revenue'
+                               THEN l.credit - l.debit
+                               ELSE l.debit - l.credit END
+                     ELSE 0 END
+              ), 0) AS amount,
+              CASE WHEN $5::date IS NULL THEN NULL ELSE COALESCE(SUM(
+                CASE WHEN j.journal_date BETWEEN $5::date AND $6::date
+                     THEN CASE WHEN a.type = 'revenue'
+                               THEN l.credit - l.debit
+                               ELSE l.debit - l.credit END
+                     ELSE 0 END
+              ), 0) END AS comparison
+         FROM accounts a
+         LEFT JOIN journal_lines l
+                ON l.tenant_id = a.tenant_id AND l.account_id = a.id
+         LEFT JOIN journals j
+                ON j.tenant_id = l.tenant_id AND j.id = l.journal_id
+               AND j.company_id = a.company_id
+        WHERE a.tenant_id = $1 AND a.company_id = $2
+          AND a.type IN ('revenue', 'expense')
+          AND a.deleted_at IS NULL
+        GROUP BY a.id, a.code, a.name, a.type, a.parent_id
+        ORDER BY a.code`,
+      [
+        this.tenantId,
+        companyId,
+        period.from,
+        period.to,
+        comparison?.from ?? null,
+        comparison?.to ?? null,
+      ],
+    )
+
+    const baris: ProfitLossRow[] = rows.map((row) => ({
+      accountId: row.account_id,
+      code: row.code,
+      name: row.name,
+      type: row.type,
+      parentId: row.parent_id,
+      amount: Number(row.amount),
+      comparison: row.comparison === null ? null : Number(row.comparison),
+    }))
+
+    return {
+      currency,
+      period: { ...period, label: labelPeriode(period.from, period.to) },
+      comparison:
+        comparison === null
+          ? null
+          : { ...comparison, label: labelPeriode(comparison.from, comparison.to) },
+      rows: baris,
+      generatedAt: new Date().toISOString(),
+    }
+  }
+}
+
+/**
+ * Label periode yang dapat dibaca manusia.
+ *
+ * Satu bulan penuh disebut namanya; rentang lain disebut kedua ujungnya. Ini
+ * ikut tercetak di header laporan, dan "1 Agu 2026 – 31 Agu 2026" lebih sulit
+ * dibaca sekilas daripada "Agustus 2026" untuk hal yang sama.
+ */
+function labelPeriode(dari: string, sampai: string): string {
+  const [tahunDari, bulanDari, hariDari] = dari.split('-')
+  const [tahunSampai, bulanSampai] = sampai.split('-')
+
+  const nama = NAMA_BULAN[Number(bulanDari) - 1]
+  const akhirBulan = new Date(Date.UTC(Number(tahunDari), Number(bulanDari), 0))
+    .getUTCDate()
+    .toString()
+
+  const sebulanPenuh =
+    tahunDari === tahunSampai &&
+    bulanDari === bulanSampai &&
+    hariDari === '01' &&
+    sampai.endsWith(`-${akhirBulan.padStart(2, '0')}`)
+
+  return sebulanPenuh && nama !== undefined ? `${nama} ${tahunDari}` : `${dari} - ${sampai}`
 }
 
 export class PostgresAccountingQueries implements AccountingQueryPort {
