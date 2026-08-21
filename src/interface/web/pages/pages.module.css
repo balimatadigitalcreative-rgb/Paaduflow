@@ -157,3 +157,18 @@
   border-radius: var(--radius-lg);
   background: var(--bg-surface-sunken);
 }
+
+/* ── Fokus ────────────────────────────────────────────────────────────────*/
+
+/* Tautan di dalam halaman memakai ring yang sama dengan komponen, bukan ring
+   bawaan peramban. Bawaan memang terlihat, tetapi bentuknya berbeda di tiap
+   peramban — dan focus ring yang berubah-ubah membuat orang ragu apakah ia
+   benar-benar sedang menunjuk sesuatu. */
+.stack a:focus-visible,
+.notice a:focus-visible,
+.metaValue a:focus-visible,
+.card a:focus-visible {
+  outline: var(--border-width-focus) solid var(--border-focus);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}

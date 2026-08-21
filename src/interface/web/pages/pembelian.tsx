@@ -15,6 +15,7 @@ import { Badge, StatusBadge, type DocumentStatus } from '../components/badge.js'
 import { Button } from '../components/button.js'
 import { FilterBar, type FilterChip } from '../components/filter-bar.js'
 import { Tabs, TabPanel } from '../components/tabs.js'
+import { useToast } from '../components/toast.js'
 import { useHeaderHalaman } from '../shell/page-header.js'
 import { DataTable } from '../components/table/data-table.js'
 import type { Column, TableState } from '../components/table/types.js'
@@ -289,9 +290,9 @@ export function DetailPesanan({
   const [terima, setTerima] = useState<Record<string, string>>({})
   const [gudang, setGudang] = useState<readonly WarehouseOption[]>([])
   const [galat, setGalat] = useState<string | null>(null)
-  const [pesan, setPesan] = useState<string | null>(null)
   const [sedang, setSedang] = useState(false)
   const [tab, setTab] = useState('ringkasan')
+  const toast = useToast()
 
   async function muat(): Promise<void> {
     try {
@@ -365,7 +366,6 @@ export function DetailPesanan({
   async function catatPenerimaan(): Promise<void> {
     if (dokumen === null) return
     setGalat(null)
-    setPesan(null)
     setSedang(true)
 
     try {
@@ -392,7 +392,21 @@ export function DetailPesanan({
         received_date: new Date().toISOString().slice(0, 10),
         lines: baris,
       })
-      setPesan('Penerimaan dicatat. Persediaan bertambah dan akun perantara terkredit.')
+      /*
+       * Toast yang menyebut objeknya - Component_Specs_Composite section 6.
+       *
+       * "Penerimaan dicatat" tidak dapat diverifikasi orang gudang yang sedang
+       * menangani lima pesanan sekaligus. Nomor pesanan dan jumlah barisnya
+       * membuat konfirmasi ini dapat dicocokkan dengan yang ada di tangannya.
+       *
+       * Aman sebagai toast: seluruh isinya tetap ada di halaman setelah
+       * dokumen dimuat ulang. Toast yang membawa satu-satunya salinan sebuah
+       * informasi adalah bug.
+       */
+      toast({
+        message: `Penerimaan atas ${dokumen.number ?? 'pesanan ini'} tercatat untuk ${baris.length} baris. Persediaan bertambah.`,
+        tone: 'baik',
+      })
       setTerima({})
       await muat()
     } catch (kesalahan) {
@@ -413,9 +427,6 @@ export function DetailPesanan({
   return (
     <div className={styles.stack}>
       {galat !== null ? <p className={`${styles.notice} ${styles.noticeDanger}`}>{galat}</p> : null}
-      {pesan !== null ? (
-        <p className={`${styles.notice} ${styles.noticeSuccess}`}>{pesan}</p>
-      ) : null}
 
       <TabPanel id="ringkasan" activeId={tab}>
       <div className={styles.meta}>
@@ -613,9 +624,9 @@ export function DetailTagihan({
   const [panel, setPanel] = useState<MatchPanel | null>(null)
   const [dokumen, setDokumen] = useState<PurchaseDocumentDetail | null>(null)
   const [galat, setGalat] = useState<string[] | null>(null)
-  const [pesan, setPesan] = useState<string | null>(null)
   const [sedang, setSedang] = useState(false)
   const [tab, setTab] = useState('ringkasan')
+  const toast = useToast()
 
   async function muat(): Promise<void> {
     try {
@@ -638,7 +649,6 @@ export function DetailTagihan({
 
   async function posting(): Promise<void> {
     setGalat(null)
-    setPesan(null)
     setSedang(true)
     try {
       // Tanpa badan permintaan. Tidak ada `force`, dan memang tidak ada bentuk
@@ -646,7 +656,10 @@ export function DetailTagihan({
       const jawaban = await api.post<{ journal_id: string }>(
         `${perusahaan(konteks.companyId)}/bills/${documentId}/post`,
       )
-      setPesan(`Diposting. Jurnal ${jawaban.data.journal_id} sudah masuk buku besar.`)
+      toast({
+        message: `Tagihan ${panel?.billNumber ?? 'ini'} diposting. Jurnal ${jawaban.data.journal_id} sudah masuk buku besar.`,
+        tone: 'baik',
+      })
       await muat()
     } catch (kesalahan) {
       setGalat(
@@ -733,9 +746,6 @@ export function DetailTagihan({
             ))}
           </ul>
         </div>
-      ) : null}
-      {pesan !== null ? (
-        <p className={`${styles.notice} ${styles.noticeSuccess}`}>{pesan}</p>
       ) : null}
 
       <TabPanel id="ringkasan" activeId={tab}>

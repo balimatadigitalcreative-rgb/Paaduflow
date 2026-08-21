@@ -35,8 +35,11 @@
   gap: var(--space-3);
   padding: var(--space-3) var(--space-4);
   background: var(--bg-surface);
+  /* Pemisahnya border atas, bukan bayangan. `--elevation-2` yang sempat
+     dirujuk di sini tidak pernah ada di tokens.json — barisnya tidak
+     melakukan apa pun. Untuk footer yang menempel, border justru lebih tegas
+     daripada bayangan halus di layar terang. */
   border-block-start: var(--border-width-default) solid var(--border-default);
-  box-shadow: var(--elevation-2);
   z-index: var(--z-sticky);
 }
 

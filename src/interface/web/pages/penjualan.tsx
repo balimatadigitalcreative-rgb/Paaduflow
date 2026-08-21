@@ -18,6 +18,7 @@ import { DataTable } from '../components/table/data-table.js'
 import { emptyLine, LineItemEditor, type EditableLine } from '../components/table/line-item-editor.js'
 import type { Column, TableState } from '../components/table/types.js'
 import { Tabs, TabPanel } from '../components/tabs.js'
+import { useToast } from '../components/toast.js'
 import { useHeaderHalaman } from '../shell/page-header.js'
 import { href, pergiKe } from '../router.js'
 import styles from './pages.module.css'
@@ -231,9 +232,9 @@ export function DetailFaktur({
 }): ReactNode {
   const [dokumen, setDokumen] = useState<SalesDocumentDetail | null>(null)
   const [galat, setGalat] = useState<string | null>(null)
-  const [pesan, setPesan] = useState<string | null>(null)
   const [sedang, setSedang] = useState(false)
   const [tab, setTab] = useState('ringkasan')
+  const toast = useToast()
 
   async function muat(): Promise<void> {
     try {
@@ -302,19 +303,35 @@ export function DetailFaktur({
     body?: unknown,
   ): Promise<void> {
     setGalat(null)
-    setPesan(null)
     setSedang(true)
     try {
       const jawaban = await api.post<{ number?: string; journal_id?: string }>(
         `${perusahaan(konteks.companyId)}/sales-documents/${documentId}/${aksi}`,
         body,
       )
-      setPesan(
+      /*
+       * Toast, bukan pesan inline - Component_Specs_Composite section 6.
+       *
+       * Ketiganya menyebut OBJEKNYA, bukan "Tersimpan". Nomor faktur adalah
+       * satu-satunya hal yang membuat konfirmasi ini berguna: orang yang
+       * memposting sepuluh faktur berturut-turut perlu tahu yang mana yang
+       * baru saja berhasil.
+       *
+       * Aman ditampilkan sebagai toast karena tidak ada informasi yang hanya
+       * hidup di sini - nomor dan jurnalnya tetap ada di halaman setelah
+       * dokumen dimuat ulang. Toast yang membawa satu-satunya salinan sebuah
+       * informasi adalah bug.
+       */
+      const nomor = jawaban.data.number ?? dokumen?.number ?? 'ini'
+      toast(
         aksi === 'submit'
-          ? `Diajukan dengan nomor ${jawaban.data.number}.`
+          ? { message: `Faktur ${nomor} diajukan dan mendapat nomor resminya.`, tone: 'baik' }
           : aksi === 'approve'
-            ? 'Disetujui.'
-            : `Diposting. Jurnal ${jawaban.data.journal_id} sudah masuk buku besar.`,
+            ? { message: `Faktur ${nomor} disetujui dan siap diposting.`, tone: 'baik' }
+            : {
+                message: `Faktur ${nomor} diposting. Jurnal ${jawaban.data.journal_id} sudah masuk buku besar.`,
+                tone: 'baik',
+              },
       )
       await muat()
     } catch (kesalahan) {
@@ -339,9 +356,6 @@ export function DetailFaktur({
     <div className={styles.stack}>
       {galat !== null ? (
         <p className={`${styles.notice} ${styles.noticeDanger}`}>{galat}</p>
-      ) : null}
-      {pesan !== null ? (
-        <p className={`${styles.notice} ${styles.noticeSuccess}`}>{pesan}</p>
       ) : null}
 
       <TabPanel id="ringkasan" activeId={tab}>

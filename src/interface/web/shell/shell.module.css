@@ -128,7 +128,6 @@
   background: var(--bg-surface-raised);
   border: var(--border-width-default) solid var(--border-default);
   border-radius: var(--radius-lg);
-  box-shadow: var(--elevation-3);
   z-index: var(--z-dropdown);
 }
 
@@ -353,7 +352,6 @@
   background: var(--bg-surface-raised);
   border: var(--border-width-default) solid var(--border-default);
   border-radius: var(--radius-xl);
-  box-shadow: var(--elevation-4);
   z-index: var(--z-modal);
 }
 

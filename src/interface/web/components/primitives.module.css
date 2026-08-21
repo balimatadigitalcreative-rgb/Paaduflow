@@ -346,13 +346,18 @@
 
 /* ── Daftar combobox ──────────────────────────────────────────────────────*/
 
+/* Overlay di berkas ini tidak memakai box-shadow. `tokens.json` tidak punya
+   kategori bayangan sama sekali, dan `--elevation-3`/`--elevation-4` yang
+   sempat dirujuk empat kali tidak pernah ada — empat baris yang diam-diam
+   tidak melakukan apa pun. Pemisahan dari konten di belakangnya dikerjakan
+   border dan latar terangkat. Menambah skala bayangan adalah keputusan desain
+   yang masuk lewat tokens.json, bukan polish yang ditulis di sini. */
 .listbox {
   max-block-size: var(--size-container-narrow);
   overflow-y: auto;
   background: var(--bg-surface-raised);
   border: var(--border-width-default) solid var(--border-default);
   border-radius: var(--radius-lg);
-  box-shadow: var(--elevation-3);
 }
 
 .listMessage {
@@ -427,7 +432,6 @@
   background: var(--bg-surface-raised);
   border: var(--border-width-default) solid var(--border-default);
   border-radius: var(--radius-md);
-  box-shadow: var(--elevation-3);
   color: var(--text-primary);
   font-size: var(--font-size-caption);
   white-space: nowrap;
@@ -459,8 +463,17 @@
 
 /* ── Fokus lintas komponen ────────────────────────────────────────────────*/
 
+/* Satu blok untuk seluruh komponen, bukan aturan fokus yang tersebar.
+   Elemen interaktif yang ditambahkan belakangan gampang lupa diberi ring, dan
+   yang pertama kehilangan akses adalah orang yang memakai keyboard — bukan
+   orang yang menulis komponennya. Daftar di sini adalah tempat memeriksanya. */
 .button:focus-visible,
 .choiceInput:focus-visible,
+.tab:focus-visible,
+.kpiCard:focus-visible,
+.filterChip:focus-visible,
+.filterClear:focus-visible,
+.toastAction:focus-visible,
 .control:focus-within {
   outline: var(--border-width-focus) solid var(--border-focus);
   outline-offset: 2px;

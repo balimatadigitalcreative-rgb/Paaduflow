@@ -7,7 +7,7 @@ import { buildHttpApp, type PaaduServer } from '#interface/http/app'
 
 import { FakeBreachList, FakeMailer } from './harness.js'
 
-// @ts-expect-error — alat, bukan bagian aplikasi. Tidak punya deklarasi tipe.
+// Alat, bukan bagian aplikasi. Diimpor apa adanya dari JavaScript.
 import { seedDemo } from '../../tools/seed/demo.js'
 
 /**
