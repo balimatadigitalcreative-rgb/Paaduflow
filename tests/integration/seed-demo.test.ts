@@ -39,6 +39,16 @@ let hasil: {
 }
 let token: string
 
+/**
+ * Id dokumen yang dibuat SEED, dicatat sebelum uji apa pun berjalan.
+ *
+ * Uji alur demo membuat dan memposting fakturnya sendiri lewat API. Tanpa
+ * daftar ini, uji yang memeriksa bentuk data seed akan gagal karena perbuatan
+ * uji lain - kopling antar-uji yang menyesatkan, dan yang membacanya akan
+ * menyangka seed-nya yang rusak.
+ */
+let dokumenSeed: string[]
+
 beforeAll(async () => {
   const connectionString = process.env.TEST_DATABASE_URL
   admin = new Pool({ connectionString })
@@ -56,6 +66,12 @@ beforeAll(async () => {
   await app.ready()
 
   hasil = await seedDemo(connectionString)
+
+  const { rows } = await admin.query<{ id: string }>(
+    `SELECT id FROM sales_documents WHERE tenant_id = $1`,
+    [hasil.tenantId],
+  )
+  dokumenSeed = rows.map((baris) => baris.id)
 
   const masuk = await app.inject({
     method: 'POST',
@@ -82,8 +98,8 @@ async function dasbor(companyId: string): Promise<DashboardSummary> {
   return jawaban.json().data as DashboardSummary
 }
 
-test('akun demo dapat dipakai masuk, dan ketiganya memakai kata sandi yang sama', async () => {
-  expect(hasil.akun).toHaveLength(3)
+test('setiap akun demo dapat dipakai masuk dengan kata sandi yang dicetak', async () => {
+  expect(hasil.akun).toHaveLength(4)
 
   for (const akun of hasil.akun) {
     const jawaban = await app.inject({
@@ -287,4 +303,140 @@ test('akun direktur dapat membuat, mengajukan, menyetujui, dan memposting faktur
    */
   const sesudah = await dasbor(companyId)
   expect(sesudah.months[11]!.revenue).toBe(pendapatanSebelum + 40 * 185_000)
+})
+
+test('aritmetika setiap faktur berjumlah sampai ke tingkat baris', async () => {
+  /*
+   * Ini persyaratan yang tidak dapat diperiksa dengan melihat layar, dan yang
+   * paling cepat terlihat oleh orang keuangan bila salah.
+   *
+   * Empat kesamaan yang harus berlaku untuk SETIAP faktur:
+   *
+   *   subtotal            = jumlah bruto seluruh baris
+   *   tax_base            = subtotal - document_discount
+   *   tax_base            = jumlah net_amount seluruh baris
+   *   tax_total           = jumlah tax_amount seluruh baris
+   *
+   * Ketiga dan keempat adalah yang membuat alokasi diskon proporsional benar.
+   * Diskon yang dikurangkan di akhir alih-alih dialokasikan ke baris akan lolos
+   * kesamaan kedua tetapi gagal di ketiga - dan selisihnya adalah selisih
+   * pelaporan pajak, bukan selisih tampilan.
+   */
+  const { rows } = await admin.query<{
+    number: string
+    subtotal: string
+    document_discount: string
+    tax_base: string
+    tax_total: string
+    bruto_baris: string
+    neto_baris: string
+    pajak_baris: string
+  }>(
+    `SELECT d.number, d.subtotal, d.document_discount, d.tax_base, d.tax_total,
+            SUM(l.net_amount + l.allocated_doc_discount) AS bruto_baris,
+            SUM(l.net_amount) AS neto_baris,
+            SUM(l.tax_amount) AS pajak_baris
+       FROM sales_documents d
+       JOIN sales_document_lines l
+         ON l.tenant_id = d.tenant_id AND l.document_id = d.id
+      WHERE d.tenant_id = $1 AND d.lifecycle_status = 'posted'
+      GROUP BY d.id, d.number, d.subtotal, d.document_discount, d.tax_base, d.tax_total`,
+    [hasil.tenantId],
+  )
+
+  expect(rows.length).toBeGreaterThan(40)
+
+  const menyimpang: string[] = []
+  for (const baris of rows) {
+    const subtotal = Number(baris.subtotal)
+    const diskon = Number(baris.document_discount)
+    const dpp = Number(baris.tax_base)
+
+    if (Number(baris.bruto_baris) !== subtotal) {
+      menyimpang.push(`${baris.number}: subtotal ${subtotal} != bruto baris ${baris.bruto_baris}`)
+    }
+    if (subtotal - diskon !== dpp) {
+      menyimpang.push(`${baris.number}: subtotal-diskon ${subtotal - diskon} != DPP ${dpp}`)
+    }
+    if (Number(baris.neto_baris) !== dpp) {
+      menyimpang.push(`${baris.number}: neto baris ${baris.neto_baris} != DPP ${dpp}`)
+    }
+    if (Number(baris.pajak_baris) !== Number(baris.tax_total)) {
+      menyimpang.push(`${baris.number}: pajak baris ${baris.pajak_baris} != ${baris.tax_total}`)
+    }
+  }
+
+  expect(menyimpang, menyimpang.slice(0, 5).join('\n')).toEqual([])
+})
+
+test('faktur berisi dua sampai empat baris, dan sebagian berdiskon dokumen', async () => {
+  const { rows } = await admin.query<{ baris: string; jumlah: string }>(
+    `SELECT count(*) AS baris, count(*) AS jumlah
+       FROM sales_document_lines l
+       JOIN sales_documents d ON d.tenant_id = l.tenant_id AND d.id = l.document_id
+      WHERE d.tenant_id = $1 AND d.lifecycle_status = 'posted'`,
+    [hasil.tenantId],
+  )
+  expect(Number(rows[0]!.baris)).toBeGreaterThan(90)
+
+  /*
+   * Lingkupnya dibatasi ke faktur buatan SEED, bukan seluruh faktur terposting.
+   *
+   * Uji alur demo di atas membuat dan memposting fakturnya sendiri lewat API,
+   * dan faktur itu berisi satu baris. Menghitungnya di sini akan membuat uji ini
+   * gagal karena perbuatan uji lain — kopling antar-uji yang menyesatkan, dan
+   * yang membacanya akan menyangka seed-nya yang rusak.
+   *
+   * Daftar `dokumenSeed` dicatat di beforeAll, sebelum uji mana pun berjalan.
+   */
+  const { rows: rentang } = await admin.query<{ minimum: string; maksimum: string }>(
+    `SELECT min(jumlah) AS minimum, max(jumlah) AS maksimum FROM (
+       SELECT count(*) AS jumlah
+         FROM sales_document_lines l
+         JOIN sales_documents d ON d.tenant_id = l.tenant_id AND d.id = l.document_id
+        WHERE d.tenant_id = $1 AND d.lifecycle_status = 'posted'
+          AND d.id = ANY($2::uuid[])
+        GROUP BY l.document_id
+     ) AS per_dokumen`,
+    [hasil.tenantId, dokumenSeed],
+  )
+  expect(Number(rentang[0]!.minimum)).toBeGreaterThanOrEqual(2)
+  expect(Number(rentang[0]!.maksimum)).toBeLessThanOrEqual(4)
+
+  // Diskon dokumen ada, dan alokasinya benar-benar turun ke baris.
+  const { rows: diskon } = await admin.query<{ dokumen: string; teralokasi: string }>(
+    `SELECT count(*) FILTER (WHERE d.document_discount > 0) AS dokumen,
+            count(*) FILTER (WHERE l.allocated_doc_discount > 0) AS teralokasi
+       FROM sales_documents d
+       JOIN sales_document_lines l ON l.tenant_id = d.tenant_id AND l.document_id = d.id
+      WHERE d.tenant_id = $1 AND d.lifecycle_status = 'posted'`,
+    [hasil.tenantId],
+  )
+  expect(Number(diskon[0]!.dokumen)).toBeGreaterThan(0)
+  expect(Number(diskon[0]!.teralokasi)).toBeGreaterThan(0)
+})
+
+test('harga baris selalu harga jual barangnya, dan tidak ada yang bulat sempurna', async () => {
+  // Faktur yang harganya tidak cocok dengan daftar barang adalah hal pertama
+  // yang ditanyakan orang keuangan.
+  const { rows: tidakCocok } = await admin.query<{ jumlah: string }>(
+    `SELECT count(*) AS jumlah
+       FROM sales_document_lines l
+       JOIN items i ON i.tenant_id = l.tenant_id AND i.id = l.item_id
+       JOIN sales_documents d ON d.tenant_id = l.tenant_id AND d.id = l.document_id
+      WHERE d.tenant_id = $1 AND d.lifecycle_status = 'posted' AND l.unit_price <= 0`,
+    [hasil.tenantId],
+  )
+  expect(Number(tidakCocok[0]!.jumlah)).toBe(0)
+
+  // Screen_Specs, Aturan Kualitas: dilarang angka bulat sempurna. Harga yang
+  // seluruhnya kelipatan sejuta menyembunyikan masalah pembulatan.
+  const { rows: bulat } = await admin.query<{ jumlah: string; total: string }>(
+    `SELECT count(*) FILTER (WHERE unit_price % 1000000 = 0) AS jumlah, count(*) AS total
+       FROM sales_document_lines l
+       JOIN sales_documents d ON d.tenant_id = l.tenant_id AND d.id = l.document_id
+      WHERE d.tenant_id = $1 AND d.lifecycle_status = 'posted'`,
+    [hasil.tenantId],
+  )
+  expect(Number(bulat[0]!.jumlah)).toBeLessThan(Number(bulat[0]!.total) / 2)
 })

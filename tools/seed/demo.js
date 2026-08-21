@@ -41,22 +41,28 @@ const SLUG_TENANT = 'paadu-demo'
 
 const AKUN = [
   {
-    email: 'direktur@demo.paaduflow.id',
-    nama: 'Ratna Wijaya',
+    email: 'budi@demo.paaduflow.id',
+    nama: 'Budi Santoso',
     peran: 'tenant_owner',
-    jabatan: 'Direktur — melihat kedua company, menyetujui dokumen',
+    jabatan: 'Pemilik Tenant — melihat kedua company, menyetujui dokumen',
   },
   {
-    email: 'akuntan@demo.paaduflow.id',
-    nama: 'Hendra Gunawan',
+    email: 'sari@demo.paaduflow.id',
+    nama: 'Sari Wijaya',
+    peran: 'tenant_admin',
+    jabatan: 'Admin Tenant — mengelola pengguna dan akses',
+  },
+  {
+    email: 'rina@demo.paaduflow.id',
+    nama: 'Rina Anggraini',
     peran: 'company_admin',
-    jabatan: 'Akuntan — memposting ke buku besar, menelusuri laba rugi',
+    jabatan: 'Admin Company — memposting ke buku besar, menelusuri laba rugi',
   },
   {
-    email: 'penjualan@demo.paaduflow.id',
-    nama: 'Sari Lestari',
+    email: 'agus@demo.paaduflow.id',
+    nama: 'Agus Pratama',
     peran: 'member',
-    jabatan: 'Staf Penjualan — membuat dan mengajukan faktur',
+    jabatan: 'Anggota — membuat dan mengajukan faktur',
   },
 ]
 
@@ -68,8 +74,23 @@ const AKUN = [
  * ditunjukkan bila keduanya memang berbeda.
  */
 const COMPANY = [
-  { slug: 'sinar-rejeki', nama: 'PT Sinar Rejeki Nusantara', bulanAwalFiskal: 1, npwp: '01.234.567.8-011.000' },
-  { slug: 'kencana-abadi', nama: 'PT Kencana Abadi Sejahtera', bulanAwalFiskal: 4, npwp: '02.345.678.9-022.000' },
+  {
+    slug: 'nusantara-jaya',
+    nama: 'PT Nusantara Jaya Abadi',
+    bulanAwalFiskal: 1,
+    npwp: '01.234.567.8-901.000',
+    gudang: [
+      { kode: 'SBY', nama: 'Gudang Surabaya' },
+      { kode: 'MLG', nama: 'Gudang Malang' },
+    ],
+  },
+  {
+    slug: 'nusantara-logistik',
+    nama: 'PT Nusantara Logistik Prima',
+    bulanAwalFiskal: 4,
+    npwp: '02.876.543.2-109.000',
+    gudang: [{ kode: 'SBY', nama: 'Gudang Surabaya' }],
+  },
 ]
 
 const BAGAN_AKUN = [
@@ -100,27 +121,99 @@ const PENENTUAN_AKUN = [
   ['purchasing.bill.price_variance', '5900'],
 ]
 
+/** Pelanggan — gaya dan nama mengikuti `docs/mock_data.json`. */
 const PELANGGAN = [
-  { kode: 'CUS-001', nama: 'PT Anugerah Boga Utama', npwp: '11.222.333.4-011.000' },
-  { kode: 'CUS-002', nama: 'CV Mitra Sejati Mandiri', npwp: '22.333.444.5-012.000' },
-  { kode: 'CUS-003', nama: 'PT Cahaya Timur Perkasa', npwp: '33.444.555.6-013.000' },
-  { kode: 'CUS-004', nama: 'Toko Berkah Jaya', npwp: null },
-  { kode: 'CUS-005', nama: 'PT Gemilang Retail Indonesia', npwp: '44.555.666.7-014.000' },
+  { kode: 'CUS-0001', nama: 'Kopi Kita', npwp: '17.231.479.4-021.000', termin: 30 },
+  { kode: 'CUS-0002', nama: 'Warung Sedap', npwp: '24.362.858.7-032.000', termin: 30 },
+  { kode: 'CUS-0003', nama: 'Toko Berkah Jaya', npwp: '31.493.337.1-043.000', termin: 30 },
+  { kode: 'CUS-0004', nama: 'CV Mandiri Sentosa', npwp: null, termin: 30 },
+  { kode: 'CUS-0005', nama: 'Kedai Nusantara', npwp: '45.755.195.7-065.000', termin: 30 },
+  { kode: 'CUS-0006', nama: 'PT Rasa Bumi', npwp: '52.886.574.1-076.000', termin: 14 },
+  { kode: 'CUS-0007', nama: 'Toko Sinar Abadi', npwp: '59.117.953.4-087.000', termin: 14 },
+  { kode: 'CUS-0008', nama: 'CV Karya Mandiri', npwp: null, termin: 30 },
+  { kode: 'CUS-0009', nama: 'Warung Bu Tini', npwp: '73.379.811.1-019.000', termin: 30 },
+  { kode: 'CUS-0010', nama: 'PT Boga Utama', npwp: '80.510.290.4-030.000', termin: 30 },
+  { kode: 'CUS-0011', nama: 'Kafe Senja', npwp: '87.641.669.7-041.000', termin: 30 },
+  { kode: 'CUS-0012', nama: 'Toko Pangan Sejahtera', npwp: null, termin: 30 },
+  { kode: 'CUS-0013', nama: 'CV Anugerah Rasa', npwp: '11.903.527.4-063.000', termin: 30 },
+  { kode: 'CUS-0014', nama: 'PT Sumber Pangan', npwp: '18.134.906.7-074.000', termin: 30 },
+  { kode: 'CUS-0015', nama: 'Warung Kopi Tugu', npwp: '25.265.385.1-085.000', termin: 30 },
+  { kode: 'CUS-0016', nama: 'Toko Rejeki Baru', npwp: null, termin: 30 },
+  { kode: 'CUS-0017', nama: 'CV Bintang Timur', npwp: '39.527.243.7-017.000', termin: 45 },
+  { kode: 'CUS-0018', nama: 'PT Citra Boga', npwp: '46.658.622.1-028.000', termin: 30 },
+  { kode: 'CUS-0019', nama: 'Kedai Kopi Merdeka', npwp: '53.789.101.4-039.000', termin: 14 },
+  { kode: 'CUS-0020', nama: 'Toko Amanah', npwp: null, termin: 30 },
+  { kode: 'CUS-0021', nama: 'CV Sejahtera Mulia', npwp: '67.151.859.1-061.000', termin: 30 },
+  { kode: 'CUS-0022', nama: 'PT Delta Pangan', npwp: '74.282.338.4-072.000', termin: 30 },
+  { kode: 'CUS-0023', nama: 'Warung Mbak Yuni', npwp: '81.413.717.7-083.000', termin: 30 },
+  { kode: 'CUS-0024', nama: 'Toko Harapan Jaya', npwp: null, termin: 14 },
+  { kode: 'CUS-0025', nama: 'CV Prima Rasa', npwp: '95.675.575.4-015.000', termin: 30 },
 ]
 
+/** Vendor. Yang non-PKP sengaja ada — faktur pajaknya tidak dapat dikreditkan. */
 const VENDOR = [
-  { kode: 'VEN-001', nama: 'PT Sumber Bahan Kimia', npwp: '55.666.777.8-021.000', pkp: true },
-  { kode: 'VEN-002', nama: 'CV Karya Logistik Nusa', npwp: '66.777.888.9-022.000', pkp: true },
-  { kode: 'VEN-003', nama: 'UD Sentosa Kemasan', npwp: null, pkp: false },
+  { kode: 'VEN-0001', nama: 'PT Gayo Highland', npwp: '20.840.860.4-090.000', pkp: true, termin: 30 },
+  { kode: 'VEN-0002', nama: 'CV Lampung Robusta', npwp: '27.971.339.7-011.000', pkp: true, termin: 45 },
+  { kode: 'VEN-0003', nama: 'Koperasi Tani Kintamani', npwp: '34.202.718.1-022.000', pkp: true, termin: 14 },
+  { kode: 'VEN-0004', nama: 'PT Toraja Prima', npwp: '41.333.197.4-033.000', pkp: true, termin: 30 },
+  { kode: 'VEN-0005', nama: 'CV Flores Arabika', npwp: null, pkp: false, termin: 30 },
+  { kode: 'VEN-0006', nama: 'PT Kemasan Nusantara', npwp: '55.595.955.1-055.000', pkp: true, termin: 45 },
+  { kode: 'VEN-0007', nama: 'CV Label Cetak Jaya', npwp: '62.726.434.4-066.000', pkp: true, termin: 14 },
+  { kode: 'VEN-0008', nama: 'PT Logistik Andal', npwp: '69.857.813.7-077.000', pkp: true, termin: 45 },
+  { kode: 'VEN-0009', nama: 'CV Mesin Roasting', npwp: '76.988.292.1-088.000', pkp: true, termin: 14 },
+  { kode: 'VEN-0010', nama: 'PT Gula Manis', npwp: null, pkp: false, termin: 45 },
+  { kode: 'VEN-0011', nama: 'CV Susu Segar', npwp: '90.350.150.7-020.000', pkp: true, termin: 30 },
+  { kode: 'VEN-0012', nama: 'PT Kardus Sejahtera', npwp: '97.481.529.1-031.000', pkp: true, termin: 30 },
+  { kode: 'VEN-0013', nama: 'CV Bali Kintamani', npwp: '14.612.908.4-042.000', pkp: true, termin: 30 },
+  { kode: 'VEN-0014', nama: 'PT Java Preanger', npwp: '21.743.387.7-053.000', pkp: true, termin: 30 },
+  { kode: 'VEN-0015', nama: 'CV Papua Wamena', npwp: null, pkp: false, termin: 30 },
+  { kode: 'VEN-0016', nama: 'PT Sumatra Mandheling', npwp: '35.105.245.4-075.000', pkp: true, termin: 30 },
+  { kode: 'VEN-0017', nama: 'CV Aceh Gayo Tani', npwp: '42.236.624.7-086.000', pkp: true, termin: 30 },
+  { kode: 'VEN-0018', nama: 'PT Rempah Nusantara', npwp: '49.367.103.1-097.000', pkp: true, termin: 14 },
+  { kode: 'VEN-0019', nama: 'CV Plastik Kemas', npwp: '56.498.482.4-018.000', pkp: true, termin: 45 },
+  { kode: 'VEN-0020', nama: 'PT Ekspedisi Cepat', npwp: null, pkp: false, termin: 45 },
 ]
 
+/**
+ * Barang dan jasa. Harga diambil dari `mock_data.json` apa adanya.
+ *
+ * Tidak ada yang bulat, dan itu disengaja: angka bulat sempurna
+ * menyembunyikan masalah pembulatan yang baru muncul di produksi
+ * (Screen_Specs, Aturan Kualitas).
+ */
 const BARANG = [
-  { kode: 'BRG-KOP', nama: 'Kopi Arabika Gayo 1 kg', uom: 'kg', harga: 185_000 },
-  { kode: 'BRG-TEH', nama: 'Teh Hitam Premium 500 g', uom: 'pak', harga: 96_000 },
-  { kode: 'BRG-GUL', nama: 'Gula Aren Cair 1 liter', uom: 'botol', harga: 62_500 },
+  { kode: 'BRG-0001', nama: 'Kopi Arabika Gayo 1 kg', uom: 'PCS', jual: 176500, pokok: 128250 },
+  { kode: 'BRG-0002', nama: 'Kopi Arabika Gayo 500 g', uom: 'PCS', jual: 91500, pokok: 67500 },
+  { kode: 'BRG-0003', nama: 'Kopi Arabika Gayo 250 g', uom: 'PCS', jual: 49500, pokok: 37750 },
+  { kode: 'BRG-0004', nama: 'Kopi Arabika Gayo 200 g', uom: 'PCS', jual: 42000, pokok: 29750 },
+  { kode: 'BRG-0005', nama: 'Kopi Robusta Lampung 1 kg', uom: 'PCS', jual: 178500, pokok: 135250 },
+  { kode: 'BRG-0006', nama: 'Kopi Robusta Lampung 500 g', uom: 'PCS', jual: 91500, pokok: 62250 },
+  { kode: 'BRG-0007', nama: 'Kopi Robusta Lampung 250 g', uom: 'PCS', jual: 57500, pokok: 42750 },
+  { kode: 'BRG-0008', nama: 'Kopi Robusta Lampung 200 g', uom: 'PCS', jual: 44000, pokok: 33750 },
+  { kode: 'BRG-0009', nama: 'Kopi Arabika Kintamani 1 kg', uom: 'PCS', jual: 218000, pokok: 159000 },
+  { kode: 'BRG-0010', nama: 'Kopi Arabika Kintamani 500 g', uom: 'PCS', jual: 111000, pokok: 82500 },
+  { kode: 'BRG-0011', nama: 'Kopi Arabika Kintamani 250 g', uom: 'PCS', jual: 53500, pokok: 34750 },
+  { kode: 'BRG-0012', nama: 'Kopi Arabika Kintamani 200 g', uom: 'PCS', jual: 41500, pokok: 28250 },
+  { kode: 'BRG-0013', nama: 'Kopi Arabika Toraja 1 kg', uom: 'PCS', jual: 183500, pokok: 140500 },
+  { kode: 'BRG-0014', nama: 'Kopi Arabika Toraja 500 g', uom: 'PCS', jual: 112500, pokok: 81000 },
+  { kode: 'BRG-0015', nama: 'Kopi Arabika Toraja 250 g', uom: 'PCS', jual: 48000, pokok: 32500 },
+  { kode: 'BRG-0016', nama: 'Kopi Arabika Toraja 200 g', uom: 'PCS', jual: 39500, pokok: 27500 },
+  { kode: 'BRG-0017', nama: 'Kopi Arabika Flores 1 kg', uom: 'PCS', jual: 207000, pokok: 151750 },
+  { kode: 'BRG-0018', nama: 'Kopi Arabika Flores 500 g', uom: 'PCS', jual: 91500, pokok: 60000 },
+  { kode: 'BRG-0019', nama: 'Kopi Arabika Flores 250 g', uom: 'PCS', jual: 58000, pokok: 44000 },
+  { kode: 'BRG-0020', nama: 'Kopi Arabika Flores 200 g', uom: 'PCS', jual: 49000, pokok: 33250 },
+  { kode: 'BRG-0021', nama: 'Kopi Robusta Temanggung 1 kg', uom: 'PCS', jual: 170500, pokok: 121500 },
+  { kode: 'BRG-0022', nama: 'Kopi Robusta Temanggung 500 g', uom: 'PCS', jual: 114000, pokok: 86500 },
+  { kode: 'BRG-0023', nama: 'Kopi Robusta Temanggung 250 g', uom: 'PCS', jual: 47000, pokok: 30750 },
+  { kode: 'BRG-0024', nama: 'Kopi Robusta Temanggung 200 g', uom: 'PCS', jual: 43500, pokok: 33250 },
 ]
 
-const JASA = { kode: 'JSA-KIR', nama: 'Jasa Pengiriman Kota', uom: 'rit', harga: 475_000 }
+const JASA = [
+  { kode: 'JSA-0041', nama: 'Jasa roasting custom', uom: 'UNIT', jual: 450000, pokok: 247500 },
+  { kode: 'JSA-0042', nama: 'Jasa grinding', uom: 'UNIT', jual: 120000, pokok: 66000 },
+  { kode: 'JSA-0043', nama: 'Biaya pengiriman', uom: 'UNIT', jual: 1250000, pokok: 687500 },
+  { kode: 'JSA-0044', nama: 'Jasa cupping & QC', uom: 'UNIT', jual: 750000, pokok: 412500 },
+]
 
 const PPN = 11
 
@@ -280,12 +373,18 @@ export async function seedDemo(connectionString) {
         )
       }
 
-      const gudangId = randomUUID()
-      await client.query(
-        `INSERT INTO warehouses (id, tenant_id, company_id, code, name)
-         VALUES ($1, $2, $3, 'GD-01', 'Gudang Utama')`,
-        [gudangId, tenantId, company.id],
-      )
+      // Gudang per company. Yang pertama punya dua, yang kedua satu - stok
+      // multi-gudang hanya terlihat bila memang ada lebih dari satu.
+      const gudang = []
+      for (const spesifikasi of company.gudang) {
+        const id = randomUUID()
+        await client.query(
+          `INSERT INTO warehouses (id, tenant_id, company_id, code, name)
+           VALUES ($1, $2, $3, $4, $5)`,
+          [id, tenantId, company.id, spesifikasi.kode, spesifikasi.nama],
+        )
+        gudang.push({ ...spesifikasi, id })
+      }
 
       const pelanggan = []
       for (const spesifikasi of PELANGGAN) {
@@ -311,37 +410,55 @@ export async function seedDemo(connectionString) {
       }
 
       const barang = []
-      for (const spesifikasi of [...BARANG, JASA]) {
+      for (const spesifikasi of BARANG) {
         const id = randomUUID()
         await client.query(
           `INSERT INTO items (id, tenant_id, company_id, code, name, type, base_uom)
-           VALUES ($1, $2, $3, $4, $5, $6::item_type, $7)`,
-          [id, tenantId, company.id, spesifikasi.kode, spesifikasi.nama,
-           spesifikasi.kode === JASA.kode ? 'service' : 'stock', spesifikasi.uom],
+           VALUES ($1, $2, $3, $4, $5, 'stock', $6)`,
+          [id, tenantId, company.id, spesifikasi.kode, spesifikasi.nama, spesifikasi.uom],
         )
         barang.push({ ...spesifikasi, id })
       }
 
-      for (const item of barang.filter((satu) => satu.kode !== JASA.kode)) {
-        const qty = 4000
-        const hargaPokok = Math.round(item.harga * 0.68)
+      const jasa = []
+      for (const spesifikasi of JASA) {
+        const id = randomUUID()
         await client.query(
-          `INSERT INTO stock_movements
-             (id, tenant_id, company_id, item_id, warehouse_id, type, qty_base, unit_cost,
-              sequence, source_type)
-           VALUES ($1, $2, $3, $4, $5, 'receipt', $6, $7, nextval('stock_movement_sequence'),
-                   'seed-demo')`,
-          [randomUUID(), tenantId, company.id, item.id, gudangId, qty, hargaPokok],
+          `INSERT INTO items (id, tenant_id, company_id, code, name, type, base_uom)
+           VALUES ($1, $2, $3, $4, $5, 'service', $6)`,
+          [id, tenantId, company.id, spesifikasi.kode, spesifikasi.nama, spesifikasi.uom],
         )
-        await client.query(
-          `INSERT INTO stock_balances
-             (tenant_id, company_id, item_id, warehouse_id, qty_on_hand, value)
-           VALUES ($1, $2, $3, $4, $5, $6)
-           ON CONFLICT (tenant_id, item_id, warehouse_id)
-             DO UPDATE SET qty_on_hand = stock_balances.qty_on_hand + EXCLUDED.qty_on_hand,
-                           value = stock_balances.value + EXCLUDED.value`,
-          [tenantId, company.id, item.id, gudangId, qty, qty * hargaPokok],
-        )
+        jasa.push({ ...spesifikasi, id })
+      }
+
+      /*
+       * Stok awal dibagi ke seluruh gudang, tidak rata.
+       *
+       * Tidak rata dengan sengaja: gudang yang isinya persis sama di setiap
+       * item terlihat seperti data yang dibangkitkan, dan layar stok
+       * multi-gudang tidak menguji apa pun bila setiap kolomnya kembar.
+       */
+      for (const [nomor, item] of barang.entries()) {
+        for (const [nomorGudang, tempat] of gudang.entries()) {
+          const qty = 1800 + ((nomor * 7 + nomorGudang * 13) % 9) * 200
+          await client.query(
+            `INSERT INTO stock_movements
+               (id, tenant_id, company_id, item_id, warehouse_id, type, qty_base, unit_cost,
+                sequence, source_type)
+             VALUES ($1, $2, $3, $4, $5, 'receipt', $6, $7, nextval('stock_movement_sequence'),
+                     'seed-demo')`,
+            [randomUUID(), tenantId, company.id, item.id, tempat.id, qty, item.pokok],
+          )
+          await client.query(
+            `INSERT INTO stock_balances
+               (tenant_id, company_id, item_id, warehouse_id, qty_on_hand, value)
+             VALUES ($1, $2, $3, $4, $5, $6)
+             ON CONFLICT (tenant_id, item_id, warehouse_id)
+               DO UPDATE SET qty_on_hand = stock_balances.qty_on_hand + EXCLUDED.qty_on_hand,
+                             value = stock_balances.value + EXCLUDED.value`,
+            [tenantId, company.id, item.id, tempat.id, qty, qty * item.pokok],
+          )
+        }
       }
 
       const hasil = await isiRiwayat(client, {
@@ -351,6 +468,8 @@ export async function seedDemo(connectionString) {
         pelanggan,
         vendor,
         barang,
+        jasa,
+        gudang,
         akunPerKode,
         // Company kedua dibuat lebih kecil, supaya berpindah company benar-benar
         // memindahkan angka dan bukan hanya nama di pojok atas.
@@ -373,6 +492,44 @@ export async function seedDemo(connectionString) {
 }
 
 /**
+ * Menyusun dua sampai empat baris yang jumlahnya mendekati target.
+ *
+ * Baris-baris awal memakai kuantitas "wajar" — kelipatan lusin, seperti orang
+ * memesan sungguhan. Baris TERAKHIR menyerap sisanya, sehingga kuantitasnya
+ * bisa berupa angka ganjil seperti 669. Itu bukan cacat: `mock_data.json`
+ * memakai teknik yang sama persis, dan hasilnya justru lebih meyakinkan
+ * daripada deretan angka bulat.
+ *
+ * Harga tidak pernah dikarang di sini. Ia selalu harga jual barangnya, karena
+ * faktur yang harganya tidak cocok dengan daftar barang adalah hal pertama yang
+ * ditanyakan orang keuangan.
+ */
+function susunBaris({ barang, jasa, targetDpp, persenDiskon, benih }) {
+  // Target DPP dikembalikan ke bruto lebih dulu; diskon dihitung DARI subtotal.
+  const targetBruto = Math.round(targetDpp / (1 - persenDiskon / 100))
+  const jumlahBaris = 2 + (benih % 3)
+
+  const dipakai = []
+  const KUANTITAS = [12, 24, 36, 48, 60, 96, 120]
+
+  for (let nomor = 0; nomor < jumlahBaris - 1; nomor += 1) {
+    // Satu baris jasa sesekali, supaya faktur tidak selalu berisi barang saja.
+    const pakaiJasa = nomor === 1 && (benih % 4) === 0
+    const daftar = pakaiJasa ? jasa : barang
+    const item = daftar[(benih * 3 + nomor * 11) % daftar.length]
+    const qty = KUANTITAS[(benih + nomor * 5) % KUANTITAS.length]
+    dipakai.push({ item, qty, bruto: qty * item.jual })
+  }
+
+  const sudah = dipakai.reduce((jumlah, satu) => jumlah + satu.bruto, 0)
+  const penutup = barang[(benih * 7 + 3) % barang.length]
+  const qtyPenutup = Math.max(1, Math.round((targetBruto - sudah) / penutup.jual))
+  dipakai.push({ item: penutup, qty: qtyPenutup, bruto: qtyPenutup * penutup.jual })
+
+  return dipakai
+}
+
+/**
  * Riwayat satu company: faktur terposting per bulan, lalu dokumen berstatus
  * lain di bulan berjalan.
  *
@@ -382,10 +539,9 @@ export async function seedDemo(connectionString) {
  * piutang yang tidak punya pendapatan.
  */
 async function isiRiwayat(client, konteks) {
-  const { tenantId, company, bulanan, pelanggan, vendor, barang, akunPerKode, skala, hariIni } =
-    konteks
+  const { tenantId, company, bulanan, pelanggan, vendor, barang, jasa, gudang, akunPerKode,
+          skala, hariIni } = konteks
 
-  const barangStok = barang.filter((satu) => satu.kode !== JASA.kode)
   let nomorUrut = 0
   let totalPendapatan = 0
   let piutangBeredar = 0
@@ -393,33 +549,68 @@ async function isiRiwayat(client, konteks) {
 
   for (const [indeks, bulan] of bulanan.entries()) {
     const target = Math.round(targetBulanan(indeks, bulan.bulan) * skala)
-
-    // Tiga sampai lima faktur per bulan. Jumlahnya ikut tumbuh, seperti bisnis
-    // yang benar-benar tumbuh — bukan hanya nilainya yang membesar.
     const jumlahBulanIni = 3 + (indeks % 3)
     let tersisa = target
 
     for (let nomor = 0; nomor < jumlahBulanIni; nomor += 1) {
       const terakhir = nomor === jumlahBulanIni - 1
-      // Baris terakhir mengambil sisanya persis, sehingga jumlah seluruh faktur
-      // sama dengan target bulan itu. Pembagian yang dibulatkan per faktur akan
-      // meleset beberapa ribu rupiah, dan selisih itulah yang akan dikejar orang.
-      const dpp = terakhir ? tersisa : Math.round(target / jumlahBulanIni / 1000) * 1000
-      tersisa -= dpp
-      if (dpp <= 0) continue
+      const targetDpp = terakhir ? tersisa : Math.round(target / jumlahBulanIni / 1000) * 1000
+      tersisa -= targetDpp
+      if (targetDpp <= 0) continue
 
-      const item = barangStok[(indeks + nomor) % barangStok.length]
-      const kepada = pelanggan[(indeks * 2 + nomor) % pelanggan.length]
-      const hari = 4 + nomor * 6
+      const kepada = pelanggan[(indeks * 7 + nomor * 3) % pelanggan.length]
+
+      /*
+       * Diskon dokumen 5% pada sebagian faktur, mengikuti mock_data.json.
+       *
+       * Bukan hiasan: diskon dokumen dialokasikan PROPORSIONAL ke baris, bukan
+       * dikurangkan di akhir (Archetype 4). Pajak dihitung per baris di atas
+       * neto setelah alokasi, jadi dua cara itu menghasilkan angka pajak yang
+       * berbeda — dan bedanya bukan selisih tampilan, melainkan selisih
+       * pelaporan pajak.
+       */
+      const persenDiskon = (indeks + nomor) % 3 === 0 ? 5 : 0
+
+      const baris = susunBaris({
+        barang,
+        jasa,
+        targetDpp,
+        persenDiskon,
+        benih: indeks * 13 + nomor * 5,
+      })
+
+      const subtotal = baris.reduce((jumlah, satu) => jumlah + satu.bruto, 0)
+      const diskon = Math.round((subtotal * persenDiskon) / 100)
+      const dpp = subtotal - diskon
+
+      // Alokasi proporsional, dengan baris terakhir menyerap sisa pembulatan.
+      // Tanpa itu, jumlah neto per baris tidak sama dengan DPP dokumen, dan
+      // selisih beberapa rupiah itulah yang akan dikejar akuntan berjam-jam.
+      let sisaAlokasi = diskon
+      let sisaPajak = 0
+      baris.forEach((satu, nomorBaris) => {
+        const bagian = nomorBaris === baris.length - 1
+          ? sisaAlokasi
+          : Math.round((diskon * satu.bruto) / subtotal)
+        sisaAlokasi -= bagian
+        satu.alokasi = bagian
+        satu.neto = satu.bruto - bagian
+      })
+
+      const pajak = Math.round((dpp * PPN) / 100)
+      baris.forEach((satu, nomorBaris) => {
+        satu.pajak = nomorBaris === baris.length - 1
+          ? pajak - sisaPajak
+          : Math.round((satu.neto * PPN) / 100)
+        if (nomorBaris < baris.length - 1) sisaPajak += satu.pajak
+      })
+
+      const total = dpp + pajak
+      const hari = 3 + nomor * 5
       const tanggalDokumen = tanggal(bulan.tahun, bulan.bulan, Math.min(hari, 27))
 
       nomorUrut += 1
       const nomorFaktur = `INV/${bulan.tahun}/${String(bulan.bulan).padStart(2, '0')}/${String(nomorUrut).padStart(4, '0')}`
-
-      const pajak = Math.round((dpp * PPN) / 100)
-      const total = dpp + pajak
-      const qty = Math.max(1, Math.round(dpp / item.harga))
-      const hargaSatuan = Math.round(dpp / qty)
 
       /*
        * Pelunasan menurut umur, bukan acak.
@@ -430,37 +621,43 @@ async function isiRiwayat(client, konteks) {
        * bukan sekadar nol yang terlihat rapi.
        */
       const menunggak = bulan.mundur === 2 && nomor === 0
-      const pelunasan = bulan.mundur >= 3 && !menunggak
-        ? 'paid'
-        : bulan.mundur === 0 && nomor >= jumlahBulanIni - 1
-          ? 'partially_paid'
-          : bulan.mundur <= 2 || menunggak
-            ? 'unpaid'
-            : 'paid'
+      const pelunasan = menunggak
+        ? 'unpaid'
+        : bulan.mundur >= 3
+          ? 'paid'
+          : bulan.mundur === 0 && terakhir
+            ? 'partially_paid'
+            : 'unpaid'
 
       const jatuhTempo = menunggak
         ? tanggal(bulan.tahun, bulan.bulan, Math.min(hari + 3, 28))
-        : tambahHari(tanggalDokumen, 30)
+        : tambahHari(tanggalDokumen, kepada.termin)
 
       const documentId = randomUUID()
       await client.query(
         `INSERT INTO sales_documents
            (id, tenant_id, company_id, doc_type, number, customer_id, document_date, due_date,
-            currency, subtotal, tax_base, tax_total, total,
+            currency, subtotal, document_discount, tax_base, tax_total, total,
             lifecycle_status, settlement_status, fulfillment_status, posted_at)
          VALUES ($1, $2, $3, 'invoice', $4, $5, $6::date, $7::date, 'IDR',
-                 $8, $8, $9, $10, 'posted', $11::settlement_status, 'fulfilled', $6::timestamptz)`,
+                 $8, $9, $10, $11, $12, 'posted', $13::settlement_status, 'fulfilled',
+                 $6::timestamptz)`,
         [documentId, tenantId, company.id, nomorFaktur, kepada.id, tanggalDokumen, jatuhTempo,
-         dpp, pajak, total, pelunasan],
+         subtotal, diskon, dpp, pajak, total, pelunasan],
       )
-      await client.query(
-        `INSERT INTO sales_document_lines
-           (id, tenant_id, company_id, document_id, line_no, item_id, description, qty, uom,
-            unit_price, net_amount, tax_rate_pct, tax_amount, qty_delivered)
-         VALUES ($1, $2, $3, $4, 1, $5, $6, $7, $8, $9, $10, $11, $12, $7)`,
-        [randomUUID(), tenantId, company.id, documentId, item.id, item.nama, qty, item.uom,
-         hargaSatuan, dpp, PPN, pajak],
-      )
+
+      for (const [nomorBaris, satu] of baris.entries()) {
+        await client.query(
+          `INSERT INTO sales_document_lines
+             (id, tenant_id, company_id, document_id, line_no, item_id, description, qty, uom,
+              unit_price, allocated_doc_discount, net_amount, tax_rate_pct, tax_amount,
+              qty_delivered)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $8)`,
+          [randomUUID(), tenantId, company.id, documentId, nomorBaris + 1, satu.item.id,
+           satu.item.nama, satu.qty, satu.item.uom, satu.item.jual, satu.alokasi, satu.neto,
+           PPN, satu.pajak],
+        )
+      }
 
       await jurnal(client, {
         tenantId,
@@ -521,15 +718,15 @@ async function isiRiwayat(client, konteks) {
          (id, tenant_id, company_id, document_id, line_no, item_id, description, qty, uom,
           unit_price, net_amount, tax_rate_pct, tax_amount)
        VALUES ($1, $2, $3, $4, 1, $5, $6, 1, $7, $8, $8, $9, $10)`,
-      [randomUUID(), tenantId, company.id, documentId, barangStok[nomor % barangStok.length].id,
-       barangStok[nomor % barangStok.length].nama, barangStok[nomor % barangStok.length].uom,
+      [randomUUID(), tenantId, company.id, documentId, barang[nomor % barang.length].id,
+       barang[nomor % barang.length].nama, barang[nomor % barang.length].uom,
        spesifikasi.dpp, PPN, pajak],
     )
   }
 
   // ── Pembelian: penerimaan sebagian dan satu tagihan exception ────────────
   const pembelian = await isiPembelian(client, {
-    tenantId, company, vendor, barang: barangStok, bulanIni, skala,
+    tenantId, company, vendor, barang, gudang, bulanIni, skala,
   })
 
   /*
@@ -575,7 +772,8 @@ async function isiPembelian(client, konteks) {
   ]
 
   for (const [nomor, spesifikasi] of pesanan.entries()) {
-    const hargaBeli = Math.round(spesifikasi.item.harga * 0.68)
+    // Harga beli adalah harga pokok barangnya, bukan turunan harga jual.
+    const hargaBeli = spesifikasi.item.pokok
     const dpp = Math.round(hargaBeli * spesifikasi.qty * skala)
     const pajak = spesifikasi.vendor.pkp ? Math.round((dpp * PPN) / 100) : 0
     const tanggalDokumen = tanggal(bulanIni.tahun, bulanIni.bulan, spesifikasi.hari)
@@ -610,7 +808,7 @@ async function isiPembelian(client, konteks) {
    * menunggu keputusan orang, dan itulah yang membuatnya layak ditunjukkan.
    */
   const item = barang[0]
-  const hargaPesanan = Math.round(item.harga * 0.68)
+  const hargaPesanan = item.pokok
   const hargaTagihan = Math.round(hargaPesanan * 1.14)
   const qty = 120
   const dpp = Math.round(hargaTagihan * qty * skala)

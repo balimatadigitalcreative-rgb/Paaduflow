@@ -24,26 +24,29 @@ pesannya menyebutkan perintahnya.
 
 ### Akun
 
-| Alamat | Peran | Dipakai di langkah |
-|---|---|---|
-| `direktur@demo.paaduflow.id` | Pemilik Tenant | 1–5 |
-| `akuntan@demo.paaduflow.id` | Admin Company | cadangan |
-| `penjualan@demo.paaduflow.id` | Anggota | cadangan |
+| Alamat | Nama | Peran | Dipakai |
+|---|---|---|---|
+| `budi@demo.paaduflow.id` | Budi Santoso | Pemilik Tenant | seluruh naskah |
+| `sari@demo.paaduflow.id` | Sari Wijaya | Admin Tenant | cadangan |
+| `rina@demo.paaduflow.id` | Rina Anggraini | Admin Company | cadangan |
+| `agus@demo.paaduflow.id` | Agus Pratama | Anggota | cadangan |
 
-Kata sandi ketiganya sama: `demo paadu flow 2026 yang panjang`
+Kata sandi keempatnya sama: `demo paadu flow 2026 yang panjang`
 
-**Pakai `direktur@` untuk seluruh naskah.** Dua akun lain ada untuk menjawab
+**Pakai `budi@` untuk seluruh naskah.** Tiga akun lain ada untuk menjawab
 pertanyaan tentang peran, bukan untuk dipakai berpindah-pindah di tengah demo.
 
 ### Yang sudah terisi
 
-| Company | Tahun fiskal | Isi |
-|---|---|---|
-| PT Sinar Rejeki Nusantara | mulai Januari | 12 bulan riwayat penuh |
-| PT Kencana Abadi Sejahtera | mulai **April** | riwayat lebih kecil |
+| Company | Tahun fiskal | Gudang | Isi |
+|---|---|---|---|
+| PT Nusantara Jaya Abadi | mulai Januari | Surabaya, Malang | 12 bulan riwayat penuh |
+| PT Nusantara Logistik Prima | mulai **April** | Surabaya | riwayat lebih kecil |
 
-Keduanya berisi faktur di lima status, tiga pesanan pembelian dengan satu
-penerimaan sebagian, dan satu tagihan yang gagal pencocokan tiga arah.
+Keduanya berisi 25 pelanggan, 20 vendor, 24 barang kopi dan 4 jasa, faktur di
+lima status dengan dua sampai empat baris masing-masing, sebagian berdiskon
+dokumen 5%, tiga pesanan pembelian dengan satu penerimaan sebagian, dan satu
+tagihan yang gagal pencocokan tiga arah.
 
 ### Periksa satu menit sebelum mulai
 
@@ -54,7 +57,7 @@ angka, seluruh naskah ini akan berjalan. Bila kosong, seed belum jalan.
 
 ## Menit 0–2 · Dasbor, dan kenapa angkanya layak dipercaya
 
-Masuk sebagai `direktur@demo.paaduflow.id`.
+Masuk sebagai `budi@demo.paaduflow.id`.
 
 **Yang ditunjukkan:** empat kartu KPI dan pendapatan dua belas bulan.
 
@@ -87,8 +90,11 @@ Ini bagian terpenting. Jangan diburu.
 
 **Penjualan → Faktur baru.**
 
-Isi satu baris: pelanggan mana pun dari daftar, deskripsi bebas, kuantitas 40,
-harga 185.000, pajak 11%. Simpan.
+Isi satu baris: pelanggan mana pun dari daftar, deskripsi `Kopi Arabika Gayo
+1 kg`, kuantitas 40, harga 176.500, pajak 11%. Simpan.
+
+Harga itu memang harga barangnya di daftar — bukan angka bulat karangan. Kalau
+ada yang mencocokkan nanti, angkanya cocok.
 
 > Perhatikan: dokumen ini **belum punya nomor**. Ia masih draf.
 
@@ -146,7 +152,7 @@ Di halaman faktur, tunjuk **tiga badge** di kepala halaman.
 
 ## Menit 7–9 · Berpindah company, periode fiskal ikut berpindah
 
-Buka pengalih company di kepala layar. Pilih **PT Kencana Abadi Sejahtera**.
+Buka pengalih company di kepala layar. Pilih **PT Nusantara Logistik Prima**.
 
 Banner selebar konten muncul menyebut nama company barunya.
 
