@@ -1,4 +1,5 @@
 import type {
+  DashboardAgeing,
   DashboardQueryPort,
   DashboardSummary,
   ProfitLossQueryPort,
@@ -761,12 +762,70 @@ export class PostgresDashboardQueries implements DashboardQueryPort {
     )
     const berjurnal = adaJurnal[0]?.ada === true
 
+    /*
+     * Umur piutang per ember, dihitung SERVER.
+     *
+     * Batas 30 dan 60 hari adalah keputusan akuntansi, bukan pilihan tampilan.
+     * Menghitungnya di klien berarti dua tempat memilikinya, dan dua tempat
+     * akan berbeda suatu hari — tepat saat seseorang membandingkan dasbor
+     * dengan laporan umur piutang.
+     *
+     * Faktur tanpa jatuh tempo tetap punya embernya sendiri. Menggabungkannya
+     * ke "belum jatuh tempo" menyembunyikan data yang kurang lengkap sebagai
+     * data yang sehat.
+     */
+    const { rows: umur } = await this.db.query<{
+      id: string
+      jumlah: string
+      nilai: string
+    }>(
+      `SELECT CASE
+                WHEN due_date IS NULL THEN 'tanpa_tempo'
+                WHEN due_date >= $3::date THEN 'belum_tempo'
+                WHEN $3::date - due_date <= 30 THEN 'lewat_30'
+                WHEN $3::date - due_date <= 60 THEN 'lewat_60'
+                ELSE 'lewat_lebih'
+              END AS id,
+              count(*) AS jumlah,
+              COALESCE(SUM(total), 0) AS nilai
+         FROM sales_documents
+        WHERE tenant_id = $1 AND company_id = $2
+          AND lifecycle_status = 'posted'
+          AND settlement_status IN ('unpaid', 'partially_paid')
+          AND deleted_at IS NULL
+        GROUP BY 1`,
+      [this.tenantId, companyId, today],
+    )
+
+    const EMBER: readonly { id: string; label: string; overdue: boolean }[] = [
+      { id: 'belum_tempo', label: 'Belum jatuh tempo', overdue: false },
+      { id: 'lewat_30', label: '1–30 hari', overdue: true },
+      { id: 'lewat_60', label: '31–60 hari', overdue: true },
+      { id: 'lewat_lebih', label: 'Lebih dari 60 hari', overdue: true },
+      { id: 'tanpa_tempo', label: 'Tanpa jatuh tempo', overdue: false },
+    ]
+
+    // SELURUH ember dikembalikan, termasuk yang nol. Ember yang hilang membuat
+    // grafik berubah bentuk antar company, dan orang membandingkan dua bentuk
+    // yang berbeda seolah keduanya sebanding.
+    const ageing: DashboardAgeing[] = EMBER.map((ember) => {
+      const baris = umur.find((satu) => satu.id === ember.id)
+      return {
+        ...ember,
+        amount: Number(baris?.nilai ?? 0),
+        count: Number(baris?.jumlah ?? 0),
+      }
+    })
+
+    const deretPendapatan = months.map((bulan) => bulan.revenue)
+
     const labelBulanLalu = namaBulan(months[months.length - 2]?.month ?? null)
 
     return {
       currency,
       months,
       awaitingApproval,
+      ageing,
       kpis: [
         {
           id: 'pendapatan',
@@ -777,6 +836,7 @@ export class PostgresDashboardQueries implements DashboardQueryPort {
           comparisonBasis: labelBulanLalu === null ? 'Tidak ada periode pembanding' : `vs ${labelBulanLalu}`,
           higherIsBetter: true,
           href: '#/akuntansi/buku-besar',
+          series: berjurnal ? deretPendapatan : [],
         },
         {
           id: 'piutang',
@@ -788,6 +848,13 @@ export class PostgresDashboardQueries implements DashboardQueryPort {
           // Piutang yang naik bukan kabar baik, meski panahnya ke atas.
           higherIsBetter: false,
           href: '#/penjualan',
+          /*
+           * Piutang beredar tidak punya deret historis: yang disimpan adalah
+           * keadaan sekarang, bukan posisinya di tiap akhir bulan. Sparkline
+           * yang digambar dari data yang tidak ada adalah grafik yang
+           * berbohong dengan meyakinkan.
+           */
+          series: [],
         },
         {
           id: 'jatuh-tempo',
@@ -801,6 +868,7 @@ export class PostgresDashboardQueries implements DashboardQueryPort {
           comparisonBasis: 'Posisi hari ini',
           higherIsBetter: false,
           href: '#/penjualan',
+          series: [],
         },
         {
           id: 'menunggu',
@@ -811,6 +879,7 @@ export class PostgresDashboardQueries implements DashboardQueryPort {
           comparisonBasis: 'Posisi hari ini',
           higherIsBetter: false,
           href: '#/penjualan',
+          series: [],
         },
       ],
     }

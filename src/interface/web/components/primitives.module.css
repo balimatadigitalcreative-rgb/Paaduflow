@@ -725,3 +725,180 @@
   outline: var(--border-width-focus) solid var(--border-focus);
   outline-offset: 2px;
 }
+
+/* ── Sparkline ────────────────────────────────────────────────────────────*/
+
+.sparkline {
+  display: block;
+  margin-block-start: var(--space-2);
+}
+
+.sparklineSvg {
+  inline-size: 100%;
+  block-size: var(--space-8);
+  overflow: visible;
+}
+
+.sparklineGaris {
+  fill: none;
+  stroke: var(--chart-series-8);
+  stroke-width: var(--border-width-focus);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.sparklineUjung {
+  fill: var(--chart-series-8);
+}
+
+/* Nada mengikuti kartunya: sparkline yang warnanya berbeda dari tren di atasnya
+   akan terbaca sebagai dua fakta yang bertentangan. */
+.sparklineSvg[data-tone='baik'] .sparklineGaris,
+.sparklineSvg[data-tone='baik'] .sparklineUjung {
+  stroke: var(--text-success);
+  fill: var(--text-success);
+}
+
+.sparklineSvg[data-tone='baik'] .sparklineGaris {
+  fill: none;
+}
+
+.sparklineSvg[data-tone='buruk'] .sparklineGaris,
+.sparklineSvg[data-tone='buruk'] .sparklineUjung {
+  stroke: var(--text-danger);
+  fill: var(--text-danger);
+}
+
+.sparklineSvg[data-tone='buruk'] .sparklineGaris {
+  fill: none;
+}
+
+.sparklineTabel {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ── Umur piutang ─────────────────────────────────────────────────────────*/
+
+.ageing {
+  display: grid;
+  gap: var(--space-4);
+  margin: 0;
+}
+
+.ageingDefs {
+  position: absolute;
+}
+
+.ageingArsir {
+  stroke: var(--bg-surface);
+  stroke-width: var(--border-width-focus);
+}
+
+.ageingBatang {
+  display: flex;
+  overflow: hidden;
+  block-size: var(--space-8);
+  border-radius: var(--radius-md);
+}
+
+/* Lebar segmen sebanding nilainya. Nilainya baru diketahui saat berjalan dan
+   masuk lewat `--bagian`; cara ia diterjemahkan menjadi lebar tetap di sini. */
+.ageingSegmen {
+  flex-grow: var(--bagian, 1);
+  min-inline-size: var(--space-1);
+}
+
+/* Palet Okabe–Ito, sudah aman untuk deuteranopia dan protanopia.
+   Tidak diganti — Color_System §2. */
+.ageingSegmen[data-seri='1'],
+.ageingPenanda[data-seri='1'] {
+  background-color: var(--chart-series-1);
+}
+
+.ageingSegmen[data-seri='2'],
+.ageingPenanda[data-seri='2'] {
+  background-color: var(--chart-series-2);
+}
+
+.ageingSegmen[data-seri='3'],
+.ageingPenanda[data-seri='3'] {
+  background-color: var(--chart-series-3);
+}
+
+.ageingSegmen[data-seri='4'],
+.ageingPenanda[data-seri='4'] {
+  background-color: var(--chart-series-4);
+}
+
+.ageingSegmen[data-seri='5'],
+.ageingPenanda[data-seri='5'] {
+  background-color: var(--chart-series-5);
+}
+
+/* Pembeda KEDUA: ember yang sudah lewat tempo diarsir diagonal. Warna
+   sendirian gagal untuk sekitar 8% pria — Color_System §2. */
+.ageingSegmen[data-tempo='true'],
+.ageingPenanda[data-tempo='true'] {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='6' height='6'%3E%3Cpath d='M0,6 L6,0' stroke='%23ffffff' stroke-width='2' stroke-opacity='.55'/%3E%3C/svg%3E");
+}
+
+.ageingLegenda {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ageingItem {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  gap: var(--space-3);
+  inline-size: 100%;
+  min-block-size: var(--size-control-md);
+  padding-inline: var(--space-2);
+  background: transparent;
+  border: var(--border-width-default) solid transparent;
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  cursor: pointer;
+  font: inherit;
+  text-align: start;
+}
+
+.ageingItem:hover:not([disabled]) {
+  background: var(--bg-surface-sunken);
+}
+
+.ageingItem[disabled] {
+  color: var(--text-tertiary);
+  cursor: default;
+}
+
+.ageingItem:focus-visible {
+  outline: var(--border-width-focus) solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+.ageingPenanda {
+  inline-size: var(--space-3);
+  block-size: var(--space-3);
+  border-radius: var(--radius-sm);
+}
+
+.ageingNilai {
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--font-weight-medium);
+}
+
+.ageingJumlah {
+  color: var(--text-secondary);
+  font-size: var(--font-size-caption);
+  font-variant-numeric: tabular-nums;
+}

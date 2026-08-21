@@ -282,6 +282,14 @@ export interface DashboardKpi {
   readonly comparisonBasis: string
   readonly higherIsBetter: boolean
   readonly href: string
+  /**
+   * Deret untuk sparkline di dalam kartu, urut lama ke baru.
+   *
+   * Kosong bila kartu itu tidak punya riwayat yang bermakna — "piutang jatuh
+   * tempo" dihitung relatif terhadap hari ini, dan menggambar garisnya berarti
+   * menggambar dua belas definisi berbeda sebagai satu tren.
+   */
+  readonly series: readonly number[]
 }
 
 export interface DashboardMonth {
@@ -290,12 +298,30 @@ export interface DashboardMonth {
   readonly revenue: number
 }
 
+/**
+ * Satu ember umur piutang.
+ *
+ * Embernya ditetapkan server, bukan klien. Batas 30/60 hari adalah keputusan
+ * akuntansi, dan dua tempat yang menghitungnya sendiri akan menghasilkan dua
+ * angka yang suatu hari berbeda — tepat saat seseorang membandingkan dasbor
+ * dengan laporan umur piutang.
+ */
+export interface DashboardAgeing {
+  readonly id: string
+  readonly label: string
+  readonly amount: number
+  readonly count: number
+  /** Sudah lewat jatuh tempo. Menentukan nada, dan diberi pola di grafik. */
+  readonly overdue: boolean
+}
+
 export interface DashboardSummary {
   readonly currency: string
   readonly kpis: readonly DashboardKpi[]
   readonly months: readonly DashboardMonth[]
   /** Jumlah dokumen yang benar-benar menunggu keputusan orang. */
   readonly awaitingApproval: number
+  readonly ageing: readonly DashboardAgeing[]
 }
 
 export interface DashboardQueryPort {

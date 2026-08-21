@@ -253,3 +253,58 @@
 .barisLaporan[data-kedalaman='3'] {
   padding-inline-start: var(--space-10);
 }
+
+/* ── Tata letak dasbor ────────────────────────────────────────────────────*/
+
+/* Baris tengah: pendapatan mendapat dua pertiga, umur piutang sepertiga.
+   Pendapatan dibaca sebagai bentuk sepanjang waktu dan butuh lebar; umur
+   piutang dibaca sebagai komposisi pada satu saat dan cukup di kolom sempit. */
+.dasborTengah {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.dasborBawah {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.panelDasbor {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--bg-surface);
+  border: var(--border-width-hairline) solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+}
+
+.panelJudul {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--font-size-body-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+/*
+ * Di bawah 768px seluruhnya menjadi satu kolom, dan urutannya mengikuti
+ * kepentingan — bukan urutan sumber.
+ *
+ * Di ponsel orang membaca dari atas lalu berhenti. Yang menuntut tindakan naik
+ * ke atas grafik: piutang jatuh tempo dan dokumen menunggu persetujuan adalah
+ * hal yang membuat orang membuka aplikasi di jalan, sedangkan grafik dua belas
+ * bulan adalah hal yang dibaca sambil duduk.
+ */
+@media (max-width: 767px) {
+  .dasborTengah,
+  .dasborBawah {
+    grid-template-columns: 1fr;
+  }
+
+  .dasborBawah {
+    order: -1;
+  }
+}

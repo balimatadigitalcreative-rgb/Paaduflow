@@ -241,3 +241,64 @@ test('setiap kartu KPI membawa basis pembanding dan jalur ke rinciannya', async 
   // yang jujur. Null, bukan nol.
   expect(data.kpis.find((kartu) => kartu.id === 'jatuh-tempo')!.changePercent).toBeNull()
 })
+
+test('umur piutang dibagi ke ember, dan seluruh ember dikembalikan', async () => {
+  const data = await dasbor()
+
+  /*
+   * Lima ember, termasuk yang nol. Ember yang hilang membuat grafik berubah
+   * bentuk antar company, dan orang membandingkan dua bentuk berbeda seolah
+   * keduanya sebanding.
+   */
+  expect(data.ageing).toHaveLength(5)
+
+  const id = data.ageing.map((ember) => ember.id)
+  expect(id).toEqual([
+    'belum_tempo',
+    'lewat_30',
+    'lewat_60',
+    'lewat_lebih',
+    'tanpa_tempo',
+  ])
+
+  // Yang lewat tempo ditandai, dan penandanya dipakai grafik untuk memberi
+  // arsir — pembeda kedua di samping warna (WCAG 1.4.1).
+  expect(data.ageing.filter((ember) => ember.overdue).map((ember) => ember.id)).toEqual([
+    'lewat_30',
+    'lewat_60',
+    'lewat_lebih',
+  ])
+})
+
+test('jumlah ember sama dengan piutang beredar di kartu KPI', async () => {
+  const data = await dasbor()
+
+  /*
+   * Dua angka yang dihitung dengan cara berbeda harus sepakat. Kartu KPI
+   * menjumlahkan seluruh faktur belum lunas; ember membaginya menurut umur.
+   * Bila keduanya berbeda, salah satunya salah — dan yang salah adalah angka
+   * yang dipakai menagih orang.
+   */
+  const dariEmber = data.ageing.reduce((jumlah, ember) => jumlah + ember.amount, 0)
+  const dariKpi = data.kpis.find((kartu) => kartu.id === 'piutang')!.value
+
+  expect(dariEmber).toBe(dariKpi)
+})
+
+test('sparkline hanya untuk kartu yang punya riwayat sungguhan', async () => {
+  const data = await dasbor()
+
+  // Pendapatan punya dua belas bulan.
+  const pendapatan = data.kpis.find((kartu) => kartu.id === 'pendapatan')!
+  expect(pendapatan.series).toHaveLength(12)
+  expect(pendapatan.series).toEqual(data.months.map((bulan) => bulan.revenue))
+
+  /*
+   * Sisanya TIDAK. Yang disimpan adalah keadaan sekarang, bukan posisinya di
+   * tiap akhir bulan — sparkline yang digambar dari data yang tidak ada adalah
+   * grafik yang berbohong dengan meyakinkan.
+   */
+  for (const id of ['piutang', 'jatuh-tempo', 'menunggu']) {
+    expect(data.kpis.find((kartu) => kartu.id === id)!.series, id).toEqual([])
+  }
+})

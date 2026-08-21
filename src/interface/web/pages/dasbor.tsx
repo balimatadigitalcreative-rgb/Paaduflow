@@ -7,6 +7,7 @@ import { formatAmount } from '#shared/money-format'
 
 import { api, ApiError, perusahaan } from '../api/client.js'
 import { Badge } from '../components/badge.js'
+import { AgeingChart } from '../components/ageing-chart.js'
 import { BarChart, type BarPoint } from '../components/bar-chart.js'
 import { Button } from '../components/button.js'
 import { KpiCard } from '../components/kpi-card.js'
@@ -167,6 +168,13 @@ function RingkasanAngka({
   const { data } = muat
   const adaAngka = data.months.some((bulan) => bulan.revenue !== 0)
 
+  // Diturunkan dari ember yang sama yang digambar grafik, bukan dihitung ulang.
+  // Dua sumber untuk angka yang sama akan menyimpang, dan yang menyimpang
+  // adalah angka yang dipakai menagih orang.
+  const emberTempo = data.ageing.filter((ember) => ember.overdue)
+  const jatuhTempo = emberTempo.reduce((jumlah, ember) => jumlah + ember.count, 0)
+  const nilaiJatuhTempo = emberTempo.reduce((jumlah, ember) => jumlah + ember.amount, 0)
+
   const titik: readonly BarPoint[] = data.months.map((bulan) => {
     const [tahun, nomor] = bulan.month.split('-')
     return {
@@ -196,38 +204,97 @@ function RingkasanAngka({
             comparisonBasis={kartu.comparisonBasis}
             higherIsBetter={kartu.higherIsBetter}
             href={kartu.href}
+            series={kartu.series}
+            seriesLabel={`Riwayat ${kartu.label.toLowerCase()} dua belas bulan terakhir`}
           />
         ))}
       </div>
 
       {/*
-        Company baru yang belum punya jurnal adalah keadaan sah, dan ia berbeda
-        dari gagal memuat. Grafik dua belas batang nol akan terlihat seperti
-        bisnis yang mati, bukan seperti buku yang belum dibuka.
-      */}
-      {adaAngka ? (
-        <BarChart
-          points={titik}
-          caption={`Pendapatan dua belas bulan terakhir (${data.currency})`}
-          valueHeader="Pendapatan"
-        />
-      ) : (
-        <div className={styles.notice}>
-          <strong>Belum ada pendapatan yang tercatat di buku besar.</strong>
-          <p>
-            Angka di sini lahir dari faktur yang sudah diposting, bukan dari draf. Buat satu
-            faktur dan posting untuk melihatnya muncul.
-          </p>
-          <Button onClick={() => pergiKe('penjualan/baru')}>Buat faktur pertama</Button>
-        </div>
-      )}
+        Baris tengah: grafik pendapatan di kiri, umur piutang di kanan.
 
-      {data.awaitingApproval > 0 ? (
-        <p className={styles.notice}>
-          <strong>{data.awaitingApproval} dokumen menunggu keputusan Anda.</strong>{' '}
-          <a href={href('penjualan')}>Buka daftar faktur</a>
-        </p>
-      ) : null}
+        Pendapatan mendapat ruang lebih besar karena ia dibaca sebagai bentuk
+        sepanjang waktu — dua belas titik butuh lebar. Umur piutang dibaca
+        sebagai komposisi pada satu saat, dan komposisi terbaca baik di kolom
+        sempit.
+      */}
+      <div className={styles.dasborTengah}>
+        <section className={styles.panelDasbor} aria-labelledby="judul-pendapatan">
+          <h3 id="judul-pendapatan" className={styles.panelJudul}>
+            Pendapatan dua belas bulan
+          </h3>
+
+          {adaAngka ? (
+            <BarChart
+              points={titik}
+              caption={`Pendapatan dua belas bulan terakhir (${data.currency})`}
+              valueHeader="Pendapatan"
+            />
+          ) : (
+            <div className={styles.notice}>
+              <strong>Belum ada pendapatan yang tercatat di buku besar.</strong>
+              <p>
+                Angka di sini lahir dari faktur yang sudah diposting, bukan dari draf. Buat
+                satu faktur dan posting untuk melihatnya muncul.
+              </p>
+              <Button onClick={() => pergiKe('penjualan/baru')}>Buat faktur pertama</Button>
+            </div>
+          )}
+        </section>
+
+        <section className={styles.panelDasbor} aria-labelledby="judul-umur">
+          <h3 id="judul-umur" className={styles.panelJudul}>
+            Umur piutang
+          </h3>
+
+          {/* Setiap ember dapat diklik menuju daftar fakturnya — grafik yang
+              tidak dapat ditelusuri adalah jalan buntu (Flow_Archetypes 6). */}
+          <AgeingChart
+            buckets={data.ageing}
+            caption={`Umur piutang menurut jatuh tempo (${data.currency})`}
+            format={(nilai) => formatAmount(nilai, data.currency)}
+            onPilih={() => pergiKe('penjualan')}
+          />
+        </section>
+      </div>
+
+      {/*
+        Baris bawah: daftar ringkas yang menuntut tindakan.
+
+        Diletakkan paling bawah bukan karena paling tidak penting, melainkan
+        karena ia paling spesifik — mata membaca dari agregat ke rincian, dan
+        daftar tindakan hanya bermakna setelah orang tahu keadaan umumnya.
+      */}
+      <div className={styles.dasborBawah}>
+        <section className={styles.panelDasbor} aria-labelledby="judul-tempo">
+          <h3 id="judul-tempo" className={styles.panelJudul}>
+            Piutang jatuh tempo
+          </h3>
+          {jatuhTempo === 0 ? (
+            <p className={styles.metaLabel}>Tidak ada faktur yang lewat jatuh tempo.</p>
+          ) : (
+            <p className={styles.notice}>
+              <strong>{jatuhTempo} faktur</strong> sudah lewat jatuh tempo, senilai{' '}
+              {formatAmount(nilaiJatuhTempo, data.currency)}.{' '}
+              <a href={href('penjualan')}>Buka daftar faktur</a>
+            </p>
+          )}
+        </section>
+
+        <section className={styles.panelDasbor} aria-labelledby="judul-persetujuan">
+          <h3 id="judul-persetujuan" className={styles.panelJudul}>
+            Menunggu persetujuan
+          </h3>
+          {data.awaitingApproval === 0 ? (
+            <p className={styles.metaLabel}>Tidak ada dokumen yang menunggu keputusan.</p>
+          ) : (
+            <p className={styles.notice}>
+              <strong>{data.awaitingApproval} dokumen</strong> menunggu keputusan Anda.{' '}
+              <a href={href('penjualan')}>Buka daftar faktur</a>
+            </p>
+          )}
+        </section>
+      </div>
     </section>
   )
 }

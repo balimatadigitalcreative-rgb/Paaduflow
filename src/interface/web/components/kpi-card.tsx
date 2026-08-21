@@ -34,6 +34,17 @@ export interface KpiCardProps {
   readonly higherIsBetter: boolean
   /** Jalur ke rinciannya. Wajib — lihat aturan 3 di atas. */
   readonly href: string
+  /**
+   * Deret sparkline, urut lama ke baru. Kosong berarti tidak ada riwayat yang
+   * bermakna, dan sparkline-nya tidak digambar sama sekali.
+   *
+   * Sparkline TIDAK menggantikan angka tren di atasnya. Ia menunjukkan bentuk
+   * perjalanannya — naik lalu turun tidak sama dengan naik terus, meski
+   * persentase akhirnya identik.
+   */
+  readonly series?: readonly number[]
+  /** Dibaca screen reader sebagai keterangan tabel sparkline. */
+  readonly seriesLabel?: string
 }
 
 export function KpiCard(props: KpiCardProps): ReactNode {
@@ -64,6 +75,90 @@ export function KpiCard(props: KpiCardProps): ReactNode {
           <span className={styles.kpiBasis}>{props.comparisonBasis}</span>
         </span>
       )}
+
+      {props.series === undefined || props.series.length < 2 ? null : (
+        <Sparkline
+          nilai={props.series}
+          nada={nada}
+          keterangan={props.seriesLabel ?? `Riwayat ${props.label}`}
+        />
+      )}
     </a>
+  )
+}
+
+
+/**
+ * Sparkline — garis kecil tanpa sumbu, di dalam kartu KPI.
+ *
+ * Tanpa sumbu dengan sengaja: pada 40px tinggi, label sumbu tidak terbaca dan
+ * hanya menambah derau. Yang dibaca dari sparkline adalah BENTUK, bukan nilai —
+ * nilainya sudah ada sebagai angka besar di atasnya.
+ *
+ * Tabel tersembunyi membawa angkanya untuk screen reader. Grafik yang hanya
+ * dapat dilihat mata bukan grafik yang dapat dipertanggungjawabkan.
+ */
+function Sparkline({
+  nilai,
+  nada,
+  keterangan,
+}: {
+  readonly nilai: readonly number[]
+  readonly nada: string
+  readonly keterangan: string
+}): ReactNode {
+  const tertinggi = Math.max(...nilai)
+  const terendah = Math.min(...nilai)
+  const rentang = tertinggi - terendah || 1
+
+  const titik = nilai
+    .map((satu, indeks) => {
+      const x = (indeks / (nilai.length - 1)) * 100
+      const y = 100 - ((satu - terendah) / rentang) * 100
+      return `${x.toFixed(2)},${y.toFixed(2)}`
+    })
+    .join(' ')
+
+  const terakhir = nilai[nilai.length - 1] ?? 0
+  const akhirX = 100
+  const akhirY = 100 - ((terakhir - terendah) / rentang) * 100
+
+  return (
+    <span className={styles.sparkline}>
+      <svg
+        viewBox="0 0 100 100"
+        preserveAspectRatio="none"
+        className={styles.sparklineSvg}
+        data-tone={nada}
+        role="img"
+        aria-label={keterangan}
+      >
+        <polyline className={styles.sparklineGaris} points={titik} vectorEffect="non-scaling-stroke" />
+        {/*
+          Titik di ujung kanan menandai nilai TERKINI. Tanpa itu, garis yang
+          berakhir di tengah tinggi tidak dapat dibedakan dari garis yang
+          terpotong — dan arah terakhir adalah hal pertama yang dicari mata.
+        */}
+        <circle className={styles.sparklineUjung} cx={akhirX} cy={akhirY} r="3" />
+      </svg>
+
+      <table className={styles.sparklineTabel}>
+        <caption>{keterangan}</caption>
+        <thead>
+          <tr>
+            <th scope="col">Periode</th>
+            <th scope="col">Nilai</th>
+          </tr>
+        </thead>
+        <tbody>
+          {nilai.map((satu, indeks) => (
+            <tr key={`${indeks}-${satu}`}>
+              <th scope="row">{`Periode ${indeks + 1}`}</th>
+              <td>{satu.toLocaleString('id-ID')}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </span>
   )
 }
