@@ -52,3 +52,5 @@ Thumbs.db
 *.sqlite
 *.sqlite3
 pgdata/
+dist/web-baru
+dist/web-lama

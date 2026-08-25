@@ -290,9 +290,42 @@ if (pasang.kode !== 0) berhenti('npm ci', pasang)
  * Verifikasi kesehatan tidak menangkapnya, dan tidak bisa: ia membuktikan ada
  * yang menjawab, bukan bahwa yang menjawab adalah commit ini.
  */
-langkah(3, 'npm run build (web + server)')
-const bangun = await ssh(`cd ${APP_DIR} && npm run build`, { tampilkan: true })
-if (bangun.kode !== 0) berhenti('npm run build', bangun)
+langkah(3, 'Build (web ke samping, lalu ditukar)')
+
+/*
+ * Antarmuka dibangun ke DIREKTORI LAIN, lalu ditukar. Bukan langsung ke
+ * tempatnya.
+ *
+ * `emptyOutDir: true` di vite.config.ts membuat Vite MENGOSONGKAN `dist/web`
+ * sebelum menulis isinya yang baru. Proses lama masih menyajikan direktori itu
+ * selama enam detik berikutnya, sehingga setiap pemuatan halaman di jendela itu
+ * menjawab 404 — index.html memang sedang tidak ada.
+ *
+ * Ini terukur, bukan dugaan: pemantauan pertama mencatat 404 pada `/` dan
+ * `/readyz` tepat pada detik build berjalan, sementara `/healthz` — yang tidak
+ * menyentuh berkas — tetap 200. Mode cluster tidak menutup celah ini sama
+ * sekali; ia terjadi jauh sebelum proses mana pun disegarkan.
+ *
+ * Penukarannya dua `mv` berurutan. Jendela di antara keduanya adalah satu
+ * operasi rename pada filesystem yang sama — mikrodetik, bukan detik.
+ *
+ * `dist/server` tidak perlu diperlakukan begini: proses lama sudah memuat
+ * bundelnya ke memori, jadi menulis ulang berkasnya tidak mempengaruhi apa yang
+ * sedang berjalan.
+ */
+const bangun = await ssh(
+  [
+    `cd ${APP_DIR}`,
+    `rm -rf dist/web-baru dist/web-lama`,
+    `npx vite build --outDir ${APP_DIR}/dist/web-baru --emptyOutDir`,
+    `npm run build:server`,
+    `if [ -d dist/web ]; then mv dist/web dist/web-lama; fi`,
+    `mv dist/web-baru dist/web`,
+    `rm -rf dist/web-lama`,
+  ].join(' && '),
+  { tampilkan: true },
+)
+if (bangun.kode !== 0) berhenti('build', bangun)
 
 langkah(4, 'Memeriksa migrasi tertunda')
 const tertunda = await ssh(
