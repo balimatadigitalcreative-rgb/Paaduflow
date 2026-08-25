@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { ReactNode } from 'react'
 
 import type {
   SalesDocumentDetail,
   SalesDocumentSummary,
 } from '#application/queries'
-import { formatAmount } from '#shared/money-format'
 
 import { api, ApiError, perusahaan } from '../api/client.js'
 import { Badge, StatusBadge, type DocumentStatus } from '../components/badge.js'
@@ -22,6 +22,7 @@ import type { Column, TableState } from '../components/table/types.js'
 import { Tabs, TabPanel } from '../components/tabs.js'
 import { useToast } from '../components/toast.js'
 import { useHeaderHalaman } from '../shell/page-header.js'
+import { useFormat } from '../i18n/use-format.js'
 import { href, pergiKe } from '../router.js'
 import styles from './pages.module.css'
 
@@ -39,20 +40,6 @@ interface Konteks {
   readonly currency: string
 }
 
-/** Sumbu kedua dan ketiga — Information Architecture §3. */
-const LABEL_PELUNASAN: Record<string, string> = {
-  unpaid: 'Belum dibayar',
-  partially_paid: 'Dibayar sebagian',
-  paid: 'Lunas',
-  overdue: 'Jatuh tempo',
-  written_off: 'Dihapusbukukan',
-}
-
-const LABEL_PEMENUHAN: Record<string, string> = {
-  not_fulfilled: 'Belum dikirim',
-  partially_fulfilled: 'Terkirim sebagian',
-  fulfilled: 'Terkirim',
-}
 
 const STATUS_DIKENAL = new Set([
   'draft',
@@ -77,13 +64,11 @@ function status(nilai: string): DocumentStatus {
  * Component_Specs_Composite §2. Ketiganya adalah pertanyaan yang benar-benar
  * dibawa orang ke daftar faktur.
  */
-const CHIP_FAKTUR: readonly FilterChip[] = [
-  { id: 'draft', label: 'Draf' },
-  { id: 'pending_approval', label: 'Menunggu persetujuan' },
-  { id: 'posted', label: 'Terposting' },
-]
+const CHIP_FAKTUR = ['draft', 'pending_approval', 'posted'] as const
 
 export function DaftarFaktur({ konteks }: { readonly konteks: Konteks }): ReactNode {
+  const { t } = useTranslation('penjualan')
+  const format = useFormat()
   const [state, setState] = useState<TableState<SalesDocumentSummary>>({ kind: 'loading' })
   const [semua, setSemua] = useState<readonly SalesDocumentSummary[]>([])
   const [filterAktif, setFilterAktif] = useState<readonly string[]>([])
@@ -108,9 +93,7 @@ export function DaftarFaktur({ konteks }: { readonly konteks: Konteks }): ReactN
     if (cocok.length === 0) {
       setState({
         kind: 'no_match',
-        activeFilters: filter.map(
-          (id) => CHIP_FAKTUR.find((chip) => chip.id === id)?.label ?? id,
-        ),
+        activeFilters: filter.map((id) => t(`chip.${id}` as 'chip.draft', { defaultValue: id })),
       })
       return
     }
@@ -129,7 +112,7 @@ export function DaftarFaktur({ konteks }: { readonly konteks: Konteks }): ReactN
     } catch (galat) {
       setState({
         kind: 'error',
-        message: galat instanceof ApiError ? galat.message : 'Tidak dapat memuat daftar faktur.',
+        message: galat instanceof ApiError ? galat.message : t('daftar.gagal'),
       })
     }
   }
@@ -143,47 +126,59 @@ export function DaftarFaktur({ konteks }: { readonly konteks: Konteks }): ReactN
     tampilkan(semua, berikut)
   }
 
+  /*
+   * Chip dirakit dari id, bukan disimpan sebagai teks.
+   *
+   * Id-nya yang dikirim ke server sebagai filter. Menyimpan label bersamanya
+   * membuat terjemahan ikut terbawa ke parameter kueri suatu hari, dan itu
+   * jenis cacat yang hanya muncul setelah bahasa kedua dipakai sungguhan.
+   */
+  const chip: readonly FilterChip[] = CHIP_FAKTUR.map((id) => ({
+    id,
+    label: t(`chip.${id}`),
+  }))
+
   const columns: readonly Column<SalesDocumentSummary>[] = useMemo(
     () => [
       {
         id: 'number',
-        header: 'Nomor',
+        header: t('daftar.kolomNomor'),
         identifier: true,
         sortable: true,
         // Draf belum bernomor — nomor diberikan saat submit (D-007). Ia tetap
         // harus dapat dibuka, jadi kolomnya menampilkan penanda, bukan kosong.
-        cell: (row) => row.number ?? '(draf)',
+        cell: (row) => row.number ?? t('daftar.draf'),
         sortValue: (row) => row.number ?? '',
       },
       {
         id: 'date',
-        header: 'Tanggal',
+        header: t('daftar.kolomTanggal'),
         sortable: true,
-        cell: (row) => row.documentDate,
+        cell: (row) => format.tanggalPendek(row.documentDate),
         sortValue: (row) => row.documentDate,
       },
       {
         id: 'customer',
-        header: 'Customer',
+        header: t('daftar.kolomCustomer'),
         sortable: true,
         cell: (row) => row.customerName,
         sortValue: (row) => row.customerName,
       },
       {
         id: 'status',
-        header: 'Status',
+        header: t('daftar.kolomStatus'),
         cell: (row) => <StatusBadge status={status(row.lifecycleStatus)} />,
       },
       {
         id: 'total',
-        header: 'Total',
+        header: t('daftar.kolomTotal'),
         align: 'end',
         sortable: true,
-        cell: (row) => formatAmount(row.total, row.currency),
+        cell: (row) => format.angka(row.total, row.currency),
         sortValue: (row) => row.total,
       },
     ],
-    [],
+    [t, format],
   )
 
   const { preferences } = usePreferences()
@@ -192,12 +187,12 @@ export function DaftarFaktur({ konteks }: { readonly konteks: Konteks }): ReactN
   return (
     <div className={styles.stack}>
       <FilterBar
-        label="Saring faktur menurut status"
-        chips={CHIP_FAKTUR}
+        label={t('daftar.saring')}
+        chips={chip}
         activeIds={filterAktif}
         search={{
           value: tabel.kueri,
-          label: 'Cari nomor atau customer',
+          label: t('daftar.cari'),
           onChange: tabel.setKueri,
         }}
         onToggle={(id) =>
@@ -211,19 +206,21 @@ export function DaftarFaktur({ konteks }: { readonly konteks: Konteks }): ReactN
       />
 
       <DataTable
-        caption="Faktur Penjualan"
+        caption={t('daftar.caption')}
         columns={columns}
         state={tabel.terapkan(state, [])}
         rowId={(row) => row.id}
         rowHref={(row) => href(`penjualan/${row.id}`)}
         filter={Object.fromEntries(filterAktif.map((id) => [id, 'aktif']))}
         activeFilterLabels={filterAktif.map(
-          (id) => CHIP_FAKTUR.find((chip) => chip.id === id)?.label ?? id,
+          (id) => chip.find((satu) => satu.id === id)?.label ?? id,
         )}
         sort={tabel.sort}
         density={preferences.density}
         companyName={konteks.companyName}
-        emptyAction={<Button onClick={() => pergiKe('penjualan/baru')}>Buat faktur pertama</Button>}
+        emptyAction={
+          <Button onClick={() => pergiKe('penjualan/baru')}>{t('daftar.buatPertama')}</Button>
+        }
         onSortChange={tabel.setSort}
         onRetry={() => void muat()}
         onClearFilters={() => ubahFilter([])}
@@ -241,6 +238,8 @@ export function DetailFaktur({
   readonly konteks: Konteks
   readonly documentId: string
 }): ReactNode {
+  const { t } = useTranslation('penjualan')
+  const format = useFormat()
   const [dokumen, setDokumen] = useState<SalesDocumentDetail | null>(null)
   const [galat, setGalat] = useState<string | null>(null)
   const [sedang, setSedang] = useState(false)
@@ -254,7 +253,7 @@ export function DetailFaktur({
       )
       setDokumen(jawaban.data)
     } catch (kesalahan) {
-      setGalat(kesalahan instanceof ApiError ? kesalahan.message : 'Tidak dapat memuat faktur.')
+      setGalat(kesalahan instanceof ApiError ? kesalahan.message : t('detail.gagalMuat'))
     }
   }
 
@@ -284,23 +283,29 @@ export function DetailFaktur({
               <>
                 <StatusBadge status={status(dokumen.lifecycleStatus)} />
                 <Badge tone={dokumen.settlementStatus === 'paid' ? 'success' : 'neutral'}>
-                  {LABEL_PELUNASAN[dokumen.settlementStatus] ?? dokumen.settlementStatus}
+                  {t(`pelunasan.${dokumen.settlementStatus}`, {
+                    ns: 'umum',
+                    defaultValue: dokumen.settlementStatus,
+                  })}
                 </Badge>
                 <Badge tone={dokumen.fulfillmentStatus === 'fulfilled' ? 'success' : 'neutral'}>
-                  {LABEL_PEMENUHAN[dokumen.fulfillmentStatus] ?? dokumen.fulfillmentStatus}
+                  {t(`pemenuhan.${dokumen.fulfillmentStatus}`, {
+                    ns: 'umum',
+                    defaultValue: dokumen.fulfillmentStatus,
+                  })}
                 </Badge>
               </>
             ),
             tabs: (
               <Tabs
-                label="Bagian faktur"
+                label={t('detail.bagian')}
                 activeId={tab}
                 onSelect={setTab}
                 items={[
-                  { id: 'ringkasan', label: 'Ringkasan' },
-                  { id: 'baris', label: 'Baris', count: dokumen.lines.length },
-                  { id: 'terkait', label: 'Dokumen terkait', count: jumlahTerkait },
-                  { id: 'aktivitas', label: 'Aktivitas' },
+                  { id: 'ringkasan', label: t('detail.tabRingkasan') },
+                  { id: 'baris', label: t('detail.tabBaris'), count: dokumen.lines.length },
+                  { id: 'terkait', label: t('detail.tabTerkait'), count: jumlahTerkait },
+                  { id: 'aktivitas', label: t('detail.tabAktivitas') },
                 ]}
               />
             ),
@@ -350,7 +355,7 @@ export function DetailFaktur({
       // "Syarat belum terpenuhi", "Tidak ada aturan akun untuk …" — dan pesan
       // karangan layar akan lebih miskin daripada itu.
       setGalat(
-        kesalahan instanceof ApiError ? kesalahan.message : 'Tindakan gagal tanpa keterangan.',
+        kesalahan instanceof ApiError ? kesalahan.message : t('detail.gagalTindakan'),
       )
     } finally {
       setSedang(false)
@@ -358,7 +363,11 @@ export function DetailFaktur({
   }
 
   if (dokumen === null) {
-    return galat === null ? <p>Memuat…</p> : <p className={styles.noticeDanger}>{galat}</p>
+    return galat === null ? (
+      <p>{t('detail.memuat')}</p>
+    ) : (
+      <p className={styles.noticeDanger}>{galat}</p>
+    )
   }
 
   const periode = dokumen.documentDate.slice(0, 7)
@@ -372,43 +381,51 @@ export function DetailFaktur({
       <TabPanel id="ringkasan" activeId={tab}>
         <div className={styles.meta}>
           <div>
-            <div className={styles.metaLabel}>Nomor</div>
+            <div className={styles.metaLabel}>{t('detail.nomor')}</div>
             <div className={styles.metaValue}>{dokumen.number ?? '(belum bernomor)'}</div>
           </div>
           <div>
-            <div className={styles.metaLabel}>Customer</div>
+            <div className={styles.metaLabel}>{t('detail.customer')}</div>
             <div className={styles.metaValue}>{dokumen.customerName}</div>
           </div>
           <div>
-            <div className={styles.metaLabel}>Tanggal</div>
+            <div className={styles.metaLabel}>{t('detail.tanggal')}</div>
             <div className={styles.metaValue}>{dokumen.documentDate}</div>
           </div>
           <div>
             <div className={styles.metaLabel}>DPP</div>
-            <div className={styles.metaValue}>{formatAmount(dokumen.taxBase, dokumen.currency)}</div>
+            <div className={styles.metaValue}>{format.angka(dokumen.taxBase, dokumen.currency)}</div>
           </div>
           <div>
-            <div className={styles.metaLabel}>Pajak</div>
-            <div className={styles.metaValue}>{formatAmount(dokumen.taxTotal, dokumen.currency)}</div>
+            <div className={styles.metaLabel}>{t('detail.pajak')}</div>
+            <div className={styles.metaValue}>{format.angka(dokumen.taxTotal, dokumen.currency)}</div>
           </div>
           <div>
-            <div className={styles.metaLabel}>Total</div>
-            <div className={styles.metaValue}>{formatAmount(dokumen.total, dokumen.currency)}</div>
+            <div className={styles.metaLabel}>{t('detail.total')}</div>
+            <div className={styles.metaValue}>{format.angka(dokumen.total, dokumen.currency)}</div>
           </div>
         </div>
       </TabPanel>
 
       <TabPanel id="baris" activeId={tab}>
         <table className={styles.matchTable}>
-          <caption>Baris faktur</caption>
+          <caption>{t('detail.captionBaris')}</caption>
           <thead>
             <tr>
               <th scope="col">#</th>
-              <th scope="col">Deskripsi</th>
-              <th scope="col" data-numeric="true">Kuantitas</th>
-              <th scope="col" data-numeric="true">Harga satuan</th>
-              <th scope="col" data-numeric="true">DPP</th>
-              <th scope="col" data-numeric="true">Pajak</th>
+              <th scope="col">{t('detail.kolomDeskripsi')}</th>
+              <th scope="col" data-numeric="true">
+                {t('detail.kolomKuantitas')}
+              </th>
+              <th scope="col" data-numeric="true">
+                {t('detail.kolomHargaSatuan')}
+              </th>
+              <th scope="col" data-numeric="true">
+                {t('detail.kolomDpp')}
+              </th>
+              <th scope="col" data-numeric="true">
+                {t('detail.kolomPajak')}
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -423,9 +440,9 @@ export function DetailFaktur({
                 <td data-numeric="true">
                   {baris.qty} {baris.uom}
                 </td>
-                <td data-numeric="true">{formatAmount(baris.unitPrice, dokumen.currency)}</td>
-                <td data-numeric="true">{formatAmount(baris.netAmount, dokumen.currency)}</td>
-                <td data-numeric="true">{formatAmount(baris.taxAmount, dokumen.currency)}</td>
+                <td data-numeric="true">{format.angka(baris.unitPrice, dokumen.currency)}</td>
+                <td data-numeric="true">{format.angka(baris.netAmount, dokumen.currency)}</td>
+                <td data-numeric="true">{format.angka(baris.taxAmount, dokumen.currency)}</td>
               </tr>
             ))}
           </tbody>
@@ -441,18 +458,18 @@ export function DetailFaktur({
       <TabPanel id="terkait" activeId={tab}>
         {dokumen.journalId === null ? (
           <p className={styles.notice}>
-            Belum ada dokumen terkait. Jurnal akan muncul di sini setelah faktur diposting.
+            {t('detail.belumAdaTerkait')}
           </p>
         ) : (
           <div className={styles.meta}>
             <div>
-              <div className={styles.metaLabel}>Jurnal</div>
+              <div className={styles.metaLabel}>{t('detail.jurnal')}</div>
               <div className={styles.metaValue}>
-                <a href={href('akuntansi/buku-besar')}>Lihat di buku besar</a>
+                <a href={href('akuntansi/buku-besar')}>{t('detail.lihatBukuBesar')}</a>
               </div>
             </div>
             <div>
-              <div className={styles.metaLabel}>Diposting</div>
+              <div className={styles.metaLabel}>{t('detail.diposting')}</div>
               <div className={styles.metaValue}>{dokumen.postedAt ?? '—'}</div>
             </div>
           </div>
@@ -461,9 +478,8 @@ export function DetailFaktur({
 
       <TabPanel id="aktivitas" activeId={tab}>
         <p className={styles.notice}>
-          Audit trail belum tersedia di antarmuka. Perubahan sudah tercatat di{' '}
-          <code>audit_log</code>, tetapi jalur bacanya belum dibangun — dicatat sebagai
-          keterbatasan, bukan sebagai fitur yang hilang diam-diam.
+          {t('detail.auditBelumAda')} <code>audit_log</code>
+          {t('detail.auditBelumAdaLanjutan')}
         </p>
       </TabPanel>
 
@@ -475,21 +491,21 @@ export function DetailFaktur({
         */}
         {dokumen.lifecycleStatus === 'draft' ? (
           <Button loading={sedang} onClick={() => void tindakan('submit', { period_key: periode })}>
-            Ajukan
+            {t('detail.ajukan')}
           </Button>
         ) : null}
         {dokumen.lifecycleStatus === 'submitted' ? (
           <Button loading={sedang} onClick={() => void tindakan('approve')}>
-            Setujui
+            {t('detail.setujui')}
           </Button>
         ) : null}
         {dokumen.lifecycleStatus === 'approved' ? (
           <Button loading={sedang} onClick={() => void tindakan('post')}>
-            Posting ke buku besar
+            {t('detail.posting')}
           </Button>
         ) : null}
         <Button variant="ghost" onClick={() => pergiKe('penjualan')}>
-          Kembali ke daftar
+          {t('detail.kembali')}
         </Button>
       </div>
     </div>
@@ -505,6 +521,7 @@ interface Pelanggan {
 }
 
 export function FakturBaru({ konteks }: { readonly konteks: Konteks }): ReactNode {
+  const { t } = useTranslation('penjualan')
   const [pelanggan, setPelanggan] = useState<readonly Pelanggan[]>([])
   const [customerId, setCustomerId] = useState('')
   const [tanggal, setTanggal] = useState<Date | null>(() => new Date())
@@ -525,8 +542,8 @@ export function FakturBaru({ konteks }: { readonly konteks: Konteks }): ReactNod
       setErrors([
         {
           fieldId: 'faktur-customer',
-          label: 'Customer',
-          message: 'Daftar customer tidak dapat dimuat.',
+          label: t('baru.customer'),
+          message: t('baru.customerGagal'),
         },
       ])
     }
@@ -561,8 +578,8 @@ export function FakturBaru({ konteks }: { readonly konteks: Konteks }): ReactNod
       setErrors([
         {
           fieldId: 'faktur-customer',
-          label: 'Faktur',
-          message: galat instanceof ApiError ? galat.message : 'Faktur tidak dapat dibuat.',
+          label: t('baru.faktur'),
+          message: galat instanceof ApiError ? galat.message : t('baru.fakturGagal'),
         },
       ])
     } finally {
@@ -577,7 +594,7 @@ export function FakturBaru({ konteks }: { readonly konteks: Konteks }): ReactNod
       <div className={styles.row}>
         <Select
           id="faktur-customer"
-          label="Customer"
+          label={t('baru.customer')}
           value={customerId}
           options={pelanggan.map((item) => ({
             value: item.id,
@@ -590,7 +607,7 @@ export function FakturBaru({ konteks }: { readonly konteks: Konteks }): ReactNod
         />
         <DateField
           id="faktur-tanggal"
-          label="Tanggal dokumen"
+          label={t('baru.tanggalDokumen')}
           value={tanggal}
           onChange={setTanggal}
         />
@@ -605,10 +622,10 @@ export function FakturBaru({ konteks }: { readonly konteks: Konteks }): ReactNod
 
       <div className={styles.row}>
         <Button loading={sedang} disabled={customerId === ''} onClick={() => void simpan()}>
-          Simpan sebagai draf
+          {t('baru.simpanDraf')}
         </Button>
         <Button variant="ghost" onClick={() => pergiKe('penjualan')}>
-          Batal
+          {t('aksi.batal', { ns: 'umum' })}
         </Button>
       </div>
     </div>

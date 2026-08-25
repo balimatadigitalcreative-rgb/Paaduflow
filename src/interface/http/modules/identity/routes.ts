@@ -13,6 +13,17 @@ import { sendDenial, sendError } from '../../context.js'
  * menyerangnya.
  */
 
+/**
+ * Bahasa yang diterima, dibatasi di skema.
+ *
+ * Daftarnya sengaja diulang di tiga tempat — di sini, di CHECK kolom, dan di
+ * `BAHASA` pada lapisan web. Menambah bahasa memang menuntut ketiganya berubah,
+ * dan itu yang diinginkan: berkas locale harus ikut, dan menaruh satu daftar
+ * bersama di `#shared` akan membuat penambahan terasa selesai padahal
+ * terjemahannya belum ada.
+ */
+const Bahasa = Type.Union([Type.Literal('id'), Type.Literal('en')])
+
 const KonteksPermintaan = Type.Object({
   email: Type.String({ format: 'email', maxLength: 320 }),
   password: Type.String({ minLength: 1, maxLength: 1024 }),
@@ -191,6 +202,88 @@ export function registerIdentityRoutes(app: PaaduServer, services: AppServices):
       // Sesi milik orang lain dan sesi yang tidak ada menjawab sama.
       if (!dicabut) return sendError(reply, 404, 'not_found', 'Sesi tidak ditemukan.')
       return reply.status(204).send()
+    },
+  )
+
+  /**
+   * Profil orang yang sedang masuk.
+   *
+   * Sebelum ini, antarmuka tidak punya SATU pun jalan baca untuk mengetahui
+   * nama pengguna — menu profil menampilkan "Pengguna" bagi semua orang. Nama
+   * dan bahasa datang bersama karena keduanya dibutuhkan pada momen yang sama:
+   * saat shell digambar pertama kali.
+   */
+  app.get(
+    '/v1/me',
+    {
+      schema: {
+        response: {
+          200: Type.Object({
+            success: Type.Literal(true),
+            data: Type.Object({
+              id: Type.String(),
+              email: Type.String(),
+              full_name: Type.String(),
+              language: Bahasa,
+            }),
+          }),
+        },
+      },
+    },
+    async (request, reply) => {
+      if (!(await requireUser(request, reply, services))) return reply
+
+      const profil = await services.bacaProfil(request.authenticated!.userId)
+
+      // Token sah tetapi penggunanya tidak ada lagi: 401, bukan 404. Yang
+      // salah bukan alamat yang diminta — yang salah sesinya.
+      if (profil === null) {
+        return sendError(reply, 401, 'unauthenticated', 'Sesi tidak berlaku.')
+      }
+
+      return reply.status(200).send({
+        success: true,
+        data: {
+          id: profil.id,
+          email: profil.email,
+          full_name: profil.fullName,
+          language: profil.language,
+        },
+      })
+    },
+  )
+
+  /**
+   * Bahasa antarmuka pilihan pengguna.
+   *
+   * PUT, bukan POST: menyimpan pilihan yang sama dua kali menghasilkan keadaan
+   * yang sama. Idempotensinya melekat pada bentuk operasinya, bukan pada kunci
+   * — dan itulah sebabnya `withIdempotency` tidak dipakai di sini. Helper itu
+   * pun menuntut konteks company untuk menyimpan jawabannya, sementara
+   * preferensi ini milik orangnya dan berlaku di seluruh company.
+   *
+   * Preferensi, bukan dokumen: tidak ada nomor, tidak ada `document_version`,
+   * dan tidak ada jejak posting. Menulisnya ulang tidak merusak apa pun.
+   */
+  app.put(
+    '/v1/me/preferences/language',
+    {
+      schema: {
+        body: Type.Object({ language: Bahasa }),
+        response: {
+          200: Type.Object({
+            success: Type.Literal(true),
+            data: Type.Object({ language: Bahasa }),
+          }),
+        },
+      },
+    },
+    async (request, reply) => {
+      if (!(await requireUser(request, reply, services))) return reply
+
+      await services.simpanBahasa(request.authenticated!.userId, request.body.language)
+
+      return reply.status(200).send({ success: true, data: { language: request.body.language } })
     },
   )
 

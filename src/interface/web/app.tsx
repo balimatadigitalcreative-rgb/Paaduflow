@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   IconBook2,
   IconLayoutDashboard,
@@ -10,7 +11,8 @@ import type { ReactNode } from 'react'
 
 import { periodOf, formatPeriod } from '#shared/fiscal-period'
 
-import { ApiError, api, onSesiHabis, sesi } from './api/client.js'
+import { ApiError, api, onSesiHabis, sesi, type Profil } from './api/client.js'
+import { BAHASA, gantiBahasa, simpanBahasa, type Bahasa } from './i18n/index.js'
 import { Button } from './components/button.js'
 import { Dasbor, type CompanyDapatDiakses } from './pages/dasbor.js'
 import { BaganAkun, BukuBesar } from './pages/akuntansi.js'
@@ -39,6 +41,20 @@ import { ToastProvider } from './components/toast.js'
 import { PreferencesProvider } from './shell/preferences.js'
 import { PenyediaHeaderHalaman, type IsiHeaderHalaman } from './shell/page-header.js'
 import type { ModuleLink, PaletteItem, SidebarItem } from './shell/types.js'
+import type shell from './i18n/locales/id/shell.json'
+
+/*
+ * Id navigasi diturunkan DARI berkas locale, bukan ditulis ulang di sini.
+ *
+ * Akibatnya menambah halaman tanpa menambah terjemahannya gagal saat build,
+ * bukan menghasilkan label kosong di sidebar. Arahnya sengaja begini — berkas
+ * locale yang menjadi acuan, dan kode yang harus menyesuaikan.
+ */
+type IdModul = keyof (typeof shell)['modul']
+type IdSidebar = keyof (typeof shell)['sidebar']
+type KunciJudul = `judul.${keyof (typeof shell)['judul']}`
+type KunciRemah = `remah.${keyof (typeof shell)['remah']}`
+type KunciAksi = `aksiPrimer.${keyof (typeof shell)['aksiPrimer']}`
 
 /**
  * Perakitan aplikasi.
@@ -63,56 +79,101 @@ import type { ModuleLink, PaletteItem, SidebarItem } from './shell/types.js'
  * nota-berpersen berbeda dari keduanya. Yang dihindari: lima varian dokumen
  * yang hanya berbeda isinya, karena pada 20px isinya tidak terbaca.
  */
-const MODUL: readonly ModuleLink[] = [
-  { id: 'dasbor', name: 'Dasbor', glyph: IconLayoutDashboard },
-  { id: 'penjualan', name: 'Penjualan', glyph: IconReceipt },
-  { id: 'pembelian', name: 'Pembelian', glyph: IconShoppingCart },
-  { id: 'akuntansi', name: 'Akuntansi', glyph: IconBook2 },
-  { id: 'pajak', name: 'Pajak', glyph: IconReceiptTax },
+const IKON_MODUL: readonly { id: IdModul; glyph: ModuleLink['glyph'] }[] = [
+  { id: 'dasbor', glyph: IconLayoutDashboard },
+  { id: 'penjualan', glyph: IconReceipt },
+  { id: 'pembelian', glyph: IconShoppingCart },
+  { id: 'akuntansi', glyph: IconBook2 },
+  { id: 'pajak', glyph: IconReceiptTax },
 ]
 
-const SIDEBAR: Record<string, readonly SidebarItem[]> = {
-  dasbor: [{ id: 'dasbor', label: 'Ringkasan', group: 'Transaksi', permitted: true }],
+/**
+ * Struktur sidebar tanpa teks.
+ *
+ * Yang tersimpan di sini adalah id dan pengelompokannya; labelnya diambil dari
+ * berkas locale saat render. Menyimpan teks di sini berarti sidebar tetap
+ * berbahasa Indonesia setelah orang beralih ke Inggris — dan sidebar adalah
+ * hal pertama yang dilihat orang, sehingga kelalaiannya paling cepat terlihat.
+ */
+const SIDEBAR: Record<string, readonly { id: IdSidebar; group: SidebarItem['group'] }[]> = {
+  dasbor: [{ id: 'dasbor', group: 'Transaksi' }],
   penjualan: [
-    { id: 'penjualan', label: 'Faktur Penjualan', group: 'Transaksi', permitted: true },
-    { id: 'penjualan/baru', label: 'Faktur baru', group: 'Transaksi', permitted: true },
+    { id: 'penjualan', group: 'Transaksi' },
+    { id: 'penjualan/baru', group: 'Transaksi' },
   ],
   pembelian: [
-    { id: 'pembelian/pesanan', label: 'Pesanan Pembelian', group: 'Transaksi', permitted: true },
-    { id: 'pembelian/penerimaan', label: 'Penerimaan Barang', group: 'Transaksi', permitted: true },
-    { id: 'pembelian/tagihan', label: 'Faktur Pembelian', group: 'Transaksi', permitted: true },
+    { id: 'pembelian/pesanan', group: 'Transaksi' },
+    { id: 'pembelian/penerimaan', group: 'Transaksi' },
+    { id: 'pembelian/tagihan', group: 'Transaksi' },
   ],
   akuntansi: [
-    { id: 'akuntansi/bagan-akun', label: 'Bagan Akun', group: 'Data induk', permitted: true },
-    { id: 'akuntansi/laba-rugi', label: 'Laba Rugi', group: 'Laporan', permitted: true },
-    { id: 'akuntansi/buku-besar', label: 'Buku Besar', group: 'Laporan', permitted: true },
+    { id: 'akuntansi/bagan-akun', group: 'Data induk' },
+    { id: 'akuntansi/laba-rugi', group: 'Laporan' },
+    { id: 'akuntansi/buku-besar', group: 'Laporan' },
   ],
   pajak: [
-    { id: 'pajak/kode', label: 'Kode Pajak', group: 'Data induk', permitted: true },
-    { id: 'pajak/nomor-seri', label: 'Nomor Seri', group: 'Data induk', permitted: true },
-    { id: 'pajak/keluaran', label: 'Faktur Pajak Keluaran', group: 'Transaksi', permitted: true },
-    { id: 'pajak/masukan', label: 'Faktur Pajak Masukan', group: 'Transaksi', permitted: true },
-    { id: 'pajak/terbitkan', label: 'Terbitkan Faktur Pajak', group: 'Transaksi', permitted: true },
-    { id: 'pajak/rekonsiliasi', label: 'Rekonsiliasi', group: 'Laporan', permitted: true },
+    { id: 'pajak/kode', group: 'Data induk' },
+    { id: 'pajak/nomor-seri', group: 'Data induk' },
+    { id: 'pajak/keluaran', group: 'Transaksi' },
+    { id: 'pajak/masukan', group: 'Transaksi' },
+    { id: 'pajak/terbitkan', group: 'Transaksi' },
+    { id: 'pajak/rekonsiliasi', group: 'Laporan' },
   ],
 }
 
-const JUDUL: Record<string, { judul: string; remah: readonly string[] }> = {
-  dasbor: { judul: 'Dasbor', remah: ['Dasbor'] },
-  penjualan: { judul: 'Faktur Penjualan', remah: ['Penjualan', 'Faktur Penjualan'] },
-  'penjualan/baru': { judul: 'Faktur Penjualan baru', remah: ['Penjualan', 'Baru'] },
-  'pembelian/pesanan': { judul: 'Pesanan Pembelian', remah: ['Pembelian', 'Pesanan'] },
-  'pembelian/penerimaan': { judul: 'Penerimaan Barang', remah: ['Pembelian', 'Penerimaan'] },
-  'pembelian/tagihan': { judul: 'Faktur Pembelian', remah: ['Pembelian', 'Tagihan'] },
-  'akuntansi/bagan-akun': { judul: 'Bagan Akun', remah: ['Akuntansi', 'Bagan Akun'] },
-  'akuntansi/laba-rugi': { judul: 'Laba Rugi', remah: ['Akuntansi', 'Laba Rugi'] },
-  'akuntansi/buku-besar': { judul: 'Buku Besar', remah: ['Akuntansi', 'Buku Besar'] },
-  'pajak/kode': { judul: 'Kode Pajak', remah: ['Pajak', 'Kode Pajak'] },
-  'pajak/nomor-seri': { judul: 'Nomor Seri Faktur Pajak', remah: ['Pajak', 'Nomor Seri'] },
-  'pajak/keluaran': { judul: 'Faktur Pajak Keluaran', remah: ['Pajak', 'Faktur Pajak Keluaran'] },
-  'pajak/masukan': { judul: 'Faktur Pajak Masukan', remah: ['Pajak', 'Faktur Pajak Masukan'] },
-  'pajak/terbitkan': { judul: 'Terbitkan Faktur Pajak', remah: ['Pajak', 'Terbitkan'] },
-  'pajak/rekonsiliasi': { judul: 'Rekonsiliasi Pajak', remah: ['Pajak', 'Rekonsiliasi'] },
+/**
+ * Judul halaman dan remah roti, sebagai KUNCI terjemahan.
+ *
+ * Remahnya larik kunci, bukan larik kata. Sebagian potongan berulang di banyak
+ * jalur — "Penjualan" muncul di tiga tempat — dan menuliskannya sebagai teks
+ * berarti menerjemahkannya berkali-kali, dengan peluang berbeda-beda.
+ */
+const JUDUL: Record<string, { judul: KunciJudul; remah: readonly KunciRemah[] }> = {
+  dasbor: { judul: 'judul.dasbor', remah: ['remah.dasbor'] },
+  penjualan: { judul: 'judul.penjualan', remah: ['remah.penjualan', 'remah.fakturPenjualan'] },
+  'penjualan/baru': { judul: 'judul.penjualan/baru', remah: ['remah.penjualan', 'remah.baru'] },
+  'pembelian/pesanan': {
+    judul: 'judul.pembelian/pesanan',
+    remah: ['remah.pembelian', 'remah.pesanan'],
+  },
+  'pembelian/penerimaan': {
+    judul: 'judul.pembelian/penerimaan',
+    remah: ['remah.pembelian', 'remah.penerimaan'],
+  },
+  'pembelian/tagihan': {
+    judul: 'judul.pembelian/tagihan',
+    remah: ['remah.pembelian', 'remah.tagihan'],
+  },
+  'akuntansi/bagan-akun': {
+    judul: 'judul.akuntansi/bagan-akun',
+    remah: ['remah.akuntansi', 'remah.baganAkun'],
+  },
+  'akuntansi/laba-rugi': {
+    judul: 'judul.akuntansi/laba-rugi',
+    remah: ['remah.akuntansi', 'remah.labaRugi'],
+  },
+  'akuntansi/buku-besar': {
+    judul: 'judul.akuntansi/buku-besar',
+    remah: ['remah.akuntansi', 'remah.bukuBesar'],
+  },
+  'pajak/kode': { judul: 'judul.pajak/kode', remah: ['remah.pajak', 'remah.kodePajak'] },
+  'pajak/nomor-seri': {
+    judul: 'judul.pajak/nomor-seri',
+    remah: ['remah.pajak', 'remah.nomorSeri'],
+  },
+  'pajak/keluaran': {
+    judul: 'judul.pajak/keluaran',
+    remah: ['remah.pajak', 'remah.fakturPajakKeluaran'],
+  },
+  'pajak/masukan': {
+    judul: 'judul.pajak/masukan',
+    remah: ['remah.pajak', 'remah.fakturPajakMasukan'],
+  },
+  'pajak/terbitkan': { judul: 'judul.pajak/terbitkan', remah: ['remah.pajak', 'remah.terbitkan'] },
+  'pajak/rekonsiliasi': {
+    judul: 'judul.pajak/rekonsiliasi',
+    remah: ['remah.pajak', 'remah.rekonsiliasi'],
+  },
 }
 
 /**
@@ -123,36 +184,15 @@ const JUDUL: Record<string, { judul: string; remah: readonly string[] }> = {
  * Layout_System §3 — dan tempat yang tetap membuatnya dapat ditemukan tanpa
  * dicari ulang di setiap modul.
  */
-const AKSI_PRIMER: Record<string, { readonly label: string; readonly tujuan: string }> = {
-  penjualan: { label: 'Faktur baru', tujuan: 'penjualan/baru' },
-  'pajak/kode': { label: 'Terbitkan faktur pajak', tujuan: 'pajak/terbitkan' },
-  'pajak/keluaran': { label: 'Terbitkan faktur pajak', tujuan: 'pajak/terbitkan' },
+const AKSI_PRIMER: Record<string, { readonly label: KunciAksi; readonly tujuan: string }> = {
+  penjualan: { label: 'aksiPrimer.fakturBaru', tujuan: 'penjualan/baru' },
+  'pajak/kode': { label: 'aksiPrimer.terbitkanFakturPajak', tujuan: 'pajak/terbitkan' },
+  'pajak/keluaran': { label: 'aksiPrimer.terbitkanFakturPajak', tujuan: 'pajak/terbitkan' },
 }
 
 const KUNCI_COMPANY = 'paadu.company_id'
 
-/**
- * Label peran, dipakai menu profil — Component_Specs_AppShell §6.
- *
- * Peran ikut disebut karena pengguna sering tidak tahu mengapa suatu menu tidak
- * terlihat, dan jawabannya hampir selalu perannya.
- */
-const LABEL_PERAN: Record<string, string> = {
-  tenant_owner: 'Pemilik Tenant',
-  tenant_admin: 'Admin Tenant',
-  company_admin: 'Admin Company',
-  member: 'Anggota',
-}
 
-/**
- * Nama pengguna belum tersedia di jalur baca mana pun.
- *
- * `/v1/me/companies` mengirim company, bukan profil. Menampilkan nama karangan
- * di menu profil akan membuat orang mengira sistem mengenalinya padahal tidak,
- * jadi yang ditampilkan adalah alamat surel — satu-satunya identitas yang
- * benar-benar diketahui klien saat ini. Dicatat sebagai keterbatasan.
- */
-const namaPengguna = 'Pengguna'
 
 /**
  * Tiga keadaan, bukan satu daftar.
@@ -173,6 +213,7 @@ type MuatCompany =
   | { readonly kind: 'galat'; readonly pesan: string }
 
 export function App(): ReactNode {
+  const { t } = useTranslation('shell')
   const [masuk, setMasuk] = useState(() => sesi.accessToken() !== null)
   const [muat, setMuat] = useState<MuatCompany>({ kind: 'memuat' })
   const [companyId, setCompanyId] = useState<string>(
@@ -180,13 +221,30 @@ export function App(): ReactNode {
   )
   const [galat, setGalat] = useState<string | null>(null)
   const [header, setHeader] = useState<IsiHeaderHalaman>({})
+  const [profil, setProfil] = useState<Profil | null>(null)
   const route = useRoute()
 
   const keluar = useCallback((): void => {
     void api.keluar().then(() => {
       setMasuk(false)
       setMuat({ kind: 'memuat' })
+      setProfil(null)
     })
+  }, [])
+
+  /**
+   * Mengganti bahasa: layar lebih dulu, server menyusul.
+   *
+   * Urutannya penting. Menunggu server menjawab sebelum layar berganti membuat
+   * pengalih terasa rusak di jaringan lambat — orang mengklik, tidak ada yang
+   * terjadi, lalu mengklik lagi. Kegagalan menyimpan pun tidak mengembalikan
+   * layar ke bahasa lama: pilihannya tetap dihormati sesi ini, hanya tidak
+   * terbawa ke perangkat berikutnya.
+   */
+  const pilihBahasa = useCallback((bahasa: Bahasa): void => {
+    simpanBahasa(bahasa)
+    void gantiBahasa(bahasa)
+    void api.simpanBahasa(bahasa).catch(() => undefined)
   }, [])
 
   const muatCompanies = useCallback(async (): Promise<void> => {
@@ -219,7 +277,7 @@ export function App(): ReactNode {
         pesan:
           kesalahan instanceof ApiError
             ? kesalahan.message
-            : 'Tidak dapat menghubungi server.',
+            : t('masuk.tidakTerhubung', { ns: 'umum' }),
       })
     }
   }, [companyId])
@@ -228,13 +286,46 @@ export function App(): ReactNode {
     if (masuk) void muatCompanies()
   }, [masuk])
 
+  /*
+   * Profil diambil TERPISAH dari daftar company, dan itu disengaja.
+   *
+   * Pengguna yang belum diberi company mana pun tetap harus melihat namanya dan
+   * tetap harus dapat mengganti bahasa. Menggabungkan keduanya dalam satu
+   * permintaan akan membuat menu profil kosong justru pada layar yang paling
+   * membutuhkan penjelasan.
+   */
+  useEffect(() => {
+    if (!masuk) return
+    void api
+      .profil()
+      .then(async (jawaban) => {
+        setProfil(jawaban.data)
+
+        /*
+         * Bahasa dari server MENANG atas tebakan localStorage.
+         *
+         * Tebakan itu ada supaya layar pertama tidak berkedip; begitu jawaban
+         * yang sebenarnya tiba, ia yang berlaku — termasuk saat orang yang sama
+         * masuk dari perangkat yang belum pernah dipakainya.
+         */
+        const dariServer = jawaban.data.language
+        if (!BAHASA.includes(dariServer as Bahasa)) return
+        simpanBahasa(dariServer as Bahasa)
+        await gantiBahasa(dariServer as Bahasa)
+      })
+      .catch(() => {
+        // Profil gagal diambil bukan alasan menghalangi orang bekerja. Menu
+        // menampilkan sapaan umum, dan bahasanya tetap yang tersimpan lokal.
+      })
+  }, [masuk])
+
   // Satu penangan untuk seluruh aplikasi: permintaan mana pun yang ditolak
   // karena sesinya mati membawa pengguna ke halaman masuk.
   useEffect(() => {
     onSesiHabis(() => {
       setMasuk(false)
       setMuat({ kind: 'memuat' })
-      setGalat('Sesi Anda berakhir. Silakan masuk lagi.')
+      setGalat(t('gerbang.sesiBerakhir'))
     })
     return () => onSesiHabis(null)
   }, [])
@@ -273,16 +364,39 @@ export function App(): ReactNode {
     [companyId, company?.legal_name],
   )
 
+  /*
+   * Modul, sidebar, dan palet dirakit ulang setiap bahasa berganti.
+   *
+   * `useMemo` bergantung pada `t`, yang identitasnya berubah saat bahasa
+   * berganti — itulah yang membuat rail dan sidebar ikut berganti tanpa perlu
+   * satu pun pemicu tambahan.
+   */
+  const MODUL: readonly ModuleLink[] = useMemo(
+    () => IKON_MODUL.map((satu) => ({ ...satu, name: t(`modul.${satu.id}`) })),
+    [t],
+  )
+
+  const sidebarUntuk = useCallback(
+    (modulId: string): readonly SidebarItem[] =>
+      (SIDEBAR[modulId] ?? []).map((satu) => ({
+        id: satu.id,
+        label: t(`sidebar.${satu.id}`),
+        group: satu.group,
+        permitted: true,
+      })),
+    [t],
+  )
+
   const paletteItems: readonly PaletteItem[] = useMemo(
     () =>
       Object.entries(JUDUL).map(([path, entri]) => ({
         id: path,
-        label: entri.judul,
+        label: t(entri.judul),
         group: 'Navigasi' as const,
         permitted: true,
         run: () => pergiKe(path),
       })),
-    [],
+    [t],
   )
 
   if (!masuk) {
@@ -303,7 +417,7 @@ export function App(): ReactNode {
     return (
       <PreferencesProvider>
         <main className={styles.masuk}>
-          <p role="status">Memuat company…</p>
+          <p role="status">{t('gerbang.memuatCompany')}</p>
         </main>
       </PreferencesProvider>
     )
@@ -318,16 +432,16 @@ export function App(): ReactNode {
     return (
       <PreferencesProvider>
         <main className={styles.masuk}>
-          <h1>Tidak dapat memuat daftar company</h1>
+          <h1>{t('gerbang.gagalJudul')}</h1>
           <p className={styles.noticeDanger} role="alert">
             {muat.pesan}
           </p>
           <div className={styles.row}>
             <Button variant="secondary" onClick={() => void muatCompanies()}>
-              Coba lagi
+              {t('aksi.cobaLagi', { ns: 'umum' })}
             </Button>
             <Button variant="ghost" onClick={keluar}>
-              Keluar
+              {t('aksi.keluar', { ns: 'umum' })}
             </Button>
           </div>
         </main>
@@ -345,17 +459,14 @@ export function App(): ReactNode {
     return (
       <PreferencesProvider>
         <main className={styles.masuk}>
-          <h1>Belum ada company untuk akun ini</h1>
-          <p>
-            Anda sudah masuk, tetapi akun Anda belum diberi akses ke company mana pun.
-            Mintalah admin tenant Anda menambahkan aksesnya, lalu periksa lagi.
-          </p>
+          <h1>{t('gerbang.kosongJudul')}</h1>
+          <p>{t('gerbang.kosongPenjelasan')}</p>
           <div className={styles.row}>
             <Button variant="secondary" onClick={() => void muatCompanies()}>
-              Periksa lagi
+              {t('gerbang.periksaLagi')}
             </Button>
             <Button variant="ghost" onClick={keluar}>
-              Keluar
+              {t('aksi.keluar', { ns: 'umum' })}
             </Button>
           </div>
         </main>
@@ -412,23 +523,25 @@ export function App(): ReactNode {
         }}
         modules={MODUL}
         activeModule={modul}
-        sidebarItems={SIDEBAR[modul.id] ?? []}
+        sidebarItems={sidebarUntuk(modul.id)}
         activeItemId={kunciHalaman === '' ? 'dasbor' : kunciHalaman}
         paletteItems={paletteItems}
-        pageTitle={judul.judul}
-        breadcrumb={judul.remah}
+        pageTitle={t(judul.judul)}
+        breadcrumb={judul.remah.map((kunci) => t(kunci))}
         {...(header.badges === undefined ? {} : { statusBadges: header.badges })}
         {...(header.tabs === undefined ? {} : { tabs: header.tabs })}
         {...(aksiPrimer === undefined
           ? {}
           : {
               primaryAction: (
-                <Button onClick={() => pergiKe(aksiPrimer.tujuan)}>{aksiPrimer.label}</Button>
+                <Button onClick={() => pergiKe(aksiPrimer.tujuan)}>{t(aksiPrimer.label)}</Button>
               ),
             })}
         fiscalPeriod={formatPeriod(periode)}
-        userName={namaPengguna}
-        userRole={LABEL_PERAN[company.role] ?? company.role}
+        userName={profil?.full_name ?? 'Pengguna'}
+        userRole={t(`peran.${company.role}`, { defaultValue: company.role })}
+        onPilihBahasa={pilihBahasa}
+        onKeluar={keluar}
         onSelectModule={(id) => {
           const pertama = SIDEBAR[id]?.[0]?.id ?? id
           pergiKe(pertama)
@@ -445,7 +558,7 @@ export function App(): ReactNode {
         </PenyediaHeaderHalaman>
         <p>
           <Button variant="ghost" onClick={keluar}>
-            Keluar
+            {t('aksi.keluar', { ns: 'umum' })}
           </Button>
         </p>
       </AppShell>
@@ -467,6 +580,10 @@ function Halaman({
   readonly companyId: string
   readonly onPilihCompany: (id: string) => void
 }): ReactNode {
+  // Kait di atas seluruh cabang: `Halaman` mengembalikan lebih awal di hampir
+  // setiap jalur, dan kait di bawah salah satunya akan mengubah jumlah kait
+  // antar render.
+  const { t } = useTranslation('shell')
   const [bagian, kedua, ketiga] = route.path
 
   if (bagian === undefined || bagian === 'dasbor') {
@@ -532,5 +649,5 @@ function Halaman({
     return <KodePajak konteks={konteks} {...(ketiga === undefined ? {} : { ubahId: ketiga })} />
   }
 
-  return <p>Halaman tidak ditemukan.</p>
+  return <p>{t('judul.tidakDitemukan')}</p>
 }

@@ -1,4 +1,5 @@
 import { useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { ReactNode } from 'react'
 
 import { formatAmount } from '#shared/money-format'
@@ -52,6 +53,8 @@ export interface LineItemEditorProps {
 }
 
 export function LineItemEditor(props: LineItemEditorProps): ReactNode {
+  const { t } = useTranslation()
+
   const sel = useRef(new Map<string, HTMLInputElement>())
 
   const hasil = calculateDocument({
@@ -175,9 +178,8 @@ export function LineItemEditor(props: LineItemEditorProps): ReactNode {
     <div className={styles.editor}>
       <table className={styles.grid}>
         <caption className={styles.srOnly}>
-          Baris dokumen. Enter turun baris, Enter di sel terakhir menambah baris, Ctrl+D menyalin
-          dari baris atas, Ctrl+Backspace menghapus baris.
-        </caption>
+        {t('baris.petunjukPanjang')}
+      </caption>
         <thead>
           <tr>
             {FIELDS.map((field) => (
@@ -186,7 +188,7 @@ export function LineItemEditor(props: LineItemEditorProps): ReactNode {
               </th>
             ))}
             <th scope="col" className={styles.numeric}>
-              Neto
+              {t('baris.neto')}
             </th>
           </tr>
         </thead>
@@ -220,14 +222,13 @@ export function LineItemEditor(props: LineItemEditorProps): ReactNode {
       </table>
 
       <p className={styles.hint}>
-        Enter turun baris · Enter di sel terakhir menambah baris · Ctrl+D menyalin dari atas ·
-        Ctrl+Backspace menghapus baris · tempelan dari Excel mengisi banyak baris
+        {t('baris.petunjukPendek')}
       </p>
 
       <dl className={styles.totals}>
-        <dt>Subtotal</dt>
+        <dt>{t('baris.subtotal')}</dt>
         <dd className={styles.totalValue}>{formatAmount(hasil.subtotal, props.currency)}</dd>
-        <dt>Diskon dokumen</dt>
+        <dt>{t('baris.diskonDokumen')}</dt>
         <dd className={styles.totalValue}>{formatAmount(hasil.documentDiscount, props.currency)}</dd>
         <dt>DPP</dt>
         <dd className={styles.totalValue}>{formatAmount(hasil.taxBase, props.currency)}</dd>

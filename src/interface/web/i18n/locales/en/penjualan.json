@@ -1,0 +1,60 @@
+{
+  "daftar": {
+    "caption": "Sales Invoices",
+    "gagal": "Unable to load the invoice list.",
+    "saring": "Filter invoices by status",
+    "cari": "Search number or customer",
+    "buatPertama": "Create your first invoice",
+    "kolomNomor": "Number",
+    "kolomTanggal": "Date",
+    "kolomCustomer": "Customer",
+    "kolomStatus": "Status",
+    "kolomTotal": "Total",
+    "draf": "(draft)"
+  },
+  "chip": {
+    "draft": "Draft",
+    "pending_approval": "Awaiting approval",
+    "posted": "Posted"
+  },
+  "detail": {
+    "gagalMuat": "Unable to load the invoice.",
+    "gagalTindakan": "The action failed without an explanation.",
+    "memuat": "Loading…",
+    "bagian": "Invoice sections",
+    "tabRingkasan": "Summary",
+    "tabBaris": "Lines",
+    "tabTerkait": "Related documents",
+    "tabAktivitas": "Activity",
+    "nomor": "Number",
+    "customer": "Customer",
+    "tanggal": "Date",
+    "pajak": "Tax",
+    "total": "Total",
+    "captionBaris": "Invoice lines",
+    "kolomNo": "No",
+    "kolomDeskripsi": "Description",
+    "kolomKuantitas": "Quantity",
+    "kolomHargaSatuan": "Unit price",
+    "kolomDpp": "DPP",
+    "kolomPajak": "Tax",
+    "belumAdaTerkait": "No related documents yet. The journal will appear here once the invoice is posted.",
+    "jurnal": "Journal",
+    "lihatBukuBesar": "View in the general ledger",
+    "diposting": "Posted",
+    "auditBelumAda": "The audit trail is not available in the interface yet. Changes are already recorded in",
+    "auditBelumAdaLanjutan": ", but the read path has not been built — recorded as a limitation, not as a feature quietly missing.",
+    "ajukan": "Submit",
+    "setujui": "Approve",
+    "posting": "Post to the general ledger",
+    "kembali": "Back to the list"
+  },
+  "baru": {
+    "customer": "Customer",
+    "customerGagal": "The customer list could not be loaded.",
+    "faktur": "Invoice",
+    "fakturGagal": "The invoice could not be created.",
+    "tanggalDokumen": "Document date",
+    "simpanDraf": "Save as draft"
+  }
+}

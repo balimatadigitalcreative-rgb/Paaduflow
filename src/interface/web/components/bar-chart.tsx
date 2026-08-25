@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import styles from './primitives.module.css'
 
@@ -31,10 +32,12 @@ const LEBAR_BATANG = 28
 const JARAK = 12
 
 export function BarChart({ points, caption, valueHeader }: BarChartProps): ReactNode {
+  const { t } = useTranslation()
+
   if (points.length === 0) {
     return (
       <p className={styles.chartEmpty} role="status">
-        Belum ada data untuk periode ini.
+        {t('grafik.belumAdaPeriode')}
       </p>
     )
   }

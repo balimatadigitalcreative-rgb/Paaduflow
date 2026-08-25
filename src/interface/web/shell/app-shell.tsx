@@ -11,6 +11,9 @@ import {
   IconSun,
 } from '@tabler/icons-react'
 import type { ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
+
+import { BAHASA, type Bahasa } from '../i18n/index.js'
 
 import { CommandPalette } from './command-palette.js'
 import { CompanySwitcher, type CompanySwitcherProps } from './company-switcher.js'
@@ -114,11 +117,34 @@ export interface AppShellProps {
   /** Ditampilkan di menu profil — §6 menuntut peran ikut disebut. */
   readonly userName?: string
   readonly userRole?: string
+  /** Mengganti bahasa antarmuka. Pilihannya disimpan per pengguna di server. */
+  onPilihBahasa?(bahasa: Bahasa): void
+  /**
+   * Keluar dari sesi.
+   *
+   * Opsional agar harness dan galeri dapat merender shell tanpa sesi. Bila
+   * tidak diberikan, item "Keluar" TIDAK dirender sama sekali — bukan dirender
+   * lalu diam. Menu yang menawarkan tindakan dan tidak mengerjakannya lebih
+   * buruk daripada menu yang tidak menawarkannya: orang mengkliknya, tidak ada
+   * yang terjadi, dan yang disimpulkan adalah aplikasinya menggantung.
+   */
+  onKeluar?(): void
   onSelectModule(moduleId: string): void
   onSelectItem(itemId: string): void
 }
 
+/**
+ * Nama produk. TIDAK diterjemahkan, dan bukan karena terlupakan.
+ *
+ * Nama tidak punya terjemahan — alasan yang sama dengan istilah pajak di D-150.
+ * Ia konstanta, bukan literal di tengah JSX, supaya pemeriksa i18n tidak perlu
+ * mengenal daftar pengecualian dan pembaca berikutnya tidak perlu menebak
+ * apakah baris ini terlewat.
+ */
+const MEREK = 'Paadu'
+
 export function AppShell(props: AppShellProps): ReactNode {
+  const { t } = useTranslation('shell')
   const { preferences, setTheme, setDensity, toggleSidebar } = usePreferences()
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [contextMessage, setContextMessage] = useState<string | null>(null)
@@ -224,10 +250,10 @@ export function AppShell(props: AppShellProps): ReactNode {
     >
       <div className={styles.skipLinks}>
         <a href="#konten-utama" className={styles.skipLink}>
-          Lewati ke konten utama
+          {t('navigasi.lewatiKeKonten')}
         </a>
         <a href="#navigasi-modul" className={styles.skipLink}>
-          Lewati ke navigasi modul
+          {t('navigasi.lewatiKeModul')}
         </a>
       </div>
 
@@ -247,7 +273,7 @@ export function AppShell(props: AppShellProps): ReactNode {
           type="button"
           ref={pemicuDrawer}
           className={styles.menuButton}
-          aria-label="Navigasi"
+          aria-label={t('navigasi.buka')}
           aria-expanded={drawerOpen}
           aria-controls="navigasi-modul"
           onClick={() => (drawerOpen ? tutupDrawer() : setDrawerOpen(true))}
@@ -256,14 +282,14 @@ export function AppShell(props: AppShellProps): ReactNode {
         </button>
 
         <a href="#beranda" className={styles.mark}>
-          Paadu
+          {MEREK}
         </a>
 
         <CompanySwitcher {...props.switcher} onSwitch={pindahCompany} />
 
         <button type="button" className={styles.cariTrigger} onClick={() => setPaletteOpen(true)}>
           <IconSearch className={styles.ikon} stroke={STROKE_IKON} />
-          <span>Cari</span>
+          <span>{t('navigasi.cari')}</span>
           <span className={styles.paletteHint}>⌘K</span>
         </button>
 
@@ -274,7 +300,7 @@ export function AppShell(props: AppShellProps): ReactNode {
           tidak berubah saat fiturnya masuk — top bar yang bergeser tempatnya
           memaksa orang mencari ulang apa yang sudah dihafal.
         */}
-        <button type="button" className={styles.topBarIkon} aria-label="Notifikasi" disabled>
+        <button type="button" className={styles.topBarIkon} aria-label={t('navigasi.notifikasi')} disabled>
           <IconBell className={styles.ikon} stroke={STROKE_IKON} />
         </button>
 
@@ -295,6 +321,8 @@ export function AppShell(props: AppShellProps): ReactNode {
           setDensity={setDensity}
           nama={props.userName}
           peran={props.userRole}
+          {...(props.onPilihBahasa === undefined ? {} : { onPilihBahasa: props.onPilihBahasa })}
+          {...(props.onKeluar === undefined ? {} : { onKeluar: props.onKeluar })}
         />
       </header>
 
@@ -307,13 +335,13 @@ export function AppShell(props: AppShellProps): ReactNode {
         <button
           type="button"
           className={styles.drawerBackdrop}
-          aria-label="Tutup navigasi"
+          aria-label={t('navigasi.tutup')}
           onClick={tutupDrawer}
         />
       ) : null}
 
       {layarSempit ? null : (
-      <nav id="navigasi-modul" className={styles.rail} aria-label="Modul">
+      <nav id="navigasi-modul" className={styles.rail} aria-label={t('navigasi.modul')}>
         {tersemat.map((module, nomor) => (
           <button
             key={module.id}
@@ -335,7 +363,7 @@ export function AppShell(props: AppShellProps): ReactNode {
             ) : null}
           </button>
         ))}
-        <button type="button" className={styles.railButton} aria-label="Semua modul" title="Semua modul">
+        <button type="button" className={styles.railButton} aria-label={t('navigasi.semuaModul')} title={t('navigasi.semuaModul')}>
           <IconLayoutGrid className={styles.ikon} stroke={STROKE_IKON} />
         </button>
       </nav>
@@ -385,7 +413,7 @@ export function AppShell(props: AppShellProps): ReactNode {
                 className={styles.navItem}
                 onClick={() => setContextMessage(null)}
               >
-                Tutup
+                {t('aksi.tutup', { ns: 'umum' })}
               </button>
             </div>
           )}
@@ -394,7 +422,7 @@ export function AppShell(props: AppShellProps): ReactNode {
         <div className={styles.contentRow}>
           <main id="konten-utama" className={styles.content} tabIndex={-1}>
             <div className={styles.pageHeader}>
-              <nav aria-label="Breadcrumb">
+              <nav aria-label={t('navigasi.breadcrumb')}>
                 <ol role="list" className={styles.breadcrumb}>
                   {props.breadcrumb.map((segment, index) => (
                     <li key={segment}>
@@ -430,7 +458,7 @@ export function AppShell(props: AppShellProps): ReactNode {
           </main>
 
           {props.panel === undefined ? null : (
-            <aside className={styles.panel} aria-label="Detail">
+            <aside className={styles.panel} aria-label={t('navigasi.panelDetail')}>
               {props.panel}
             </aside>
           )}
@@ -449,7 +477,7 @@ export function AppShell(props: AppShellProps): ReactNode {
         teka-teki (§2), dan di ponsel tidak ada hover untuk memunculkan tooltip.
       */}
       {layarSempit ? (
-      <nav id="navigasi-modul" className={styles.bottomBar} aria-label="Modul">
+      <nav id="navigasi-modul" className={styles.bottomBar} aria-label={t('navigasi.modul')}>
         {props.modules.slice(0, MAX_BOTTOM_TABS).map((module) => (
           <button
             key={module.id}
@@ -493,13 +521,18 @@ function MenuPengguna({
   setDensity,
   nama,
   peran,
+  onPilihBahasa,
+  onKeluar,
 }: {
   readonly preferences: { theme: string; density: string }
   setTheme: (nilai: 'system' | 'light' | 'dark') => void
   setDensity: (nilai: 'comfortable' | 'compact') => void
   readonly nama?: string | undefined
   readonly peran?: string | undefined
+  onPilihBahasa?(bahasa: Bahasa): void
+  onKeluar?(): void
 }): ReactNode {
+  const { t, i18n } = useTranslation('shell')
   const [open, setOpen] = useState(false)
   const pemicu = useRef<HTMLButtonElement | null>(null)
 
@@ -528,7 +561,11 @@ function MenuPengguna({
         className={styles.userAvatar}
         aria-haspopup="menu"
         aria-expanded={open}
-        aria-label={`Menu pengguna${nama === undefined ? '' : ` — ${nama}`}`}
+        aria-label={
+          nama === undefined
+            ? t('menuPengguna.pemicu')
+            : t('menuPengguna.pemicuDengan', { nama })
+        }
         onClick={() => setOpen((sebelum) => !sebelum)}
       >
         {inisial}
@@ -540,44 +577,79 @@ function MenuPengguna({
           <button
             type="button"
             className={styles.menuBackdrop}
-            aria-label="Tutup menu pengguna"
+            aria-label={t('menuPengguna.tutup')}
             onClick={() => {
               setOpen(false)
               pemicu.current?.focus()
             }}
           />
 
-          <div className={styles.menuPanel} role="menu" aria-label="Menu pengguna">
+          <div className={styles.menuPanel} role="menu" aria-label={t('menuPengguna.pemicu')}>
             <div className={styles.menuIdentitas}>
               <strong>{nama ?? 'Pengguna'}</strong>
               {peran === undefined ? null : <span className={styles.menuPeran}>{peran}</span>}
             </div>
 
             <PilihanMenu
-              label="Tema"
+              label={t('menuPengguna.tema')}
               nilai={preferences.theme}
               onPilih={(nilai) => setTheme(nilai as 'system' | 'light' | 'dark')}
               pilihan={[
-                { nilai: 'system', label: 'Ikuti sistem', Ikon: IconDeviceDesktop },
-                { nilai: 'light', label: 'Terang', Ikon: IconSun },
-                { nilai: 'dark', label: 'Gelap', Ikon: IconMoon },
+                { nilai: 'system', label: t('menuPengguna.temaSistem'), Ikon: IconDeviceDesktop },
+                { nilai: 'light', label: t('menuPengguna.temaTerang'), Ikon: IconSun },
+                { nilai: 'dark', label: t('menuPengguna.temaGelap'), Ikon: IconMoon },
               ]}
             />
 
             <PilihanMenu
-              label="Kepadatan"
+              label={t('menuPengguna.kepadatan')}
               nilai={preferences.density}
               onPilih={(nilai) => setDensity(nilai as 'comfortable' | 'compact')}
               pilihan={[
-                { nilai: 'comfortable', label: 'Lega' },
-                { nilai: 'compact', label: 'Padat' },
+                { nilai: 'comfortable', label: t('menuPengguna.kepadatanLega') },
+                { nilai: 'compact', label: t('menuPengguna.kepadatanPadat') },
               ]}
             />
 
-            <button type="button" className={styles.menuItem} role="menuitem">
-              <IconLogout className={styles.ikon} stroke={STROKE_IKON} />
-              <span>Keluar</span>
-            </button>
+            {/*
+              Nama bahasa ditulis DALAM bahasa itu sendiri — "English", bukan
+              "Inggris". Orang yang tersesat di antarmuka berbahasa asing mencari
+              kata yang ia kenali, dan menerjemahkan nama bahasa justru
+              menyembunyikannya dari satu-satunya orang yang membutuhkannya.
+            */}
+            {onPilihBahasa === undefined ? null : (
+              <PilihanMenu
+                label={t('menuPengguna.bahasa')}
+                nilai={i18n.language}
+                onPilih={(nilai) => onPilihBahasa(nilai as Bahasa)}
+                pilihan={BAHASA.map((satu) => ({
+                  nilai: satu,
+                  label: t(satu === 'id' ? 'menuPengguna.bahasaId' : 'menuPengguna.bahasaEn'),
+                }))}
+              />
+            )}
+
+            {/*
+              Menu ditutup SEBELUM keluar dijalankan.
+
+              Keluar mengganti seluruh pohon dengan layar masuk, dan panel yang
+              masih terbuka saat itu meninggalkan `menuBackdrop` di atas form —
+              layar masuk yang tampil tetapi tidak dapat diklik.
+            */}
+            {onKeluar === undefined ? null : (
+              <button
+                type="button"
+                className={styles.menuItem}
+                role="menuitem"
+                onClick={() => {
+                  setOpen(false)
+                  onKeluar()
+                }}
+              >
+                <IconLogout className={styles.ikon} stroke={STROKE_IKON} />
+                <span>{t('aksi.keluar', { ns: 'umum' })}</span>
+              </button>
+            )}
           </div>
         </>
       ) : null}

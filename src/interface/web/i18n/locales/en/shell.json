@@ -1,0 +1,130 @@
+{
+  "navigasi": {
+    "buka": "Navigation",
+    "tutup": "Close navigation",
+    "lewatiKeKonten": "Skip to main content",
+    "lewatiKeModul": "Skip to module navigation",
+    "modul": "Modules",
+    "semuaModul": "All modules",
+    "cari": "Search",
+    "notifikasi": "Notifications",
+    "breadcrumb": "Breadcrumb",
+    "panelDetail": "Details"
+  },
+  "modul": {
+    "dasbor": "Dashboard",
+    "penjualan": "Sales",
+    "pembelian": "Purchasing",
+    "akuntansi": "Accounting",
+    "pajak": "Tax"
+  },
+  "menuPengguna": {
+    "pemicu": "User menu",
+    "pemicuDengan": "User menu — {{nama}}",
+    "tutup": "Close user menu",
+    "tema": "Theme",
+    "temaSistem": "Match system",
+    "temaTerang": "Light",
+    "temaGelap": "Dark",
+    "kepadatan": "Density",
+    "kepadatanLega": "Comfortable",
+    "kepadatanPadat": "Compact",
+    "bahasaId": "Bahasa Indonesia",
+    "bahasaEn": "English",
+    "bahasa": "Language"
+  },
+  "company": {
+    "pilih": "Select company",
+    "berpindah": "Context switched to {{nama}}.",
+    "cari": "Search companies",
+    "nonaktif": "Inactive",
+    "tenantLain": "Other tenants",
+    "label": "Company"
+  },
+  "peran": {
+    "tenant_owner": "Tenant Owner",
+    "tenant_admin": "Tenant Admin",
+    "company_admin": "Company Admin",
+    "member": "Member"
+  },
+  "palet": {
+    "judul": "Commands and search",
+    "cari": "Search commands, pages, or documents",
+    "hasil": "Results",
+    "kosong": "No results."
+  },
+  "sidebar": {
+    "dasbor": "Summary",
+    "penjualan": "Sales Invoices",
+    "penjualan/baru": "New invoice",
+    "pembelian/pesanan": "Purchase Orders",
+    "pembelian/penerimaan": "Goods Receipts",
+    "pembelian/tagihan": "Purchase Invoices",
+    "akuntansi/bagan-akun": "Chart of Accounts",
+    "akuntansi/laba-rugi": "Profit and Loss",
+    "akuntansi/buku-besar": "General Ledger",
+    "pajak/kode": "Tax Codes",
+    "pajak/nomor-seri": "Serial Numbers",
+    "pajak/keluaran": "Faktur Pajak Keluaran",
+    "pajak/masukan": "Faktur Pajak Masukan",
+    "pajak/terbitkan": "Issue Faktur Pajak",
+    "pajak/rekonsiliasi": "Reconciliation"
+  },
+  "grup": {
+    "Transaksi": "Transactions",
+    "Data induk": "Master data",
+    "Laporan": "Reports",
+    "Pengaturan": "Settings"
+  },
+  "judul": {
+    "dasbor": "Dashboard",
+    "penjualan": "Sales Invoices",
+    "penjualan/baru": "New Sales Invoice",
+    "pembelian/pesanan": "Purchase Orders",
+    "pembelian/penerimaan": "Goods Receipts",
+    "pembelian/tagihan": "Purchase Invoices",
+    "akuntansi/bagan-akun": "Chart of Accounts",
+    "akuntansi/laba-rugi": "Profit and Loss",
+    "akuntansi/buku-besar": "General Ledger",
+    "pajak/kode": "Tax Codes",
+    "pajak/nomor-seri": "Nomor Seri Faktur Pajak",
+    "pajak/keluaran": "Faktur Pajak Keluaran",
+    "pajak/masukan": "Faktur Pajak Masukan",
+    "pajak/terbitkan": "Issue Faktur Pajak",
+    "pajak/rekonsiliasi": "Tax Reconciliation",
+    "tidakDitemukan": "Page not found."
+  },
+  "remah": {
+    "dasbor": "Dashboard",
+    "penjualan": "Sales",
+    "fakturPenjualan": "Sales Invoices",
+    "baru": "New",
+    "pembelian": "Purchasing",
+    "pesanan": "Orders",
+    "penerimaan": "Receipts",
+    "tagihan": "Invoices",
+    "akuntansi": "Accounting",
+    "baganAkun": "Chart of Accounts",
+    "labaRugi": "Profit and Loss",
+    "bukuBesar": "General Ledger",
+    "pajak": "Tax",
+    "kodePajak": "Tax Codes",
+    "nomorSeri": "Serial Numbers",
+    "fakturPajakKeluaran": "Faktur Pajak Keluaran",
+    "fakturPajakMasukan": "Faktur Pajak Masukan",
+    "terbitkan": "Issue",
+    "rekonsiliasi": "Reconciliation"
+  },
+  "aksiPrimer": {
+    "fakturBaru": "New invoice",
+    "terbitkanFakturPajak": "Issue Faktur Pajak"
+  },
+  "gerbang": {
+    "memuatCompany": "Loading company…",
+    "gagalJudul": "Unable to load your company list",
+    "periksaLagi": "Check again",
+    "kosongJudul": "No companies for this account yet",
+    "kosongPenjelasan": "You are signed in, but your account has not been granted access to any company. Ask your tenant admin to add access, then check again.",
+    "sesiBerakhir": "Your session has ended. Please sign in again."
+  }
+}

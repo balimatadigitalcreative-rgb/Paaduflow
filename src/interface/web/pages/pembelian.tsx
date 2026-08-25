@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { ReactNode } from 'react'
 
 import type {
@@ -8,7 +9,6 @@ import type {
   PurchaseDocumentSummary,
   WarehouseOption,
 } from '#application/queries'
-import { formatAmount } from '#shared/money-format'
 
 import { api, ApiError, perusahaan } from '../api/client.js'
 import { Badge, StatusBadge, type DocumentStatus } from '../components/badge.js'
@@ -22,6 +22,7 @@ import { useTabel } from '../components/table/use-tabel.js'
 import { usePreferences } from '../shell/preferences.js'
 import type { Column, TableState } from '../components/table/types.js'
 import { TextField } from '../components/text-field.js'
+import { useFormat } from '../i18n/use-format.js'
 import { href, pergiKe } from '../router.js'
 import styles from './pages.module.css'
 
@@ -57,11 +58,18 @@ function status(nilai: string): DocumentStatus {
   return (STATUS_DIKENAL.has(nilai) ? nilai : 'draft') as DocumentStatus
 }
 
-const LABEL_PENCOCOKAN: Record<string, { teks: string; nada: 'neutral' | 'success' | 'danger' | 'warning' }> = {
-  not_matched: { teks: 'Belum dicocokkan', nada: 'neutral' },
-  matched: { teks: 'Cocok', nada: 'success' },
-  exception: { teks: 'Ada selisih', nada: 'danger' },
-  overridden: { teks: 'Selisih disetujui', nada: 'warning' },
+/**
+ * Nada badge per status pencocokan. Teksnya di berkas locale.
+ *
+ * Nada adalah keputusan visual dan tinggal di kode; teks adalah bahasa dan
+ * tinggal di locale. Sebelumnya keduanya menyatu dalam satu objek, dan yang
+ * menyatu seperti itu selalu berakhir setengah diterjemahkan.
+ */
+const NADA_PENCOCOKAN: Record<string, 'neutral' | 'success' | 'danger' | 'warning'> = {
+  not_matched: 'neutral',
+  matched: 'success',
+  exception: 'danger',
+  overridden: 'warning',
 }
 
 // ── Daftar dokumen pembelian ───────────────────────────────────────────────
@@ -74,17 +82,8 @@ const LABEL_PENCOCOKAN: Record<string, { teks: string; nada: 'neutral' | 'succes
  * barangnya belum datang. Ke tagihan: mana yang belum diposting, mana yang belum
  * dibayar.
  */
-const CHIP_PESANAN: readonly FilterChip[] = [
-  { id: 'draft', label: 'Draf' },
-  { id: 'pending_approval', label: 'Menunggu persetujuan' },
-  { id: 'approved', label: 'Disetujui' },
-]
-
-const CHIP_TAGIHAN: readonly FilterChip[] = [
-  { id: 'draft', label: 'Draf' },
-  { id: 'approved', label: 'Siap diposting' },
-  { id: 'posted', label: 'Terposting' },
-]
+const CHIP_PESANAN = ['draft', 'pending_approval', 'approved'] as const
+const CHIP_TAGIHAN = ['draft', 'approved', 'posted'] as const
 
 export function DaftarPembelian({
   konteks,
@@ -93,13 +92,21 @@ export function DaftarPembelian({
   readonly konteks: Konteks
   readonly docType: 'purchase_order' | 'bill'
 }): ReactNode {
+  const { t } = useTranslation('pembelian')
+  const format = useFormat()
   const [state, setState] = useState<TableState<PurchaseDocumentSummary>>({ kind: 'loading' })
   const [semua, setSemua] = useState<readonly PurchaseDocumentSummary[]>([])
   const [filterAktif, setFilterAktif] = useState<readonly string[]>([])
 
-  const chips = docType === 'bill' ? CHIP_TAGIHAN : CHIP_PESANAN
-  const labelFilter = (id: string): string =>
-    chips.find((chip) => chip.id === id)?.label ?? id
+  const chips: readonly FilterChip[] = (docType === 'bill' ? CHIP_TAGIHAN : CHIP_PESANAN).map(
+    (id) => ({ id, label: labelFilter(id) }),
+  )
+
+  function labelFilter(id: string): string {
+    return docType === 'bill'
+      ? t(`chipTagihan.${id}` as 'chipTagihan.draft', { defaultValue: id })
+      : t(`chipPesanan.${id}` as 'chipPesanan.draft', { defaultValue: id })
+  }
 
   /**
    * "Belum ada dokumen" dan "ada dokumen, filternya tidak cocok" adalah dua
@@ -134,7 +141,7 @@ export function DaftarPembelian({
     } catch (galat) {
       setState({
         kind: 'error',
-        message: galat instanceof ApiError ? galat.message : 'Tidak dapat memuat daftar.',
+        message: galat instanceof ApiError ? galat.message : t('daftar.gagal'),
       })
     }
   }
@@ -152,29 +159,29 @@ export function DaftarPembelian({
     const dasar: Column<PurchaseDocumentSummary>[] = [
       {
         id: 'number',
-        header: 'Nomor',
+        header: t('daftar.kolomNomor'),
         identifier: true,
         sortable: true,
-        cell: (row) => row.number ?? '(draf)',
+        cell: (row) => row.number ?? t('daftar.belumBernomor'),
         sortValue: (row) => row.number ?? '',
       },
       {
         id: 'date',
-        header: 'Tanggal',
+        header: t('daftar.kolomTanggal'),
         sortable: true,
-        cell: (row) => row.issueDate,
+        cell: (row) => format.tanggalPendek(row.issueDate),
         sortValue: (row) => row.issueDate,
       },
       {
         id: 'vendor',
-        header: 'Vendor',
+        header: t('daftar.kolomVendor'),
         sortable: true,
         cell: (row) => row.vendorName,
         sortValue: (row) => row.vendorName,
       },
       {
         id: 'status',
-        header: 'Status',
+        header: t('daftar.kolomStatus'),
         cell: (row) => <StatusBadge status={status(row.lifecycleStatus)} />,
       },
     ]
@@ -183,25 +190,28 @@ export function DaftarPembelian({
     if (docType === 'bill') {
       dasar.push({
         id: 'match',
-        header: 'Pencocokan',
-        cell: (row) => {
-          const label = LABEL_PENCOCOKAN[row.matchStatus]
-          return <Badge tone={label?.nada ?? 'neutral'}>{label?.teks ?? row.matchStatus}</Badge>
-        },
+        header: t('daftar.kolomPencocokan'),
+        cell: (row) => (
+          <Badge tone={NADA_PENCOCOKAN[row.matchStatus] ?? 'neutral'}>
+            {t(`pencocokan.${row.matchStatus}` as 'pencocokan.matched', {
+              defaultValue: row.matchStatus,
+            })}
+          </Badge>
+        ),
       })
     }
 
     dasar.push({
       id: 'total',
-      header: 'Total',
+      header: t('daftar.kolomTotal'),
       align: 'end',
       sortable: true,
-      cell: (row) => formatAmount(row.total, row.currency),
+      cell: (row) => format.angka(row.total, row.currency),
       sortValue: (row) => row.total,
     })
 
     return dasar
-  }, [docType])
+  }, [docType, t, format])
 
   const { preferences } = usePreferences()
   const tabel = useTabel(columns, (row) => [row.number, row.vendorName])
@@ -210,15 +220,13 @@ export function DaftarPembelian({
     <div className={styles.stack}>
       <FilterBar
         label={
-          docType === 'bill'
-            ? 'Saring tagihan menurut status'
-            : 'Saring pesanan menurut status'
+          docType === 'bill' ? t('daftar.saringTagihan') : t('daftar.saringPesanan')
         }
         chips={chips}
         activeIds={filterAktif}
         search={{
           value: tabel.kueri,
-          label: 'Cari nomor atau vendor',
+          label: t('daftar.cari'),
           onChange: tabel.setKueri,
         }}
         onToggle={(id) =>
@@ -238,7 +246,7 @@ export function DaftarPembelian({
         form yang gagal di field pertama.
       */}
       <DataTable
-        caption={docType === 'bill' ? 'Faktur Pembelian' : 'Pesanan Pembelian'}
+        caption={docType === 'bill' ? t('daftar.captionTagihan') : t('daftar.captionPesanan')}
         columns={columns}
         state={tabel.terapkan(state, filterAktif.map(labelFilter))}
         rowId={(row) => row.id}
@@ -252,7 +260,7 @@ export function DaftarPembelian({
         companyName={konteks.companyName}
         emptyAction={
           <Button variant="secondary" onClick={() => pergiKe('pembelian/pesanan')}>
-            {docType === 'bill' ? 'Mulai dari pesanan pembelian' : 'Pelajari alur pembelian'}
+            {docType === 'bill' ? t('daftar.kosongTagihan') : t('daftar.kosongPesanan')}
           </Button>
         }
         onSortChange={tabel.setSort}
@@ -273,21 +281,34 @@ export function DaftarPembelian({
  * hanya ada penanda biner - dan justru itulah yang perlu dilihat orang
  * pembelian sebelum menyetujui tagihan.
  */
+/**
+ * Ringkasan kuantitas: belum, sebagian, atau penuh.
+ *
+ * Sebelumnya labelnya dirakit dari potongan — `Belum ${kata}` dan
+ * `${kata} penuh` — dan itu bekerja persis selama bahasanya satu. Bahasa
+ * Inggris membalik urutannya ("Fully received", bukan "Received fully"), dan
+ * perakitan semacam ini tidak punya cara mengetahuinya.
+ *
+ * Sekarang yang dikembalikan KUNCI, bukan kalimat. Yang memanggil menerjemahkan.
+ */
 function ringkasKuantitas(
   dokumen: PurchaseDocumentDetail | null,
   ambil: (baris: PurchaseDocumentDetail['lines'][number]) => number,
-  kata: string,
-): { readonly label: string; readonly penuh: boolean } {
+  sumbu: 'diterima' | 'ditagih',
+): { readonly kunci: 'kuantitas.diterima.belum'; readonly penuh: boolean } {
+  const kunci = (sisi: 'belum' | 'sebagian' | 'penuh') =>
+    `kuantitas.${sumbu}.${sisi}` as 'kuantitas.diterima.belum'
+
   if (dokumen === null || dokumen.lines.length === 0) {
-    return { label: `Belum ${kata}`, penuh: false }
+    return { kunci: kunci('belum'), penuh: false }
   }
 
   const dipesan = dokumen.lines.reduce((jumlah, baris) => jumlah + baris.qty, 0)
   const terpenuhi = dokumen.lines.reduce((jumlah, baris) => jumlah + ambil(baris), 0)
 
-  if (terpenuhi <= 0) return { label: `Belum ${kata}`, penuh: false }
-  if (terpenuhi >= dipesan) return { label: `${kata[0]!.toUpperCase()}${kata.slice(1)} penuh`, penuh: true }
-  return { label: `Sebagian ${kata}`, penuh: false }
+  if (terpenuhi <= 0) return { kunci: kunci('belum'), penuh: false }
+  if (terpenuhi >= dipesan) return { kunci: kunci('penuh'), penuh: true }
+  return { kunci: kunci('sebagian'), penuh: false }
 }
 
 export function DetailPesanan({
@@ -297,6 +318,8 @@ export function DetailPesanan({
   readonly konteks: Konteks
   readonly documentId: string
 }): ReactNode {
+  const { t } = useTranslation('pembelian')
+  const format = useFormat()
   const [dokumen, setDokumen] = useState<PurchaseDocumentDetail | null>(null)
   const [terima, setTerima] = useState<Record<string, string>>({})
   const [gudang, setGudang] = useState<readonly WarehouseOption[]>([])
@@ -312,7 +335,7 @@ export function DetailPesanan({
       )
       setDokumen(jawaban.data)
     } catch (kesalahan) {
-      setGalat(kesalahan instanceof ApiError ? kesalahan.message : 'Tidak dapat memuat pesanan.')
+      setGalat(kesalahan instanceof ApiError ? kesalahan.message : t('pesanan.gagalMuat'))
     }
   }
 
@@ -349,29 +372,31 @@ export function DetailPesanan({
             badges: (
               <>
                 <StatusBadge status={status(dokumen.lifecycleStatus)} />
-                <Badge tone={penerimaan.penuh ? 'success' : 'neutral'}>{penerimaan.label}</Badge>
-                <Badge tone={penagihan.penuh ? 'success' : 'neutral'}>{penagihan.label}</Badge>
+                <Badge tone={penerimaan.penuh ? 'success' : 'neutral'}>
+                  {t(penerimaan.kunci)}
+                </Badge>
+                <Badge tone={penagihan.penuh ? 'success' : 'neutral'}>{t(penagihan.kunci)}</Badge>
               </>
             ),
             tabs: (
               <Tabs
-                label="Bagian pesanan"
+                label={t('pesanan.bagian')}
                 activeId={tab}
                 onSelect={setTab}
                 items={[
-                  { id: 'ringkasan', label: 'Ringkasan' },
-                  { id: 'baris', label: 'Baris', count: dokumen.lines.length },
+                  { id: 'ringkasan', label: t('pesanan.tabRingkasan') },
+                  { id: 'baris', label: t('pesanan.tabBaris'), count: dokumen.lines.length },
                   {
                     id: 'terkait',
-                    label: 'Dokumen terkait',
+                    label: t('pesanan.tabTerkait'),
                     count: dokumen.sourceDocumentId === null ? 0 : 1,
                   },
-                  { id: 'aktivitas', label: 'Aktivitas' },
+                  { id: 'aktivitas', label: t('pesanan.tabAktivitas') },
                 ]}
               />
             ),
           },
-    [dokumen, tab, penerimaan.label, penagihan.label],
+    [dokumen, tab, penerimaan.kunci, penagihan.kunci, t],
   )
 
   async function catatPenerimaan(): Promise<void> {
@@ -385,7 +410,7 @@ export function DetailPesanan({
         .filter((item) => item.qty_received > 0)
 
       if (baris.length === 0) {
-        setGalat('Isi kuantitas diterima pada sedikitnya satu baris.')
+        setGalat(t('pesanan.wajibKuantitas'))
         return
       }
 
@@ -393,7 +418,7 @@ export function DetailPesanan({
       if (gudangTujuan === undefined) {
         // Dinyatakan, bukan dibiarkan gagal sebagai galat validasi server yang
         // menyebut nama kolom.
-        setGalat('Company ini belum punya gudang. Buat gudang lebih dulu.')
+        setGalat(t('pesanan.belumAdaGudang'))
         return
       }
 
@@ -422,7 +447,7 @@ export function DetailPesanan({
       await muat()
     } catch (kesalahan) {
       setGalat(
-        kesalahan instanceof ApiError ? kesalahan.message : 'Penerimaan tidak dapat dicatat.',
+        kesalahan instanceof ApiError ? kesalahan.message : t('pesanan.gagalTerima'),
       )
     } finally {
       setSedang(false)
@@ -430,7 +455,11 @@ export function DetailPesanan({
   }
 
   if (dokumen === null) {
-    return galat === null ? <p>Memuat…</p> : <p className={styles.noticeDanger}>{galat}</p>
+    return galat === null ? (
+      <p>{t('pesanan.memuat')}</p>
+    ) : (
+      <p className={styles.noticeDanger}>{galat}</p>
+    )
   }
 
   const dapatMenerima = dokumen.lifecycleStatus === 'approved'
@@ -442,18 +471,20 @@ export function DetailPesanan({
       <TabPanel id="ringkasan" activeId={tab}>
       <div className={styles.meta}>
         <div>
-          <div className={styles.metaLabel}>Nomor</div>
-          <div className={styles.metaValue}>{dokumen.number ?? '(belum bernomor)'}</div>
+          <div className={styles.metaLabel}>{t('pesanan.nomor')}</div>
+          <div className={styles.metaValue}>
+            {dokumen.number ?? t('daftar.belumBernomor')}
+          </div>
         </div>
         <div>
-          <div className={styles.metaLabel}>Vendor</div>
+          <div className={styles.metaLabel}>{t('pesanan.vendor')}</div>
           <div className={styles.metaValue}>
             {dokumen.vendorName} {dokumen.vendorIsPkp ? <Badge tone="accent">PKP</Badge> : null}
           </div>
         </div>
         <div>
-          <div className={styles.metaLabel}>Total</div>
-          <div className={styles.metaValue}>{formatAmount(dokumen.total, dokumen.currency)}</div>
+          <div className={styles.metaLabel}>{t('pesanan.total')}</div>
+          <div className={styles.metaValue}>{format.angka(dokumen.total, dokumen.currency)}</div>
         </div>
       </div>
       </TabPanel>
@@ -461,25 +492,25 @@ export function DetailPesanan({
       <TabPanel id="baris" activeId={tab}>
       <table className={styles.matchTable}>
         <caption>
-          Baris pesanan — kuantitas diterima dan ditagih dilacak per baris, bukan per dokumen
+          {t('pesanan.captionBaris')}
         </caption>
         <thead>
           <tr>
             <th scope="col">#</th>
-            <th scope="col">Deskripsi</th>
+            <th scope="col">{t('pesanan.kolomDeskripsi')}</th>
             <th scope="col" data-numeric="true">
-              Dipesan
+              {t('pesanan.kolomDipesan')}
             </th>
             <th scope="col" data-numeric="true">
-              Diterima
+              {t('pesanan.kolomDiterima')}
             </th>
             <th scope="col" data-numeric="true">
-              Ditagih
+              {t('pesanan.kolomDitagih')}
             </th>
             <th scope="col" data-numeric="true">
-              Harga satuan
+              {t('pesanan.kolomHargaSatuan')}
             </th>
-            {dapatMenerima ? <th scope="col">Terima sekarang</th> : null}
+            {dapatMenerima ? <th scope="col">{t('pesanan.kolomTerimaSekarang')}</th> : null}
           </tr>
         </thead>
         <tbody>
@@ -492,11 +523,11 @@ export function DetailPesanan({
               </td>
               <td data-numeric="true">{baris.qtyReceived}</td>
               <td data-numeric="true">{baris.qtyBilled}</td>
-              <td data-numeric="true">{formatAmount(baris.unitPrice, dokumen.currency)}</td>
+              <td data-numeric="true">{format.angka(baris.unitPrice, dokumen.currency)}</td>
               {dapatMenerima ? (
                 <td>
                   <TextField
-                    label={`Diterima baris ${baris.lineNo}`}
+                    label={t('pesanan.terimaBaris', { nomor: baris.lineNo })}
                     value={terima[baris.id] ?? ''}
                     onChange={(nilai) => setTerima((lama) => ({ ...lama, [baris.id]: nilai }))}
                   />
@@ -515,13 +546,12 @@ export function DetailPesanan({
       <TabPanel id="terkait" activeId={tab}>
         {dokumen.sourceDocumentId === null ? (
           <p className={styles.notice}>
-            Pesanan ini dibuat langsung, bukan dari RFQ. Penerimaan dan tagihan yang lahir
-            darinya belum ditautkan balik ke sini.
+            {t('pesanan.tanpaSumber')}
           </p>
         ) : (
           <div className={styles.meta}>
             <div>
-              <div className={styles.metaLabel}>Dokumen sumber</div>
+              <div className={styles.metaLabel}>{t('pesanan.dokumenSumber')}</div>
               <div className={styles.metaValue}>{dokumen.sourceDocumentId}</div>
             </div>
           </div>
@@ -530,23 +560,23 @@ export function DetailPesanan({
 
       <TabPanel id="aktivitas" activeId={tab}>
         <p className={styles.notice}>
-          Audit trail belum tersedia di antarmuka. Perubahan sudah tercatat di{' '}
-          <code>audit_log</code>, tetapi jalur bacanya belum dibangun.
+          {t('pesanan.auditBelumAda')} <code>audit_log</code>
+          {t('pesanan.auditBelumAdaLanjutan')}
         </p>
       </TabPanel>
 
       <div className={styles.row}>
         {dapatMenerima ? (
           <Button loading={sedang} onClick={() => void catatPenerimaan()}>
-            Catat penerimaan
+            {t('pesanan.catatPenerimaan')}
           </Button>
         ) : (
           <p className={styles.notice}>
-            Penerimaan hanya dapat dicatat atas pesanan berstatus disetujui.
+            {t('pesanan.hanyaDisetujui')}
           </p>
         )}
         <Button variant="ghost" onClick={() => pergiKe('pembelian/pesanan')}>
-          Kembali ke daftar
+          {t('pesanan.kembali')}
         </Button>
       </div>
     </div>
@@ -556,6 +586,8 @@ export function DetailPesanan({
 // ── Daftar penerimaan ──────────────────────────────────────────────────────
 
 export function DaftarPenerimaan({ konteks }: { readonly konteks: Konteks }): ReactNode {
+  const { t } = useTranslation('pembelian')
+  const format = useFormat()
   const [state, setState] = useState<TableState<GoodsReceiptSummary>>({ kind: 'loading' })
 
   async function muat(): Promise<void> {
@@ -577,7 +609,7 @@ export function DaftarPenerimaan({ konteks }: { readonly konteks: Konteks }): Re
     } catch (galat) {
       setState({
         kind: 'error',
-        message: galat instanceof ApiError ? galat.message : 'Tidak dapat memuat penerimaan.',
+        message: galat instanceof ApiError ? galat.message : t('penerimaan.gagal'),
       })
     }
   }
@@ -590,16 +622,25 @@ export function DaftarPenerimaan({ konteks }: { readonly konteks: Konteks }): Re
     () => [
       {
         id: 'number',
-        header: 'Nomor',
+        header: t('penerimaan.kolomNomor'),
         identifier: true,
         cell: (row) => row.number ?? '(tanpa nomor)',
       },
-      { id: 'date', header: 'Tanggal terima', cell: (row) => row.receivedDate },
-      { id: 'po', header: 'Pesanan', cell: (row) => row.purchaseOrderNumber ?? '—' },
-      { id: 'vendor', header: 'Vendor', cell: (row) => row.vendorName },
-      { id: 'lines', header: 'Jumlah baris', align: 'end', cell: (row) => row.lineCount },
+      {
+        id: 'date',
+        header: t('penerimaan.kolomTanggalTerima'),
+        cell: (row) => format.tanggalPendek(row.receivedDate),
+      },
+      { id: 'po', header: t('penerimaan.kolomPesanan'), cell: (row) => row.purchaseOrderNumber ?? '—' },
+      { id: 'vendor', header: t('penerimaan.kolomVendor'), cell: (row) => row.vendorName },
+      {
+        id: 'lines',
+        header: t('penerimaan.kolomJumlahBaris'),
+        align: 'end',
+        cell: (row) => format.bilangan(row.lineCount),
+      },
     ],
-    [],
+    [t, format],
   )
 
   const { preferences } = usePreferences()
@@ -607,7 +648,7 @@ export function DaftarPenerimaan({ konteks }: { readonly konteks: Konteks }): Re
 
   return (
     <DataTable
-      caption="Penerimaan Barang"
+      caption={t('penerimaan.caption')}
       columns={columns}
       state={tabel.terapkan(state, [])}
       rowId={(row) => row.id}
@@ -618,7 +659,7 @@ export function DaftarPenerimaan({ konteks }: { readonly konteks: Konteks }): Re
       companyName={konteks.companyName}
       emptyAction={
         <Button variant="secondary" onClick={() => pergiKe('pembelian/pesanan')}>
-          Buka pesanan pembelian
+          {t('penerimaan.bukaPesanan')}
         </Button>
       }
       onSortChange={tabel.setSort}
@@ -636,6 +677,8 @@ export function DetailTagihan({
   readonly konteks: Konteks
   readonly documentId: string
 }): ReactNode {
+  const { t } = useTranslation('pembelian')
+  const format = useFormat()
   const [panel, setPanel] = useState<MatchPanel | null>(null)
   const [dokumen, setDokumen] = useState<PurchaseDocumentDetail | null>(null)
   const [galat, setGalat] = useState<string[] | null>(null)
@@ -654,7 +697,7 @@ export function DetailTagihan({
       setDokumen(detail.data)
       setPanel(cocok.data)
     } catch (kesalahan) {
-      setGalat([kesalahan instanceof ApiError ? kesalahan.message : 'Tidak dapat memuat tagihan.'])
+      setGalat([kesalahan instanceof ApiError ? kesalahan.message : t('tagihan.gagalMuat')])
     }
   }
 
@@ -682,7 +725,7 @@ export function DetailTagihan({
           ? kesalahan.errors.map(
               (butir) => (butir.message as string | undefined) ?? kesalahan.message,
             )
-          : ['Posting gagal tanpa keterangan.'],
+          : [t('tagihan.gagalPosting')],
       )
       await muat()
     } finally {
@@ -705,7 +748,6 @@ export function DetailTagihan({
    * early return akan berubah jumlahnya saat dokumen selesai dimuat, dan itu
    * menghentikan React - bukan sekadar melanggar aturan di atas kertas.
    */
-  const label = panel === null ? undefined : LABEL_PENCOCOKAN[panel.matchStatus]
   const penerimaan = ringkasKuantitas(dokumen, (baris) => baris.qtyReceived, 'diterima')
 
   /*
@@ -719,9 +761,9 @@ export function DetailTagihan({
     panel === null
       ? null
       : panel.matchStatus === 'exception'
-        ? 'Pencocokan tiga arah menemukan selisih yang belum disetujui. Periksa tab Baris, lalu setujui pengecualiannya bila selisihnya memang disepakati.'
+        ? t('tagihan.tertahanSelisih')
         : panel.matchStatus === 'not_matched'
-          ? 'Pencocokan tiga arah belum dijalankan atas tagihan ini.'
+          ? t('tagihan.tertahanBelumCocok')
           : null
 
   useHeaderHalaman(
@@ -732,34 +774,40 @@ export function DetailTagihan({
             badges: (
               <>
                 <StatusBadge status={status(panel.lifecycleStatus)} />
-                <Badge tone={label?.nada ?? 'neutral'}>{label?.teks ?? panel.matchStatus}</Badge>
-                <Badge tone={penerimaan.penuh ? 'success' : 'neutral'}>{penerimaan.label}</Badge>
+                <Badge tone={NADA_PENCOCOKAN[panel.matchStatus] ?? 'neutral'}>
+                  {t(`pencocokan.${panel.matchStatus}` as 'pencocokan.matched', {
+                    defaultValue: panel.matchStatus,
+                  })}
+                </Badge>
+                <Badge tone={penerimaan.penuh ? 'success' : 'neutral'}>
+                  {t(penerimaan.kunci)}
+                </Badge>
               </>
             ),
             tabs: (
               <Tabs
-                label="Bagian tagihan"
+                label={t('tagihan.bagian')}
                 activeId={tab}
                 onSelect={setTab}
                 items={[
-                  { id: 'ringkasan', label: 'Ringkasan' },
-                  { id: 'baris', label: 'Baris', count: panel.lines.length },
+                  { id: 'ringkasan', label: t('tagihan.tabRingkasan') },
+                  { id: 'baris', label: t('tagihan.tabBaris'), count: panel.lines.length },
                   {
                     id: 'terkait',
-                    label: 'Dokumen terkait',
+                    label: t('tagihan.tabTerkait'),
                     count: dokumen.sourceDocumentId === null ? 0 : 1,
                   },
-                  { id: 'aktivitas', label: 'Aktivitas' },
+                  { id: 'aktivitas', label: t('tagihan.tabAktivitas') },
                 ]}
               />
             ),
           },
-    [panel, dokumen, tab, penerimaan.label, label],
+    [panel, dokumen, tab, penerimaan.kunci, t],
   )
 
   if (panel === null || dokumen === null) {
     return galat === null ? (
-      <p>Memuat…</p>
+      <p>{t('tagihan.memuat')}</p>
     ) : (
       <p className={`${styles.notice} ${styles.noticeDanger}`}>{galat.join(' ')}</p>
     )
@@ -770,7 +818,7 @@ export function DetailTagihan({
     <div className={styles.stack}>
       {galat !== null ? (
         <div className={`${styles.notice} ${styles.noticeDanger}`}>
-          <strong>Tagihan tidak dapat diposting.</strong>
+          <strong>{t('tagihan.tidakDapatDiposting')}</strong>
           <ul>
             {galat.map((baris) => (
               <li key={baris}>{baris}</li>
@@ -782,24 +830,30 @@ export function DetailTagihan({
       <TabPanel id="ringkasan" activeId={tab}>
       <div className={styles.meta}>
         <div>
-          <div className={styles.metaLabel}>Nomor</div>
-          <div className={styles.metaValue}>{panel.billNumber ?? '(belum bernomor)'}</div>
+          <div className={styles.metaLabel}>{t('tagihan.nomor')}</div>
+          <div className={styles.metaValue}>
+            {panel.billNumber ?? t('daftar.belumBernomor')}
+          </div>
         </div>
         <div>
-          <div className={styles.metaLabel}>Vendor</div>
+          <div className={styles.metaLabel}>{t('tagihan.vendor')}</div>
           <div className={styles.metaValue}>{dokumen.vendorName}</div>
         </div>
         <div>
-          <div className={styles.metaLabel}>Pencocokan</div>
+          <div className={styles.metaLabel}>{t('tagihan.pencocokan')}</div>
           <div className={styles.metaValue}>
-            <Badge tone={label?.nada ?? 'neutral'}>{label?.teks ?? panel.matchStatus}</Badge>
+            <Badge tone={NADA_PENCOCOKAN[panel.matchStatus] ?? 'neutral'}>
+              {t(`pencocokan.${panel.matchStatus}` as 'pencocokan.matched', {
+                defaultValue: panel.matchStatus,
+              })}
+            </Badge>
           </div>
         </div>
       </div>
 
       {panel.overrideReason !== null ? (
         <p className={styles.notice}>
-          <strong>Pengecualian disetujui:</strong> {panel.overrideReason}
+          <strong>{t('tagihan.pengecualianDisetujui')}</strong> {panel.overrideReason}
         </p>
       ) : null}
 
@@ -813,26 +867,26 @@ export function DetailTagihan({
       <TabPanel id="baris" activeId={tab}>
       <table className={styles.matchTable}>
         <caption>
-          Pencocokan tiga arah — dipesan, diterima, dan ditagih pada baris yang sama
+          {t('tagihan.captionBaris')}
         </caption>
         <thead>
           <tr>
             <th scope="col">#</th>
-            <th scope="col">Deskripsi</th>
+            <th scope="col">{t('tagihan.kolomDeskripsi')}</th>
             <th scope="col" data-numeric="true">
-              Dipesan
+              {t('tagihan.kolomDipesan')}
             </th>
             <th scope="col" data-numeric="true">
-              Diterima
+              {t('tagihan.kolomDiterima')}
             </th>
             <th scope="col" data-numeric="true">
-              Ditagih
+              {t('tagihan.kolomDitagih')}
             </th>
             <th scope="col" data-numeric="true">
-              Harga pesanan
+              {t('tagihan.kolomHargaPesanan')}
             </th>
             <th scope="col" data-numeric="true">
-              Harga tagihan
+              {t('tagihan.kolomHargaTagihan')}
             </th>
           </tr>
         </thead>
@@ -855,13 +909,15 @@ export function DetailTagihan({
               <td data-numeric="true">{baris.qtyReceived}</td>
               <td data-numeric="true">
                 {baris.qtyBilled}
-                {baris.qtyBilledBefore > 0 ? ` (+${baris.qtyBilledBefore} sebelumnya)` : ''}
+                {baris.qtyBilledBefore > 0
+                  ? t('tagihan.sebelumnya', { jumlah: format.bilangan(baris.qtyBilledBefore) })
+                  : ''}
               </td>
               <td data-numeric="true">
-                {formatAmount(baris.orderedUnitPrice, dokumen.currency)}
+                {format.angka(baris.orderedUnitPrice, dokumen.currency)}
               </td>
               <td data-numeric="true">
-                {formatAmount(baris.billedUnitPrice, dokumen.currency)}
+                {format.angka(baris.billedUnitPrice, dokumen.currency)}
               </td>
             </tr>
           ))}
@@ -872,16 +928,15 @@ export function DetailTagihan({
       <TabPanel id="terkait" activeId={tab}>
         {dokumen.sourceDocumentId === null ? (
           <p className={styles.notice}>
-            Tagihan ini tidak menunjuk pesanan pembelian mana pun. Pencocokan tiga arah tetap
-            berjalan atas baris yang ada, tetapi jejak konversinya tidak tercatat.
+            {t('tagihan.tanpaPesanan')}
           </p>
         ) : (
           <div className={styles.meta}>
             <div>
-              <div className={styles.metaLabel}>Pesanan pembelian</div>
+              <div className={styles.metaLabel}>{t('tagihan.pesananPembelian')}</div>
               <div className={styles.metaValue}>
                 <a href={href(`pembelian/pesanan/${dokumen.sourceDocumentId}`)}>
-                  Buka pesanan sumber
+                  {t('tagihan.bukaPesananSumber')}
                 </a>
               </div>
             </div>
@@ -891,8 +946,8 @@ export function DetailTagihan({
 
       <TabPanel id="aktivitas" activeId={tab}>
         <p className={styles.notice}>
-          Audit trail belum tersedia di antarmuka. Persetujuan pengecualian tercatat di{' '}
-          <code>audit_log</code> beserta alasannya, tetapi jalur bacanya belum dibangun.
+          {t('tagihan.auditBelumAda')} <code>audit_log</code>{' '}
+          {t('tagihan.auditBelumAdaLanjutan')}
         </p>
       </TabPanel>
 
@@ -909,7 +964,7 @@ export function DetailTagihan({
       <div className={styles.stack}>
         {tertahan === null ? null : (
           <p className={`${styles.notice} ${styles.noticeDanger}`} role="status">
-            <strong>Tagihan ini belum dapat diposting.</strong> {tertahan}
+            <strong>{t('tagihan.belumDapatDiposting')}</strong> {tertahan}
           </p>
         )}
 
@@ -920,11 +975,11 @@ export function DetailTagihan({
               disabled={tertahan !== null}
               onClick={() => void posting()}
             >
-              Posting tagihan
+              {t('tagihan.posting')}
             </Button>
           ) : null}
           <Button variant="ghost" onClick={() => pergiKe('pembelian/tagihan')}>
-            Kembali ke daftar
+            {t('tagihan.kembali')}
           </Button>
         </div>
       </div>

@@ -1,0 +1,130 @@
+{
+  "navigasi": {
+    "buka": "Navigasi",
+    "tutup": "Tutup navigasi",
+    "lewatiKeKonten": "Lewati ke konten utama",
+    "lewatiKeModul": "Lewati ke navigasi modul",
+    "modul": "Modul",
+    "semuaModul": "Semua modul",
+    "cari": "Cari",
+    "notifikasi": "Notifikasi",
+    "breadcrumb": "Remah roti",
+    "panelDetail": "Detail"
+  },
+  "modul": {
+    "dasbor": "Dasbor",
+    "penjualan": "Penjualan",
+    "pembelian": "Pembelian",
+    "akuntansi": "Akuntansi",
+    "pajak": "Pajak"
+  },
+  "menuPengguna": {
+    "pemicu": "Menu pengguna",
+    "pemicuDengan": "Menu pengguna — {{nama}}",
+    "tutup": "Tutup menu pengguna",
+    "tema": "Tema",
+    "temaSistem": "Ikuti sistem",
+    "temaTerang": "Terang",
+    "temaGelap": "Gelap",
+    "kepadatan": "Kepadatan",
+    "kepadatanLega": "Lega",
+    "kepadatanPadat": "Padat",
+    "bahasa": "Bahasa",
+    "bahasaId": "Bahasa Indonesia",
+    "bahasaEn": "English"
+  },
+  "company": {
+    "pilih": "Pilih company",
+    "berpindah": "Konteks berpindah ke {{nama}}.",
+    "cari": "Cari company",
+    "nonaktif": "Nonaktif",
+    "tenantLain": "Tenant lain",
+    "label": "Company"
+  },
+  "peran": {
+    "tenant_owner": "Pemilik Tenant",
+    "tenant_admin": "Admin Tenant",
+    "company_admin": "Admin Company",
+    "member": "Anggota"
+  },
+  "palet": {
+    "judul": "Perintah dan pencarian",
+    "cari": "Cari perintah, halaman, atau dokumen",
+    "hasil": "Hasil",
+    "kosong": "Tidak ada hasil."
+  },
+  "sidebar": {
+    "dasbor": "Ringkasan",
+    "penjualan": "Faktur Penjualan",
+    "penjualan/baru": "Faktur baru",
+    "pembelian/pesanan": "Pesanan Pembelian",
+    "pembelian/penerimaan": "Penerimaan Barang",
+    "pembelian/tagihan": "Faktur Pembelian",
+    "akuntansi/bagan-akun": "Bagan Akun",
+    "akuntansi/laba-rugi": "Laba Rugi",
+    "akuntansi/buku-besar": "Buku Besar",
+    "pajak/kode": "Kode Pajak",
+    "pajak/nomor-seri": "Nomor Seri",
+    "pajak/keluaran": "Faktur Pajak Keluaran",
+    "pajak/masukan": "Faktur Pajak Masukan",
+    "pajak/terbitkan": "Terbitkan Faktur Pajak",
+    "pajak/rekonsiliasi": "Rekonsiliasi"
+  },
+  "grup": {
+    "Transaksi": "Transaksi",
+    "Data induk": "Data induk",
+    "Laporan": "Laporan",
+    "Pengaturan": "Pengaturan"
+  },
+  "judul": {
+    "dasbor": "Dasbor",
+    "penjualan": "Faktur Penjualan",
+    "penjualan/baru": "Faktur Penjualan baru",
+    "pembelian/pesanan": "Pesanan Pembelian",
+    "pembelian/penerimaan": "Penerimaan Barang",
+    "pembelian/tagihan": "Faktur Pembelian",
+    "akuntansi/bagan-akun": "Bagan Akun",
+    "akuntansi/laba-rugi": "Laba Rugi",
+    "akuntansi/buku-besar": "Buku Besar",
+    "pajak/kode": "Kode Pajak",
+    "pajak/nomor-seri": "Nomor Seri Faktur Pajak",
+    "pajak/keluaran": "Faktur Pajak Keluaran",
+    "pajak/masukan": "Faktur Pajak Masukan",
+    "pajak/terbitkan": "Terbitkan Faktur Pajak",
+    "pajak/rekonsiliasi": "Rekonsiliasi Pajak",
+    "tidakDitemukan": "Halaman tidak ditemukan."
+  },
+  "remah": {
+    "dasbor": "Dasbor",
+    "penjualan": "Penjualan",
+    "fakturPenjualan": "Faktur Penjualan",
+    "baru": "Baru",
+    "pembelian": "Pembelian",
+    "pesanan": "Pesanan",
+    "penerimaan": "Penerimaan",
+    "tagihan": "Tagihan",
+    "akuntansi": "Akuntansi",
+    "baganAkun": "Bagan Akun",
+    "labaRugi": "Laba Rugi",
+    "bukuBesar": "Buku Besar",
+    "pajak": "Pajak",
+    "kodePajak": "Kode Pajak",
+    "nomorSeri": "Nomor Seri",
+    "fakturPajakKeluaran": "Faktur Pajak Keluaran",
+    "fakturPajakMasukan": "Faktur Pajak Masukan",
+    "terbitkan": "Terbitkan",
+    "rekonsiliasi": "Rekonsiliasi"
+  },
+  "aksiPrimer": {
+    "fakturBaru": "Faktur baru",
+    "terbitkanFakturPajak": "Terbitkan faktur pajak"
+  },
+  "gerbang": {
+    "memuatCompany": "Memuat company…",
+    "gagalJudul": "Tidak dapat memuat daftar company",
+    "periksaLagi": "Periksa lagi",
+    "kosongJudul": "Belum ada company untuk akun ini",
+    "kosongPenjelasan": "Anda sudah masuk, tetapi akun Anda belum diberi akses ke company mana pun. Mintalah admin tenant Anda menambahkan aksesnya, lalu periksa lagi.",
+    "sesiBerakhir": "Sesi Anda berakhir. Silakan masuk lagi."
+  }
+}

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { ReactNode } from 'react'
 
 import type { AccountSummary, LedgerEntry } from '#application/queries'
@@ -30,22 +31,28 @@ interface Konteks {
   readonly currency: string
 }
 
-/** Lima klasifikasi akun, dan jumlahnya tetap — Modul Akuntansi. */
-const CHIP_AKUN: readonly FilterChip[] = [
-  { id: 'asset', label: 'Aset' },
-  { id: 'liability', label: 'Kewajiban' },
-  { id: 'equity', label: 'Ekuitas' },
-  { id: 'revenue', label: 'Pendapatan' },
-  { id: 'expense', label: 'Beban' },
-]
+/**
+ * Lima klasifikasi akun, dan jumlahnya tetap — Modul Akuntansi.
+ *
+ * Yang tersimpan hanya id-nya. Id inilah yang dikirim ke server sebagai filter;
+ * labelnya urusan layar, dan menyatukan keduanya dalam satu larik membuat
+ * terjemahan diam-diam ikut terkirim sebagai parameter kueri.
+ */
+const KLASIFIKASI = ['asset', 'liability', 'equity', 'revenue', 'expense'] as const
 
 export function BaganAkun({ konteks }: { readonly konteks: Konteks }): ReactNode {
+  const { t } = useTranslation('akuntansi')
   const [state, setState] = useState<TableState<AccountSummary>>({ kind: 'loading' })
   const [semua, setSemua] = useState<readonly AccountSummary[]>([])
   const [filterAktif, setFilterAktif] = useState<readonly string[]>([])
 
   const labelFilter = (id: string): string =>
-    CHIP_AKUN.find((chip) => chip.id === id)?.label ?? id
+    t(`klasifikasi.${id}` as `klasifikasi.asset`, { defaultValue: id })
+
+  const CHIP_AKUN: readonly FilterChip[] = KLASIFIKASI.map((id) => ({
+    id,
+    label: t(`klasifikasi.${id}`),
+  }))
 
   function tampilkan(baris: readonly AccountSummary[], filter: readonly string[]): void {
     if (baris.length === 0) {
@@ -87,7 +94,7 @@ export function BaganAkun({ konteks }: { readonly konteks: Konteks }): ReactNode
     () => [
       {
         id: 'code',
-        header: 'Kode',
+        header: t('baganAkun.kolomKode'),
         identifier: true,
         sortable: true,
         cell: (row) => row.code,
@@ -95,15 +102,15 @@ export function BaganAkun({ konteks }: { readonly konteks: Konteks }): ReactNode
       },
       {
         id: 'name',
-        header: 'Nama akun',
+        header: t('baganAkun.kolomNama'),
         sortable: true,
         cell: (row) => row.name,
         sortValue: (row) => row.name,
       },
-      { id: 'type', header: 'Jenis', cell: (row) => row.type },
+      { id: 'type', header: t('baganAkun.kolomJenis'), cell: (row) => row.type },
       {
         id: 'balance',
-        header: 'Saldo',
+        header: t('baganAkun.kolomSaldo'),
         align: 'end',
         sortable: true,
         // Saldo sudah bertanda menurut jenis akun di server — aset dan beban
@@ -115,7 +122,7 @@ export function BaganAkun({ konteks }: { readonly konteks: Konteks }): ReactNode
         sortValue: (row) => row.balance,
       },
     ],
-    [konteks.currency],
+    [konteks.currency, t],
   )
 
   const { preferences } = usePreferences()
@@ -124,12 +131,12 @@ export function BaganAkun({ konteks }: { readonly konteks: Konteks }): ReactNode
   return (
     <div className={styles.stack}>
       <FilterBar
-        label="Saring akun menurut klasifikasi"
+        label={t('baganAkun.saring')}
         chips={CHIP_AKUN}
         activeIds={filterAktif}
         search={{
           value: tabel.kueri,
-          label: 'Cari kode atau nama akun',
+          label: t('baganAkun.cari'),
           onChange: tabel.setKueri,
         }}
         onToggle={(id) =>
@@ -148,7 +155,7 @@ export function BaganAkun({ konteks }: { readonly konteks: Konteks }): ReactNode
         karena itu bukan "buat akun pertama", melainkan memuat ulang.
       */}
       <DataTable
-        caption="Bagan Akun"
+        caption={t('baganAkun.caption')}
         columns={columns}
         state={tabel.terapkan(state, filterAktif.map(labelFilter))}
         rowId={(row) => row.id}
@@ -160,7 +167,7 @@ export function BaganAkun({ konteks }: { readonly konteks: Konteks }): ReactNode
         companyName={konteks.companyName}
         emptyAction={
           <Button variant="secondary" onClick={() => void muat()}>
-            Muat ulang bagan akun
+            {t('baganAkun.muatUlang')}
           </Button>
         }
         onSortChange={tabel.setSort}
@@ -199,6 +206,7 @@ export function BukuBesar({
   /** Datang dari rute — `akuntansi/buku-besar/<id>`. */
   readonly accountId?: string
 }): ReactNode {
+  const { t } = useTranslation('akuntansi')
   const [akun, setAkun] = useState<readonly AccountSummary[]>([])
   const [terpilih, setTerpilih] = useState(accountId ?? '')
   const [state, setState] = useState<TableState<LedgerEntry>>({ kind: 'loading' })
@@ -236,7 +244,7 @@ export function BukuBesar({
             : {
                 kind: 'no_match',
                 activeFilters: [
-                  akun.find((item) => item.id === accountId)?.name ?? 'Akun terpilih',
+                  akun.find((item) => item.id === accountId)?.name ?? t('bukuBesar.akunTerpilih'),
                 ],
               },
         )
@@ -278,27 +286,31 @@ export function BukuBesar({
     () => [
       {
         id: 'date',
-        header: 'Tanggal',
+        header: t('bukuBesar.kolomTanggal'),
         identifier: true,
         sortable: true,
         cell: (row) => row.journalDate,
         sortValue: (row) => row.journalDate,
       },
-      { id: 'journal', header: 'Jurnal', cell: (row) => row.journalNumber ?? '(tanpa nomor)' },
+            {
+        id: 'journal',
+        header: t('bukuBesar.kolomJurnal'),
+        cell: (row) => row.journalNumber ?? t('bukuBesar.tanpaNomor'),
+      },
       {
         id: 'account',
-        header: 'Akun',
+        header: t('bukuBesar.kolomAkun'),
         cell: (row) => `${row.accountCode} — ${row.accountName}`,
       },
       {
         id: 'source',
-        header: 'Sumber',
+        header: t('bukuBesar.kolomSumber'),
         // Menjawab "angka ini datang dari mana" tanpa membuka jurnalnya.
         cell: (row) => row.sourceType ?? '—',
       },
       {
         id: 'debit',
-        header: 'Debit',
+        header: t('bukuBesar.kolomDebit'),
         align: 'end',
         /*
          * Sisi yang tidak dipakai menjadi em dash, bukan sel kosong.
@@ -312,20 +324,20 @@ export function BukuBesar({
       },
       {
         id: 'credit',
-        header: 'Kredit',
+        header: t('bukuBesar.kolomKredit'),
         align: 'end',
         cell: (row) => formatAccounting(row.credit === 0 ? null : row.credit, konteks.currency),
         sortValue: (row) => row.credit,
       },
       {
         id: 'running',
-        header: 'Saldo berjalan',
+        header: t('bukuBesar.kolomSaldoBerjalan'),
         align: 'end',
         cell: (row) => formatAccounting(row.runningBalance, konteks.currency),
         sortValue: (row) => row.runningBalance,
       },
     ],
-    [konteks.currency],
+    [konteks.currency, t],
   )
 
   const { preferences } = usePreferences()
@@ -336,10 +348,10 @@ export function BukuBesar({
       <div className={styles.row}>
         <Select
           id="buku-akun"
-          label="Akun"
+          label={t('bukuBesar.akun')}
           value={terpilih}
           options={[
-            { value: '', label: 'Semua akun' },
+            { value: '', label: t('bukuBesar.semuaAkun') },
             ...akun.map((item) => ({ value: item.id, label: `${item.code} — ${item.name}` })),
           ]}
           onChange={(nilai) => {
@@ -350,7 +362,7 @@ export function BukuBesar({
       </div>
 
       <DataTable
-        caption="Buku Besar"
+        caption={t('bukuBesar.caption')}
         columns={columns}
         state={tabel.terapkan(state, [])}
         rowId={(row) => row.id}
@@ -359,13 +371,15 @@ export function BukuBesar({
         activeFilterLabels={
           terpilih === ''
             ? []
-            : [akun.find((item) => item.id === terpilih)?.name ?? 'Akun terpilih']
+            : [akun.find((item) => item.id === terpilih)?.name ?? t('bukuBesar.akunTerpilih')]
         }
         sort={tabel.sort}
         density={preferences.density}
         companyName={konteks.companyName}
         emptyAction={
-          <Button onClick={() => pergiKe('penjualan/baru')}>Buat faktur pertama</Button>
+          <Button onClick={() => pergiKe('penjualan/baru')}>
+            {t('bukuBesar.buatFakturPertama')}
+          </Button>
         }
         onSortChange={tabel.setSort}
         onRetry={() => void muat(terpilih)}

@@ -1,4 +1,5 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { ReactNode } from 'react'
 
 import styles from './shell.module.css'
@@ -21,6 +22,8 @@ export interface CommandPaletteProps {
 }
 
 export function CommandPalette({ open, items, onClose }: CommandPaletteProps): ReactNode {
+  const { t } = useTranslation('shell')
+
   const [query, setQuery] = useState('')
   const [highlighted, setHighlighted] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -127,7 +130,7 @@ export function CommandPalette({ open, items, onClose }: CommandPaletteProps): R
         ref={panelRef}
         role="dialog"
         aria-modal="true"
-        aria-label="Perintah dan pencarian"
+        aria-label={t('palet.judul')}
         className={styles.palette}
         onKeyDown={onKeyDown}
       >
@@ -136,8 +139,8 @@ export function CommandPalette({ open, items, onClose }: CommandPaletteProps): R
           type="text"
           role="combobox"
           className={styles.paletteInput}
-          placeholder="Cari perintah, halaman, atau dokumen"
-          aria-label="Cari perintah, halaman, atau dokumen"
+          placeholder={t('palet.cari')}
+          aria-label={t('palet.cari')}
           aria-expanded="true"
           aria-controls={listId}
           aria-activedescendant={hasil[highlighted] ? `${listId}-${highlighted}` : undefined}
@@ -149,9 +152,9 @@ export function CommandPalette({ open, items, onClose }: CommandPaletteProps): R
         />
 
         {hasil.length === 0 ? (
-          <p className={styles.paletteEmpty}>Tidak ada hasil.</p>
+          <p className={styles.paletteEmpty}>{t('palet.kosong')}</p>
         ) : (
-          <ul id={listId} role="listbox" aria-label="Hasil" className={styles.paletteList}>
+          <ul id={listId} role="listbox" aria-label={t('palet.hasil')} className={styles.paletteList}>
             {hasil.map((item, index) => {
               const kelompokBaru = item.group !== kelompokTerakhir
               kelompokTerakhir = item.group

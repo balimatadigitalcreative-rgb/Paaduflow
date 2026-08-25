@@ -1,0 +1,63 @@
+{
+  "klasifikasi": {
+    "asset": "Aset",
+    "liability": "Kewajiban",
+    "equity": "Ekuitas",
+    "revenue": "Pendapatan",
+    "expense": "Beban"
+  },
+  "baganAkun": {
+    "caption": "Bagan Akun",
+    "saring": "Saring akun menurut klasifikasi",
+    "cari": "Cari kode atau nama akun",
+    "muatUlang": "Muat ulang bagan akun",
+    "kolomKode": "Kode",
+    "kolomNama": "Nama akun",
+    "kolomJenis": "Jenis",
+    "kolomSaldo": "Saldo"
+  },
+  "bukuBesar": {
+    "caption": "Buku Besar",
+    "akun": "Akun",
+    "semuaAkun": "Semua akun",
+    "akunTerpilih": "Akun terpilih",
+    "buatFakturPertama": "Buat faktur pertama",
+    "kolomTanggal": "Tanggal",
+    "kolomJurnal": "Jurnal",
+    "kolomAkun": "Akun",
+    "kolomSumber": "Sumber",
+    "kolomDebit": "Debit",
+    "kolomKredit": "Kredit",
+    "kolomKeterangan": "Keterangan",
+    "tanpaNomor": "(tanpa nomor)",
+    "kolomSaldoBerjalan": "Saldo berjalan"
+  },
+  "labaRugi": {
+    "gagal": "Tidak dapat memuat laba rugi.",
+    "dari": "Dari",
+    "sampai": "Sampai",
+    "bandingkan": "Bandingkan dengan bulan sebelumnya",
+    "terapkan": "Terapkan",
+    "sempitJudul": "Laporan ini dirancang untuk layar lebih lebar.",
+    "sempitPenjelasan": "Kolom perbandingan dan selisihnya tidak muat dibaca di sini. Buka di tablet atau laptop untuk membacanya utuh — angkanya tetap dapat dilihat di bawah, tetapi akan memerlukan gulir mendatar.",
+    "menghitung": "Sedang menghitung…",
+    "kosongJudul": "Tidak ada transaksi pada periode ini.",
+    "kosongPenjelasan": "Laporan dihitung dari jurnal yang sudah diposting. Coba periode lain, atau posting faktur lebih dulu.",
+    "company": "Company",
+    "periode": "Periode",
+    "mataUang": "Mata uang",
+    "dibangkitkan": "Dibangkitkan",
+    "caption": "Laba Rugi — {{company}}, {{periode}}",
+    "captionBanding": "Laba Rugi — {{company}}, {{periode}} dibandingkan {{pembanding}}",
+    "kolomAkun": "Akun",
+    "kolomSelisih": "Selisih",
+    "pendapatan": "Pendapatan",
+    "beban": "Beban",
+    "labaBersih": "Laba bersih",
+    "jumlahPendapatan": "Jumlah pendapatan",
+    "jumlahBeban": "Jumlah beban",
+    "buka": "Buka {{nama}}",
+    "lipat": "Lipat {{nama}}",
+    "ekspor": "Ekspor belum tersedia. Angka di layar ini dapat disalin apa adanya; ekspor XLSX yang mengirim angka sebagai angka menyusul."
+  }
+}

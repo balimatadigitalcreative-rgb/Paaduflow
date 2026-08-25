@@ -1,0 +1,55 @@
+{
+  "ringkasan": {
+    "judul": "Ringkasan",
+    "memuat": "Memuat angka dasbor…",
+    "gagal": "Tidak dapat memuat dasbor."
+  },
+  "kpi": {
+    "pendapatan": "Pendapatan bulan ini",
+    "piutang": "Piutang beredar",
+    "jatuh-tempo": "Piutang jatuh tempo",
+    "menunggu": "Menunggu persetujuan",
+    "riwayat": "Riwayat {{label}} dua belas bulan terakhir",
+    "tanpaPembanding": "Tidak ada periode pembanding",
+    "vsBulanLalu": "vs {{bulan}}",
+    "vsAkhirBulanLalu": "vs akhir bulan lalu",
+    "posisiHariIni": "Posisi hari ini"
+  },
+  "pendapatan": {
+    "judul": "Pendapatan dua belas bulan",
+    "keterangan": "Pendapatan dua belas bulan terakhir ({{mataUang}})",
+    "kolomNilai": "Pendapatan",
+    "kosongJudul": "Belum ada pendapatan yang tercatat di buku besar.",
+    "kosongPenjelasan": "Angka di sini lahir dari faktur yang sudah diposting, bukan dari draf. Buat satu faktur dan posting untuk melihatnya muncul.",
+    "kosongAksi": "Buat faktur pertama"
+  },
+  "umurPiutang": {
+    "judul": "Umur piutang",
+    "keterangan": "Umur piutang menurut jatuh tempo ({{mataUang}})",
+    "ember": {
+      "belum_tempo": "Belum jatuh tempo",
+      "lewat_30": "1–30 hari",
+      "lewat_60": "31–60 hari",
+      "lewat_lebih": "Lebih dari 60 hari",
+      "tanpa_tempo": "Tanpa jatuh tempo"
+    }
+  },
+  "jatuhTempo": {
+    "judul": "Piutang jatuh tempo",
+    "kosong": "Tidak ada faktur yang lewat jatuh tempo.",
+    "pesan_other": "<0>{{count, bilangan}} faktur</0> sudah lewat jatuh tempo, senilai {{nilai}}.",
+    "tautan": "Buka daftar faktur"
+  },
+  "persetujuan": {
+    "judul": "Menunggu persetujuan",
+    "kosong": "Tidak ada dokumen yang menunggu keputusan.",
+    "pesan_other": "<0>{{count, bilangan}} dokumen</0> menunggu keputusan Anda.",
+    "tautan": "Buka daftar faktur"
+  },
+  "company": {
+    "judul": "Company yang dapat Anda akses",
+    "tahunFiskal": "Tahun fiskal mulai {{bulan}}",
+    "sedangAktif": "Sedang aktif",
+    "beralih": "Beralih ke company ini"
+  }
+}

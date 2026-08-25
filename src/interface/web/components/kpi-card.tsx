@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import styles from './primitives.module.css'
 
@@ -56,6 +57,8 @@ export interface KpiCardProps {
 }
 
 export function KpiCard(props: KpiCardProps): ReactNode {
+  const { t } = useTranslation()
+
   const { changePercent } = props
   const naik = changePercent !== null && changePercent > 0
   const datar = changePercent !== null && changePercent === 0
@@ -74,7 +77,7 @@ export function KpiCard(props: KpiCardProps): ReactNode {
       <strong className={styles.kpiValue}>{props.value}</strong>
 
       {changePercent === null ? (
-        <span className={styles.kpiBasis}>Tidak ada periode pembanding</span>
+        <span className={styles.kpiBasis}>{t('grafik.tanpaPeriodePembanding')}</span>
       ) : (
         <span className={styles.kpiTrend} data-tone={nada}>
           <span aria-hidden="true">{panah}</span>
@@ -115,6 +118,8 @@ function Sparkline({
   readonly nada: string
   readonly keterangan: string
 }): ReactNode {
+  const { t } = useTranslation()
+
   const tertinggi = Math.max(...nilai)
   const terendah = Math.min(...nilai)
   const rentang = tertinggi - terendah || 1
@@ -154,7 +159,7 @@ function Sparkline({
         <caption>{keterangan}</caption>
         <thead>
           <tr>
-            <th scope="col">Periode</th>
+            <th scope="col">{t('grafik.periode')}</th>
             <th scope="col">Nilai</th>
           </tr>
         </thead>

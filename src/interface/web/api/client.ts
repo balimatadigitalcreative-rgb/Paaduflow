@@ -77,7 +77,7 @@ export function onSesiHabis(penangan: SesiHabis | null): void {
 }
 
 interface Opsi {
-  readonly method?: 'GET' | 'POST' | 'PATCH' | 'DELETE'
+  readonly method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
   readonly body?: unknown
   readonly tanpaToken?: boolean
 }
@@ -141,6 +141,13 @@ export interface Amplop<T> {
   readonly meta?: { readonly next_cursor: string | null }
 }
 
+export interface Profil {
+  readonly id: string
+  readonly email: string
+  readonly full_name: string
+  readonly language: string
+}
+
 export const api = {
   async masuk(email: string, password: string): Promise<void> {
     const jawaban = await panggil<{
@@ -159,6 +166,25 @@ export const api = {
       }).catch(() => undefined)
     }
     sesi.hapus()
+  },
+
+  /** Profil orang yang sedang masuk: nama, email, dan bahasa pilihannya. */
+  profil(): Promise<Amplop<Profil>> {
+    return panggil<Amplop<Profil>>('/v1/me')
+  },
+
+  /**
+   * Menyimpan bahasa di server, bukan di peramban.
+   *
+   * PUT, dan itu bukan sekadar gaya: menyimpan pilihan yang sama dua kali
+   * menghasilkan keadaan yang sama, jadi klik ganda dan percobaan ulang setelah
+   * timeout tidak perlu dijaga kunci idempotency.
+   */
+  simpanBahasa(bahasa: string): Promise<Amplop<{ language: string }>> {
+    return panggil<Amplop<{ language: string }>>('/v1/me/preferences/language', {
+      method: 'PUT',
+      body: { language: bahasa },
+    })
   },
 
   get<T>(path: string): Promise<Amplop<T>> {

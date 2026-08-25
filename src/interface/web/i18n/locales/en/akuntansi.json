@@ -1,0 +1,63 @@
+{
+  "klasifikasi": {
+    "asset": "Assets",
+    "liability": "Liabilities",
+    "equity": "Equity",
+    "revenue": "Revenue",
+    "expense": "Expenses"
+  },
+  "baganAkun": {
+    "caption": "Chart of Accounts",
+    "saring": "Filter accounts by classification",
+    "cari": "Search account code or name",
+    "muatUlang": "Reload chart of accounts",
+    "kolomKode": "Code",
+    "kolomNama": "Account name",
+    "kolomJenis": "Type",
+    "kolomSaldo": "Balance"
+  },
+  "bukuBesar": {
+    "caption": "General Ledger",
+    "akun": "Account",
+    "semuaAkun": "All accounts",
+    "akunTerpilih": "Selected account",
+    "buatFakturPertama": "Create your first invoice",
+    "kolomTanggal": "Date",
+    "kolomJurnal": "Journal",
+    "kolomAkun": "Account",
+    "kolomSumber": "Source",
+    "kolomDebit": "Debit",
+    "kolomKredit": "Credit",
+    "kolomKeterangan": "Description",
+    "tanpaNomor": "(no number)",
+    "kolomSaldoBerjalan": "Running balance"
+  },
+  "labaRugi": {
+    "gagal": "Unable to load the profit and loss report.",
+    "dari": "From",
+    "sampai": "To",
+    "bandingkan": "Compare with the previous month",
+    "terapkan": "Apply",
+    "sempitJudul": "This report is designed for a wider screen.",
+    "sempitPenjelasan": "The comparison and variance columns cannot be read at this width. Open it on a tablet or laptop to see it in full — the figures are still visible below, but will need horizontal scrolling.",
+    "menghitung": "Calculating…",
+    "kosongJudul": "No transactions in this period.",
+    "kosongPenjelasan": "The report is calculated from posted journals. Try another period, or post an invoice first.",
+    "company": "Company",
+    "periode": "Period",
+    "mataUang": "Currency",
+    "dibangkitkan": "Generated",
+    "caption": "Profit and Loss — {{company}}, {{periode}}",
+    "captionBanding": "Profit and Loss — {{company}}, {{periode}} compared with {{pembanding}}",
+    "kolomAkun": "Account",
+    "kolomSelisih": "Variance",
+    "pendapatan": "Revenue",
+    "beban": "Expenses",
+    "labaBersih": "Net profit",
+    "jumlahPendapatan": "Total revenue",
+    "jumlahBeban": "Total expenses",
+    "buka": "Expand {{nama}}",
+    "lipat": "Collapse {{nama}}",
+    "ekspor": "Export is not available yet. The figures on this screen can be copied as they are; an XLSX export that sends numbers as numbers is coming."
+  }
+}

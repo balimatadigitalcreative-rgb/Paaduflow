@@ -4,6 +4,8 @@ import type { IdempotencyStore } from '#shared/idempotency'
 import type {
   AccessibleCompany,
   AccountingQueryPort,
+  BahasaPengguna,
+  ProfilPengguna,
   MasterDataPort,
   PurchaseQueryPort,
   SalesQueryPort,
@@ -148,6 +150,18 @@ export interface AppServices {
    * punya cara mengetahui id company mana pun untuk dimasukkan ke path.
    */
   listCompaniesForUser(userId: string): Promise<readonly AccessibleCompany[]>
+
+  /**
+   * Profil orang yang sedang masuk: nama, email, dan bahasa pilihannya.
+   *
+   * Berjalan tanpa konteks tenant — `users` adalah tabel identitas global.
+   * Dipanggil sekali saat aplikasi dimuat, sebelum company mana pun dipilih,
+   * karena bahasa harus sudah benar sebelum layar pertama digambar.
+   */
+  bacaProfil(userId: string): Promise<ProfilPengguna | null>
+
+  /** Menyimpan bahasa pilihan pengguna. Preferensi, bukan dokumen. */
+  simpanBahasa(userId: string, bahasa: BahasaPengguna): Promise<void>
 
   /** Menjalankan sesuatu di dalam transaksi dengan konteks tenant terpasang. */
   withCompanyContext<T>(

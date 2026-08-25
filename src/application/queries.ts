@@ -48,6 +48,31 @@ export interface CompanyDirectoryPort {
   listForUser(userId: string): Promise<readonly AccessibleCompany[]>
 }
 
+/** Bahasa antarmuka yang didukung. Cerminan `BAHASA` di lapisan web. */
+export type BahasaPengguna = 'id' | 'en'
+
+export interface ProfilPengguna {
+  readonly id: string
+  readonly email: string
+  readonly fullName: string
+  readonly language: BahasaPengguna
+}
+
+/**
+ * Profil orang yang sedang masuk, beserta preferensinya.
+ *
+ * Terpisah dari `CompanyDirectoryPort` meski keduanya berjalan tanpa konteks
+ * tenant: yang satu menjawab "company mana yang boleh saya buka", yang ini
+ * menjawab "siapa saya". Layar memanggil keduanya pada saat yang sama, tetapi
+ * menggabungkannya akan membuat pengalih bahasa bergantung pada daftar company
+ * — dan pengalih bahasa harus tetap bekerja bagi pengguna yang belum punya
+ * company sama sekali.
+ */
+export interface ProfilPenggunaPort {
+  baca(userId: string): Promise<ProfilPengguna | null>
+  simpanBahasa(userId: string, bahasa: BahasaPengguna): Promise<void>
+}
+
 // ── Data induk ─────────────────────────────────────────────────────────────
 //
 // Dibutuhkan setiap form yang harus memilih partner atau barang. Tanpa ini,

@@ -48,6 +48,9 @@ export default defineConfig({
         test: {
           name: 'ui',
           include: ['tests/ui/**/*.test.tsx'],
+          // i18n dipasang sekali per berkas uji, sama seperti `main.tsx`
+          // memasangnya sekali sebelum render pertama.
+          setupFiles: ['tests/ui/setup-i18n.ts'],
           // Audit aksesibilitas otomatis butuh DOM sungguhan. Ia menangkap
           // sekitar sepertiga masalah nyata; sisanya butuh screen reader.
           environment: 'jsdom',

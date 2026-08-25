@@ -1,0 +1,96 @@
+{
+  "aksi": {
+    "simpan": "Simpan",
+    "batal": "Batal",
+    "cobaLagi": "Coba lagi",
+    "hapusFilter": "Hapus filter",
+    "muatUlang": "Muat ulang",
+    "kembali": "Kembali",
+    "keluar": "Keluar",
+    "terapkan": "Terapkan",
+    "tutup": "Tutup",
+    "lanjutkan": "Lanjutkan",
+    "berikutnya": "Berikutnya",
+    "hapusSemua": "Hapus semua",
+    "tetapDiSini": "Tetap di sini",
+    "buangPerubahan": "Buang perubahan"
+  },
+  "status": {
+    "memuat": "Memuat…",
+    "menghitung": "Sedang menghitung…",
+    "tidakAdaData": "Belum ada data di sini",
+    "gagalMemuat": "Gagal memuat data",
+    "tidakAdaHasil": "Tidak ada hasil untuk filter ini",
+    "filterAktif": "Filter yang sedang aktif:",
+    "belumAdaDokumen": "Dokumen yang Anda buat akan muncul di daftar ini.",
+    "tidakAdaHasilPencarian": "Tidak ada hasil untuk pencarian ini.",
+    "adaPerubahan": "Ada perubahan belum tersimpan",
+    "belumAdaPilihan": "Belum ada data."
+  },
+  "tabel": {
+    "barisTerpilih_other": "{{count, bilangan}} baris terpilih",
+    "pilihSemuaCocok": "Pilih semua {{jumlah, bilangan}} baris yang cocok dengan filter",
+    "dariTotal": "{{tampil, bilangan}} dari {{total, bilangan}}",
+    "batalkanPilihan": "Batalkan pilihan",
+    "pilihBarisHalaman": "Pilih baris di halaman ini",
+    "konfirmasiMassal": "Konfirmasi aksi massal"
+  },
+  "baris": {
+    "petunjukPanjang": "Baris dokumen. Enter turun baris, Enter di sel terakhir menambah baris, Ctrl+D menyalin dari baris atas, Ctrl+Backspace menghapus baris.",
+    "petunjukPendek": "Enter turun baris · Enter di sel terakhir menambah baris · Ctrl+D menyalin dari atas · Ctrl+Backspace menghapus baris · tempelan dari Excel mengisi banyak baris",
+    "neto": "Neto",
+    "subtotal": "Subtotal",
+    "diskonDokumen": "Diskon dokumen"
+  },
+  "grafik": {
+    "tanpaPeriodePembanding": "Tidak ada periode pembanding",
+    "periode": "Periode",
+    "jumlahFaktur": "Jumlah faktur",
+    "piutangLunas": "Tidak ada piutang beredar. Seluruh faktur terposting sudah lunas.",
+    "belumAdaPeriode": "Belum ada data untuk periode ini."
+  },
+  "masuk": {
+    "judul": "Paadu Flow",
+    "ajakan": "Masuk untuk melanjutkan.",
+    "email": "Email",
+    "sandi": "Kata sandi",
+    "tombol": "Masuk",
+    "tidakTerhubung": "Tidak dapat menghubungi server."
+  },
+  "siklus": {
+    "draft": "Draf",
+    "submitted": "Diajukan",
+    "pending_approval": "Menunggu persetujuan",
+    "approved": "Disetujui",
+    "rejected": "Ditolak",
+    "posted": "Diposting",
+    "cancelled": "Dibatalkan",
+    "void": "Void",
+    "closed": "Selesai"
+  },
+  "pelunasan": {
+    "unpaid": "Belum dibayar",
+    "partially_paid": "Dibayar sebagian",
+    "paid": "Lunas",
+    "overdue": "Jatuh tempo",
+    "written_off": "Dihapusbukukan"
+  },
+  "pemenuhan": {
+    "not_fulfilled": "Belum dikirim",
+    "partially_fulfilled": "Terkirim sebagian",
+    "fulfilled": "Terkirim",
+    "not_received": "Belum diterima",
+    "partially_received": "Diterima sebagian",
+    "received": "Diterima"
+  },
+  "pajakIstilah": {
+    "catatan": "Istilah di bawah TIDAK PERNAH diterjemahkan — lihat D-150.",
+    "npwp": "NPWP",
+    "nppkp": "NPPKP",
+    "eFaktur": "e-Faktur",
+    "fakturPajak": "Faktur Pajak",
+    "dpp": "DPP",
+    "ppn": "PPN",
+    "pph": "PPh"
+  }
+}

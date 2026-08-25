@@ -16,8 +16,9 @@
     "check:append-only": "node tools/db/check-append-only.js",
     "seed:tax-dev": "node tools/seed/pajak-pengembangan.js",
     "check:contrast": "node tools/a11y/contrast.js",
-    "lint": "npm run lint:js && npm run lint:css && npm run check:append-only && npm run check:env && npm run audit:kontras",
+    "lint": "npm run lint:js && npm run lint:css && npm run check:append-only && npm run check:env && npm run audit:kontras && npm run check:i18n",
     "audit:kontras": "node tools/audit/kontras.js",
+    "check:i18n": "node tools/i18n/periksa.js",
     "check:env": "node tools/check-env-example.js",
     "lint:js": "eslint .",
     "lint:css": "stylelint \"src/**/*.css\" --allow-empty-input",
@@ -71,11 +72,13 @@
     "@tabler/icons-react": "^3.46.0",
     "@tanstack/react-query": "^5.101.4",
     "fastify": "^5.11.3",
+    "i18next": "^26.4.0",
     "jose": "^6.2.8",
     "node-pg-migrate": "^9.0.0",
     "otpauth": "^9.5.1",
     "pg": "^8.23.0",
     "react": "^19.2.8",
-    "react-dom": "^19.2.8"
+    "react-dom": "^19.2.8",
+    "react-i18next": "^17.0.12"
   }
 }

@@ -1,0 +1,97 @@
+{
+  "aksi": {
+    "simpan": "Save",
+    "batal": "Cancel",
+    "cobaLagi": "Try again",
+    "hapusFilter": "Clear filters",
+    "muatUlang": "Reload",
+    "kembali": "Back",
+    "keluar": "Sign out",
+    "terapkan": "Apply",
+    "tutup": "Close",
+    "lanjutkan": "Continue",
+    "berikutnya": "Next",
+    "hapusSemua": "Clear all",
+    "tetapDiSini": "Stay here",
+    "buangPerubahan": "Discard changes"
+  },
+  "status": {
+    "memuat": "Loading…",
+    "menghitung": "Calculating…",
+    "tidakAdaData": "Nothing here yet",
+    "gagalMemuat": "Could not load data",
+    "tidakAdaHasil": "No results for these filters",
+    "filterAktif": "Filters currently active:",
+    "belumAdaDokumen": "Documents you create will appear in this list.",
+    "tidakAdaHasilPencarian": "No results for this search.",
+    "adaPerubahan": "You have unsaved changes",
+    "belumAdaPilihan": "No data yet."
+  },
+  "tabel": {
+    "barisTerpilih_one": "{{count, bilangan}} row selected",
+    "barisTerpilih_other": "{{count, bilangan}} rows selected",
+    "pilihSemuaCocok": "Select all {{jumlah, bilangan}} rows matching the filters",
+    "dariTotal": "{{tampil, bilangan}} of {{total, bilangan}}",
+    "batalkanPilihan": "Clear selection",
+    "pilihBarisHalaman": "Select rows on this page",
+    "konfirmasiMassal": "Confirm bulk action"
+  },
+  "baris": {
+    "petunjukPanjang": "Document lines. Enter moves down a row, Enter in the last cell adds a row, Ctrl+D copies from the row above, Ctrl+Backspace deletes a row.",
+    "petunjukPendek": "Enter moves down · Enter in the last cell adds a row · Ctrl+D copies from above · Ctrl+Backspace deletes a row · pasting from Excel fills many rows",
+    "neto": "Net",
+    "subtotal": "Subtotal",
+    "diskonDokumen": "Document discount"
+  },
+  "grafik": {
+    "tanpaPeriodePembanding": "No comparison period",
+    "periode": "Period",
+    "jumlahFaktur": "Invoice count",
+    "piutangLunas": "No receivables outstanding. Every posted invoice has been settled.",
+    "belumAdaPeriode": "No data for this period yet."
+  },
+  "masuk": {
+    "judul": "Paadu Flow",
+    "ajakan": "Sign in to continue.",
+    "email": "Email",
+    "sandi": "Password",
+    "tombol": "Sign in",
+    "tidakTerhubung": "Unable to reach the server."
+  },
+  "siklus": {
+    "draft": "Draft",
+    "submitted": "Submitted",
+    "pending_approval": "Awaiting approval",
+    "approved": "Approved",
+    "rejected": "Rejected",
+    "posted": "Posted",
+    "cancelled": "Cancelled",
+    "void": "Void",
+    "closed": "Closed"
+  },
+  "pelunasan": {
+    "unpaid": "Unpaid",
+    "partially_paid": "Partially paid",
+    "paid": "Paid",
+    "overdue": "Overdue",
+    "written_off": "Written off"
+  },
+  "pemenuhan": {
+    "not_fulfilled": "Not shipped",
+    "partially_fulfilled": "Partially shipped",
+    "fulfilled": "Shipped",
+    "not_received": "Not received",
+    "partially_received": "Partially received",
+    "received": "Received"
+  },
+  "pajakIstilah": {
+    "catatan": "The terms below are NEVER translated — see D-150.",
+    "npwp": "NPWP",
+    "nppkp": "NPPKP",
+    "eFaktur": "e-Faktur",
+    "fakturPajak": "Faktur Pajak",
+    "dpp": "DPP",
+    "ppn": "PPN",
+    "pph": "PPh"
+  }
+}

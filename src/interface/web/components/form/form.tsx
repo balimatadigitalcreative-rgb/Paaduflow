@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { ReactNode } from 'react'
 
 import { Button } from '../button.js'
@@ -71,16 +72,18 @@ export interface ActionFooterProps {
 }
 
 export function ActionFooter(props: ActionFooterProps): ReactNode {
+  const { t } = useTranslation()
+
   return (
     <div className={styles.footer}>
-      {props.dirty ? <span className={styles.dirtyNote}>Ada perubahan belum tersimpan</span> : null}
+      {props.dirty ? <span className={styles.dirtyNote}>{t('status.adaPerubahan')}</span> : null}
       <div className={styles.footerActions}>
         {props.children}
         <Button variant="ghost" onClick={props.onCancel}>
-          Batal
+          {t('aksi.batal')}
         </Button>
         <Button loading={props.saving === true} onClick={props.onSave}>
-          Simpan
+          {t('aksi.simpan')}
         </Button>
       </div>
     </div>
@@ -103,6 +106,8 @@ export interface UnsavedChangesGuardProps {
  * kehilangan ketikan melainkan bekerja di entitas legal yang berbeda.
  */
 export function UnsavedChangesGuard(props: UnsavedChangesGuardProps): ReactNode {
+  const { t } = useTranslation()
+
   useEffect(() => {
     if (!props.dirty) return
 
@@ -119,7 +124,7 @@ export function UnsavedChangesGuard(props: UnsavedChangesGuardProps): ReactNode 
   if (props.pending === null) return null
 
   return (
-    <div role="alertdialog" aria-label="Perubahan belum tersimpan" className={styles.guard}>
+    <div role="alertdialog" aria-label={t('status.adaPerubahan')} className={styles.guard}>
       <p>
         {props.pending.reason === 'switch_company'
           ? `Perubahan pada dokumen ini belum tersimpan. Berpindah ke ${props.pending.label} juga mengubah konteks company — dokumen ini tidak akan terbawa.`
@@ -127,10 +132,10 @@ export function UnsavedChangesGuard(props: UnsavedChangesGuardProps): ReactNode 
       </p>
       <div className={styles.guardActions}>
         <Button variant="ghost" onClick={props.onStay}>
-          Tetap di sini
+          {t('aksi.tetapDiSini')}
         </Button>
         <Button variant="danger" onClick={props.onDiscard}>
-          Buang perubahan
+          {t('aksi.buangPerubahan')}
         </Button>
       </div>
     </div>

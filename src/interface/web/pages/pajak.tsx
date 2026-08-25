@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { ReactNode } from 'react'
 
 import type { AccountSummary, TaxCodeVersion } from '#application/queries'
@@ -20,6 +21,7 @@ import { useTabel } from '../components/table/use-tabel.js'
 import { usePreferences } from '../shell/preferences.js'
 import type { Column, TableState } from '../components/table/types.js'
 import { TextField } from '../components/text-field.js'
+import { useFormat } from '../i18n/use-format.js'
 import { href, pergiKe } from '../router.js'
 import styles from './pages.module.css'
 
@@ -46,15 +48,7 @@ interface Konteks {
   readonly currency: string
 }
 
-const LABEL_JENIS: Record<string, string> = {
-  vat_out: 'PPN Keluaran',
-  vat_in: 'PPN Masukan',
-  withholding: 'PPh Potong Pungut',
-  exempt: 'Dibebaskan',
-  not_collected: 'Tidak Dipungut',
-}
 
-const LABEL_DASAR: Record<string, string> = { net: 'Neto', gross: 'Bruto' }
 
 /** Tarif disimpan `numeric(7,4)`; nol di belakang koma tidak perlu ikut tampil. */
 function formatTarif(rate: number): string {
@@ -87,6 +81,8 @@ export function KodePajak({
   readonly konteks: Konteks
   readonly ubahId?: string
 }): ReactNode {
+  const { t } = useTranslation('pajak')
+  const format = useFormat()
   const [state, setState] = useState<TableState<TaxCodeVersion>>({ kind: 'loading' })
   const [versi, setVersi] = useState<readonly TaxCodeVersion[]>([])
   const [akun, setAkun] = useState<readonly AccountSummary[]>([])
@@ -105,7 +101,7 @@ export function KodePajak({
     } catch (galat) {
       setState({
         kind: 'error',
-        message: galat instanceof ApiError ? galat.message : 'Tidak dapat memuat kode pajak.',
+        message: galat instanceof ApiError ? galat.message : t('kode.gagal'),
       })
     }
   }
@@ -122,17 +118,21 @@ export function KodePajak({
     () => [
       {
         id: 'code',
-        header: 'Kode',
+        header: t('kode.kolomKode'),
         identifier: true,
         sortable: true,
         cell: (row) => row.code,
         sortValue: (row) => row.code,
       },
-      { id: 'name', header: 'Nama', cell: (row) => row.name },
-      { id: 'type', header: 'Jenis', cell: (row) => LABEL_JENIS[row.taxType] ?? row.taxType },
+      { id: 'name', header: t('kode.kolomNama'), cell: (row) => row.name },
+      {
+        id: 'type',
+        header: t('kode.kolomJenis'),
+        cell: (row) => t(`jenis.${row.taxType}` as 'jenis.vat_out', { defaultValue: row.taxType }),
+      },
       {
         id: 'rate',
-        header: 'Tarif',
+        header: t('kode.kolomTarif'),
         align: 'end',
         sortable: true,
         cell: (row) => formatTarif(row.rate),
@@ -140,45 +140,50 @@ export function KodePajak({
       },
       {
         id: 'valid_from',
-        header: 'Berlaku dari',
+        header: t('kode.kolomBerlakuDari'),
         sortable: true,
-        cell: (row) => row.validFrom,
+        cell: (row) => format.tanggalPendek(row.validFrom),
         sortValue: (row) => row.validFrom,
       },
       {
         id: 'valid_to',
-        header: 'Berlaku sampai',
+        header: t('kode.kolomBerlakuSampai'),
         // Batasnya setengah terbuka: tanggal ini TIDAK ikut memakai tarif baris
         // ini. Disebut apa adanya supaya tidak dibaca sebagai hari terakhir.
         cell: (row) =>
           row.validTo === null ? (
-            <Badge tone="success">Masih berlaku</Badge>
+            <Badge tone="success">{t('kode.masihBerlaku')}</Badge>
           ) : (
-            `sebelum ${row.validTo}`
+            t('kode.sebelum', { tanggal: format.tanggalPendek(row.validTo) })
           ),
       },
-      { id: 'base', header: 'Dasar', cell: (row) => LABEL_DASAR[row.calculationBase] ?? row.calculationBase },
+      {
+        id: 'base',
+        header: t('kode.kolomDasar'),
+        cell: (row) =>
+          t(`dasar.${row.calculationBase}` as 'dasar.net', { defaultValue: row.calculationBase }),
+      },
       {
         id: 'account',
-        header: 'Akun buku besar',
+        header: t('kode.kolomAkun'),
         cell: (row) => `${row.glAccountCode} — ${row.glAccountName}`,
       },
       {
         id: 'creditable',
-        header: 'Dapat dikreditkan',
-        cell: (row) => (row.isCreditable ? 'Ya' : 'Tidak'),
+        header: t('kode.kolomDapatDikreditkan'),
+        cell: (row) => (row.isCreditable ? t('kode.ya') : t('kode.tidak')),
       },
       {
         id: 'aksi',
-        header: 'Aksi',
+        header: t('kode.kolomAksi'),
         cell: (row) => (
           <Button variant="secondary" onClick={() => pergiKe(`pajak/kode/${row.id}`)}>
-            Ubah tarif
+            {t('kode.ubahTarif')}
           </Button>
         ),
       },
     ],
-    [],
+    [t, format],
   )
 
   const dipilih = ubahId === undefined ? null : (versi.find((baris) => baris.id === ubahId) ?? null)
@@ -209,7 +214,7 @@ export function KodePajak({
       ) : null}
 
       <DataTable
-        caption="Kode Pajak — seluruh versi"
+        caption={t('kode.caption')}
         columns={columns}
         state={tabel.terapkan(state, [])}
         rowId={(row) => row.id}
@@ -220,7 +225,7 @@ export function KodePajak({
         companyName={konteks.companyName}
         emptyAction={
           <Button variant="secondary" onClick={() => void muat()}>
-            Muat ulang kode pajak
+            {t('kode.muatUlang')}
           </Button>
         }
         onSortChange={tabel.setSort}
@@ -253,6 +258,8 @@ interface RingkasanSeri {
 }
 
 export function NomorSeri({ konteks }: { readonly konteks: Konteks }): ReactNode {
+  const { t } = useTranslation('pajak')
+  const format = useFormat()
   const [ringkasan, setRingkasan] = useState<RingkasanSeri | null>(null)
   const [galat, setGalat] = useState<string | null>(null)
 
@@ -268,7 +275,7 @@ export function NomorSeri({ konteks }: { readonly konteks: Konteks }): ReactNode
       setGalat(
         kesalahan instanceof ApiError
           ? kesalahan.message
-          : 'Tidak dapat memuat pemakaian nomor seri.',
+          : t('seri.gagal'),
       )
     }
   }
@@ -285,14 +292,14 @@ export function NomorSeri({ konteks }: { readonly konteks: Konteks }): ReactNode
         </p>
         <div>
           <Button variant="secondary" onClick={() => void muat()}>
-            Coba lagi
+            {t('aksi.cobaLagi', { ns: 'umum' })}
           </Button>
         </div>
       </div>
     )
   }
 
-  if (ringkasan === null) return <p role="status">Memuat pemakaian nomor seri…</p>
+  if (ringkasan === null) return <p role="status">{t('seri.memuat')}</p>
 
   const terpakaiSemua =
     ringkasan.used + ringkasan.cancelled + ringkasan.expired + ringkasan.available
@@ -302,15 +309,15 @@ export function NomorSeri({ konteks }: { readonly konteks: Konteks }): ReactNode
     <div className={styles.stack}>
       <div className={styles.meta}>
         <div>
-          <div className={styles.metaLabel}>Company</div>
+          <div className={styles.metaLabel}>{t('seri.company')}</div>
           <div className={styles.metaValue}>{konteks.companyName}</div>
         </div>
         <div>
-          <div className={styles.metaLabel}>Total dialokasikan</div>
-          <div className={styles.metaValue}>{ringkasan.allocated}</div>
+          <div className={styles.metaLabel}>{t('seri.totalDialokasikan')}</div>
+          <div className={styles.metaValue}>{format.bilangan(ringkasan.allocated)}</div>
         </div>
         <div>
-          <div className={styles.metaLabel}>Sisa alokasi</div>
+          <div className={styles.metaLabel}>{t('seri.sisaAlokasi')}</div>
           <div className={styles.metaValue}>
             <Badge
               tone={
@@ -321,7 +328,7 @@ export function NomorSeri({ konteks }: { readonly konteks: Konteks }): ReactNode
                     : 'success'
               }
             >
-              {`${ringkasan.available} nomor tersisa`}
+              {t('seri.tersisaBadge', { count: ringkasan.available })}
             </Badge>
           </div>
         </div>
@@ -329,41 +336,46 @@ export function NomorSeri({ konteks }: { readonly konteks: Konteks }): ReactNode
 
       {ringkasan.available === 0 ? (
         <p className={styles.noticeDanger} role="alert">
-          Tidak ada nomor tersisa. Faktur pajak keluaran berikutnya akan ditolak sampai alokasi
-          baru dicatat.
+          {t('seri.habis')}
         </p>
       ) : null}
 
       <div className={styles.cards}>
         <div className={styles.card}>
-          <span className={styles.metaLabel}>Terpakai</span>
-          <strong className={styles.metaValue}>{ringkasan.used}</strong>
-          <p>Melekat pada faktur pajak keluaran yang sudah terbit.</p>
+          <span className={styles.metaLabel}>{t('seri.terpakai')}</span>
+          <strong className={styles.metaValue}>{format.bilangan(ringkasan.used)}</strong>
+          <p>{t('seri.terpakaiPenjelasan')}</p>
         </div>
         <div className={styles.card}>
-          <span className={styles.metaLabel}>Batal</span>
-          <strong className={styles.metaValue}>{ringkasan.cancelled}</strong>
-          <p>
-            Tidak kembali ke pool, dan tidak dapat dipakai ulang oleh siapa pun — termasuk lewat
-            basis data.
-          </p>
+          <span className={styles.metaLabel}>{t('seri.batal')}</span>
+          <strong className={styles.metaValue}>{format.bilangan(ringkasan.cancelled)}</strong>
+          <p>{t('seri.batalPenjelasan')}</p>
         </div>
         <div className={styles.card}>
-          <span className={styles.metaLabel}>Kedaluwarsa</span>
-          <strong className={styles.metaValue}>{ringkasan.expired}</strong>
-          <p>Lewat tanggal berlaku alokasinya sebelum sempat dipakai.</p>
+          <span className={styles.metaLabel}>{t('seri.kedaluwarsa')}</span>
+          <strong className={styles.metaValue}>{format.bilangan(ringkasan.expired)}</strong>
+          <p>{t('seri.kedaluwarsaPenjelasan')}</p>
         </div>
         <div className={styles.card}>
-          <span className={styles.metaLabel}>Tersisa</span>
-          <strong className={styles.metaValue}>{ringkasan.available}</strong>
-          <p>Siap diambil penerbitan berikutnya, dari nomor terkecil.</p>
+          <span className={styles.metaLabel}>{t('seri.tersisa')}</span>
+          <strong className={styles.metaValue}>{format.bilangan(ringkasan.available)}</strong>
+          <p>{t('seri.tersisaPenjelasan')}</p>
         </div>
       </div>
 
       <p className={seimbang ? styles.notice : styles.noticeDanger} role="status">
         {seimbang
-          ? `${ringkasan.used} terpakai + ${ringkasan.cancelled} batal + ${ringkasan.expired} kedaluwarsa + ${ringkasan.available} tersisa = ${ringkasan.allocated} dialokasikan.`
-          : `Tidak seimbang: keempatnya berjumlah ${terpakaiSemua}, sedangkan yang dialokasikan ${ringkasan.allocated}. Ini temuan, bukan tampilan.`}
+          ? t('seri.seimbang', {
+              terpakai: format.bilangan(ringkasan.used),
+              batal: format.bilangan(ringkasan.cancelled),
+              kedaluwarsa: format.bilangan(ringkasan.expired),
+              tersisa: format.bilangan(ringkasan.available),
+              dialokasikan: format.bilangan(ringkasan.allocated),
+            })
+          : t('seri.tidakSeimbang', {
+              jumlah: format.bilangan(terpakaiSemua),
+              dialokasikan: format.bilangan(ringkasan.allocated),
+            })}
       </p>
     </div>
   )
@@ -381,16 +393,25 @@ export function NomorSeri({ konteks }: { readonly konteks: Konteks }): ReactNode
  * data, tetapi aturan formalnya menunggu konsultan pajak (V-07), dan layar yang
  * menampilkannya akan segera diikuti pertanyaan "di mana tombol membuatnya".
  */
-const LABEL_STATUS_FAKTUR: Record<string, { label: string; tone: 'neutral' | 'success' | 'warning' | 'danger' }> = {
-  draft: { label: 'Draf', tone: 'neutral' },
-  issued: { label: 'Terbit', tone: 'success' },
-  cancelled: { label: 'Batal', tone: 'danger' },
-  replaced: { label: 'Diganti', tone: 'warning' },
+/** Nada badge per status faktur pajak. Teksnya di `pajak.statusFaktur`. */
+const NADA_STATUS_FAKTUR: Record<string, 'neutral' | 'success' | 'warning' | 'danger'> = {
+  draft: 'neutral',
+  issued: 'success',
+  cancelled: 'danger',
+  replaced: 'warning',
 }
 
 function StatusFaktur({ status }: { readonly status: string }): ReactNode {
-  const rupa = LABEL_STATUS_FAKTUR[status]
-  return rupa === undefined ? <>{status}</> : <Badge tone={rupa.tone}>{rupa.label}</Badge>
+  const { t } = useTranslation('pajak')
+  const nada = NADA_STATUS_FAKTUR[status]
+
+  return nada === undefined ? (
+    <>{status}</>
+  ) : (
+    <Badge tone={nada}>
+      {t(`statusFaktur.${status}` as 'statusFaktur.issued', { defaultValue: status })}
+    </Badge>
+  )
 }
 
 interface FakturKeluaranRingkas {
@@ -428,19 +449,19 @@ interface FakturKeluaranDetail extends FakturKeluaranRingkas {
  * diganti. Status draf sengaja tidak masuk - faktur pajak draf tidak pernah
  * dilaporkan, jadi ia bukan pertanyaan yang muncul di sini.
  */
-const CHIP_KELUARAN: readonly FilterChip[] = [
-  { id: 'issued', label: 'Terbit' },
-  { id: 'cancelled', label: 'Batal' },
-  { id: 'replaced', label: 'Diganti' },
-]
+const CHIP_KELUARAN = ['issued', 'cancelled', 'replaced'] as const
 
 export function DaftarFakturKeluaran({ konteks }: { readonly konteks: Konteks }): ReactNode {
+  const { t } = useTranslation('pajak')
+  const format = useFormat()
   const [state, setState] = useState<TableState<FakturKeluaranRingkas>>({ kind: 'loading' })
   const [semua, setSemua] = useState<readonly FakturKeluaranRingkas[]>([])
   const [filterAktif, setFilterAktif] = useState<readonly string[]>([])
 
   const labelFilter = (id: string): string =>
-    CHIP_KELUARAN.find((chip) => chip.id === id)?.label ?? id
+    t(`statusFaktur.${id}` as 'statusFaktur.issued', { defaultValue: id })
+
+  const chip: readonly FilterChip[] = CHIP_KELUARAN.map((id) => ({ id, label: labelFilter(id) }))
 
   function tampilkan(baris: readonly FakturKeluaranRingkas[], filter: readonly string[]): void {
     if (baris.length === 0) {
@@ -472,7 +493,7 @@ export function DaftarFakturKeluaran({ konteks }: { readonly konteks: Konteks })
       setState({
         kind: 'error',
         message:
-          galat instanceof ApiError ? galat.message : 'Tidak dapat memuat faktur pajak keluaran.',
+          galat instanceof ApiError ? galat.message : t('keluaran.gagal'),
       })
     }
   }
@@ -485,48 +506,52 @@ export function DaftarFakturKeluaran({ konteks }: { readonly konteks: Konteks })
     () => [
       {
         id: 'number',
-        header: 'Nomor',
+        header: t('keluaran.kolomNomor'),
         identifier: true,
         sortable: true,
         // Draf memang belum bernomor — nomor melekat saat terbit, bukan saat
         // draf dibuat (D-007).
-        cell: (row) => row.formattedNumber ?? '(belum bernomor)',
+        cell: (row) => row.formattedNumber ?? t('detail.belumBernomor'),
         sortValue: (row) => row.formattedNumber ?? '',
       },
-      { id: 'customer', header: 'Pelanggan', cell: (row) => row.customerName },
+      { id: 'customer', header: t('keluaran.kolomPelanggan'), cell: (row) => row.customerName },
       {
         id: 'npwp',
-        header: 'NPWP',
+        header: t('keluaran.kolomNpwp'),
         cell: (row) => row.customerNpwp ?? '—',
       },
       {
         id: 'date',
-        header: 'Tanggal',
+        header: t('keluaran.kolomTanggal'),
         sortable: true,
-        cell: (row) => row.invoiceDate,
+        cell: (row) => format.tanggalPendek(row.invoiceDate),
         sortValue: (row) => row.invoiceDate,
       },
-      { id: 'period', header: 'Masa', cell: (row) => row.taxPeriod },
-      { id: 'code', header: 'Kode', cell: (row) => row.taxCode },
+      { id: 'period', header: t('keluaran.kolomMasa'), cell: (row) => row.taxPeriod },
+      { id: 'code', header: t('keluaran.kolomKode'), cell: (row) => row.taxCode },
       {
         id: 'base',
-        header: 'DPP',
+        header: t('keluaran.kolomDpp'),
         align: 'end',
         sortable: true,
-        cell: (row) => formatAmount(row.baseAmount, konteks.currency),
+        cell: (row) => format.angka(row.baseAmount, konteks.currency),
         sortValue: (row) => row.baseAmount,
       },
       {
         id: 'tax',
-        header: 'PPN',
+        header: t('keluaran.kolomPpn'),
         align: 'end',
         sortable: true,
-        cell: (row) => formatAmount(row.taxAmount, konteks.currency),
+        cell: (row) => format.angka(row.taxAmount, konteks.currency),
         sortValue: (row) => row.taxAmount,
       },
-      { id: 'status', header: 'Status', cell: (row) => <StatusFaktur status={row.status} /> },
+      {
+        id: 'status',
+        header: t('keluaran.kolomStatus'),
+        cell: (row) => <StatusFaktur status={row.status} />,
+      },
     ],
-    [konteks.currency],
+    [konteks.currency, t, format],
   )
 
   const { preferences } = usePreferences()
@@ -535,12 +560,12 @@ export function DaftarFakturKeluaran({ konteks }: { readonly konteks: Konteks })
   return (
     <div className={styles.stack}>
       <FilterBar
-        label="Saring faktur pajak keluaran menurut status"
-        chips={CHIP_KELUARAN}
+        label={t('keluaran.saring')}
+        chips={chip}
         activeIds={filterAktif}
         search={{
           value: tabel.kueri,
-          label: 'Cari nomor atau customer',
+          label: t('keluaran.cari'),
           onChange: tabel.setKueri,
         }}
         onToggle={(id) =>
@@ -554,7 +579,7 @@ export function DaftarFakturKeluaran({ konteks }: { readonly konteks: Konteks })
       />
 
     <DataTable
-      caption="Faktur Pajak Keluaran"
+      caption={t('keluaran.caption')}
       columns={columns}
       state={tabel.terapkan(state, filterAktif.map(labelFilter))}
       rowId={(row) => row.id}
@@ -565,7 +590,7 @@ export function DaftarFakturKeluaran({ konteks }: { readonly konteks: Konteks })
       density={preferences.density}
       companyName={konteks.companyName}
       emptyAction={
-        <Button onClick={() => pergiKe('pajak/terbitkan')}>Terbitkan faktur pajak</Button>
+        <Button onClick={() => pergiKe('pajak/terbitkan')}>{t('keluaran.terbitkan')}</Button>
       }
       onSortChange={tabel.setSort}
       onRetry={() => void muat()}
@@ -600,6 +625,8 @@ interface FakturLayak {
 }
 
 export function TerbitkanFakturPajak({ konteks }: { readonly konteks: Konteks }): ReactNode {
+  const { t } = useTranslation('pajak')
+  const format = useFormat()
   const [kandidat, setKandidat] = useState<readonly FakturLayak[]>([])
   const [dipilih, setDipilih] = useState<readonly string[]>([])
   const [kode, setKode] = useState<readonly TaxCodeVersion[]>([])
@@ -627,7 +654,7 @@ export function TerbitkanFakturPajak({ konteks }: { readonly konteks: Konteks })
       setKodeDipilih(keluaran[0]?.id ?? '')
     } catch (kesalahan) {
       setGalat(
-        kesalahan instanceof ApiError ? kesalahan.message : 'Tidak dapat memuat faktur penjualan.',
+        kesalahan instanceof ApiError ? kesalahan.message : t('terbitkan.gagalFaktur'),
       )
     }
   }
@@ -685,7 +712,7 @@ export function TerbitkanFakturPajak({ konteks }: { readonly konteks: Konteks })
       setGalat(
         kesalahan instanceof ApiError
           ? kesalahan.message
-          : 'Faktur pajak tidak dapat diterbitkan.',
+          : t('terbitkan.gagalTerbit'),
       )
     } finally {
       setMenyimpan(false)
@@ -699,20 +726,20 @@ export function TerbitkanFakturPajak({ konteks }: { readonly konteks: Konteks })
     <div className={styles.stack}>
       <div className={styles.meta}>
         <div>
-          <div className={styles.metaLabel}>Company</div>
+          <div className={styles.metaLabel}>{t('terbitkan.company')}</div>
           <div className={styles.metaValue}>{konteks.companyName}</div>
         </div>
         <div>
-          <div className={styles.metaLabel}>Faktur terpilih</div>
-          <div className={styles.metaValue}>{terpilih.length}</div>
+          <div className={styles.metaLabel}>{t('terbitkan.fakturTerpilih')}</div>
+          <div className={styles.metaValue}>{format.bilangan(terpilih.length)}</div>
         </div>
         <div>
-          <div className={styles.metaLabel}>DPP</div>
-          <div className={styles.metaValue}>{formatAmount(totalDpp, konteks.currency)}</div>
+          <div className={styles.metaLabel}>{t('terbitkan.dpp')}</div>
+          <div className={styles.metaValue}>{format.angka(totalDpp, konteks.currency)}</div>
         </div>
         <div>
-          <div className={styles.metaLabel}>PPN</div>
-          <div className={styles.metaValue}>{formatAmount(totalPpn, konteks.currency)}</div>
+          <div className={styles.metaLabel}>{t('terbitkan.ppn')}</div>
+          <div className={styles.metaValue}>{format.angka(totalPpn, konteks.currency)}</div>
         </div>
       </div>
 
@@ -729,27 +756,26 @@ export function TerbitkanFakturPajak({ konteks }: { readonly konteks: Konteks })
 
       {kandidat.length === 0 ? (
         <p className={styles.notice} role="status">
-          Tidak ada faktur penjualan yang menunggu difakturpajakkan. Faktur muncul di sini setelah
-          diposting, dan hilang setelah tercakup faktur pajak.
+          {t('terbitkan.kosong')}
         </p>
       ) : (
         <>
           <table className={styles.matchTable}>
             <caption>
-              Faktur penjualan terposting yang belum tercakup — pilih satu atau beberapa
+              {t('terbitkan.caption')}
             </caption>
             <thead>
               <tr>
-                <th scope="col">Pilih</th>
-                <th scope="col">Nomor</th>
-                <th scope="col">Pelanggan</th>
-                <th scope="col">NPWP</th>
-                <th scope="col">Tanggal</th>
+                <th scope="col">{t('terbitkan.kolomPilih')}</th>
+                <th scope="col">{t('terbitkan.kolomNomor')}</th>
+                <th scope="col">{t('terbitkan.kolomPelanggan')}</th>
+                <th scope="col">{t('terbitkan.kolomNpwp')}</th>
+                <th scope="col">{t('terbitkan.kolomTanggal')}</th>
                 <th scope="col" data-numeric="true">
-                  DPP
+                  {t('terbitkan.dpp')}
                 </th>
                 <th scope="col" data-numeric="true">
-                  PPN
+                  {t('terbitkan.ppn')}
                 </th>
               </tr>
             </thead>
@@ -761,7 +787,7 @@ export function TerbitkanFakturPajak({ konteks }: { readonly konteks: Konteks })
                     <td>
                       <Checkbox
                         id={`pilih-${baris.id}`}
-                        label={`Pilih ${baris.number ?? baris.id}`}
+                        label={t('terbitkan.pilihBaris', { nomor: baris.number ?? baris.id })}
                         checked={dipilih.includes(baris.id)}
                         onChange={(nyala) =>
                           setDipilih((lama) =>
@@ -770,12 +796,12 @@ export function TerbitkanFakturPajak({ konteks }: { readonly konteks: Konteks })
                         }
                       />
                     </td>
-                    <td>{baris.number ?? '(tanpa nomor)'}</td>
+                    <td>{baris.number ?? t('terbitkan.tanpaNomor')}</td>
                     <td>{baris.customerName}</td>
-                    <td>{npwpKosong ? 'belum diisi' : baris.customerNpwp}</td>
-                    <td>{baris.documentDate}</td>
-                    <td data-numeric="true">{formatAmount(baris.taxBase, baris.currency)}</td>
-                    <td data-numeric="true">{formatAmount(baris.taxTotal, baris.currency)}</td>
+                    <td>{npwpKosong ? t('terbitkan.npwpKosong') : baris.customerNpwp}</td>
+                    <td>{format.tanggalPendek(baris.documentDate)}</td>
+                    <td data-numeric="true">{format.angka(baris.taxBase, baris.currency)}</td>
+                    <td data-numeric="true">{format.angka(baris.taxTotal, baris.currency)}</td>
                   </tr>
                 )
               })}
@@ -784,32 +810,34 @@ export function TerbitkanFakturPajak({ konteks }: { readonly konteks: Konteks })
 
           <Select
             id="kode-pajak-terbit"
-            label="Kode pajak"
-            helper="Hanya kode PPN keluaran yang masa berlakunya masih terbuka."
+            label={t('terbitkan.kodePajak')}
+            helper={t('terbitkan.kodePajakHelper')}
             value={kodeDipilih}
             options={kode.map((item) => ({
               value: item.id,
-              label: `${item.code} — ${formatTarif(item.rate)} sejak ${item.validFrom}`,
+              label: t('terbitkan.opsiKode', {
+                kode: item.code,
+                tarif: formatTarif(item.rate),
+                tanggal: format.tanggalPendek(item.validFrom),
+              }),
             }))}
             onChange={setKodeDipilih}
           />
 
           {bedaPelanggan ? (
             <p className={styles.noticeDanger} role="alert">
-              Faktur yang dipilih milik pelanggan berbeda. Satu faktur pajak membawa satu NPWP, jadi
-              terbitkan terpisah per pelanggan.
+              {t('terbitkan.bedaPelanggan')}
             </p>
           ) : null}
           {tanpaNpwp ? (
             <p className={styles.noticeDanger} role="alert">
-              Ada pelanggan yang NPWP-nya belum diisi. Faktur pajak keluaran memerlukan NPWP
-              pelanggan — lengkapi di Pelanggan → Data Pajak, lalu muat ulang halaman ini.
+              {t('terbitkan.tanpaNpwp')}
             </p>
           ) : null}
 
           <div className={styles.row}>
             <Button loading={menyimpan} disabled={!dapatTerbit} onClick={() => void terbitkan()}>
-              Terbitkan faktur pajak
+              {t('terbitkan.tombol')}
             </Button>
           </div>
         </>
@@ -825,6 +853,8 @@ export function DetailFakturKeluaran({
   readonly konteks: Konteks
   readonly invoiceId: string
 }): ReactNode {
+  const { t } = useTranslation('pajak')
+  const format = useFormat()
   const [faktur, setFaktur] = useState<FakturKeluaranDetail | null>(null)
   const [galat, setGalat] = useState<string | null>(null)
   const [tab, setTab] = useState('ringkasan')
@@ -841,7 +871,7 @@ export function DetailFakturKeluaran({
         setGalat(
           kesalahan instanceof ApiError
             ? kesalahan.message
-            : 'Tidak dapat memuat faktur pajak ini.',
+            : t('detail.gagal'),
         )
       })
   }, [konteks.companyId, invoiceId])
@@ -864,27 +894,27 @@ export function DetailFakturKeluaran({
             badges: (
               <>
                 <StatusFaktur status={faktur.status} />
-                <Badge tone="neutral">Masa {faktur.taxPeriod}</Badge>
+                <Badge tone="neutral">{t('detail.masa', { masa: faktur.taxPeriod })}</Badge>
                 {faktur.serialNumber === null ? null : (
-                  <Badge tone="neutral">Seri {faktur.serialNumber}</Badge>
+                  <Badge tone="neutral">{t('detail.seri', { nomor: faktur.serialNumber })}</Badge>
                 )}
               </>
             ),
             tabs: (
               <Tabs
-                label="Bagian faktur pajak"
+                label={t('detail.bagian')}
                 activeId={tab}
                 onSelect={setTab}
                 items={[
-                  { id: 'ringkasan', label: 'Ringkasan' },
-                  { id: 'baris', label: 'Baris', count: faktur.sources.length },
-                  { id: 'terkait', label: 'Dokumen terkait', count: faktur.sources.length },
-                  { id: 'aktivitas', label: 'Aktivitas' },
+                  { id: 'ringkasan', label: t('detail.tabRingkasan') },
+                  { id: 'baris', label: t('detail.tabBaris'), count: faktur.sources.length },
+                  { id: 'terkait', label: t('detail.tabTerkait'), count: faktur.sources.length },
+                  { id: 'aktivitas', label: t('detail.tabAktivitas') },
                 ]}
               />
             ),
           },
-    [faktur, tab],
+    [faktur, tab, t],
   )
 
   if (galat !== null) {
@@ -895,51 +925,53 @@ export function DetailFakturKeluaran({
         </p>
         <div>
           <Button variant="secondary" onClick={() => pergiKe('pajak/keluaran')}>
-            Kembali ke daftar
+            {t('detail.kembali')}
           </Button>
         </div>
       </div>
     )
   }
 
-  if (faktur === null) return <p role="status">Memuat faktur pajak…</p>
+  if (faktur === null) return <p role="status">{t('detail.memuat')}</p>
 
   return (
     <div className={styles.stack}>
       <TabPanel id="ringkasan" activeId={tab}>
       <div className={styles.meta}>
         <div>
-          <div className={styles.metaLabel}>Company</div>
+          <div className={styles.metaLabel}>{t('detail.company')}</div>
           <div className={styles.metaValue}>{konteks.companyName}</div>
         </div>
         <div>
-          <div className={styles.metaLabel}>Nomor</div>
-          <div className={styles.metaValue}>{faktur.formattedNumber ?? '(belum bernomor)'}</div>
+          <div className={styles.metaLabel}>{t('detail.nomor')}</div>
+          <div className={styles.metaValue}>
+            {faktur.formattedNumber ?? t('detail.belumBernomor')}
+          </div>
         </div>
         <div>
-          <div className={styles.metaLabel}>Status</div>
+          <div className={styles.metaLabel}>{t('detail.status')}</div>
           <div className={styles.metaValue}>
             <StatusFaktur status={faktur.status} />
           </div>
         </div>
         <div>
-          <div className={styles.metaLabel}>Pelanggan</div>
+          <div className={styles.metaLabel}>{t('detail.pelanggan')}</div>
           <div className={styles.metaValue}>{faktur.customerName}</div>
         </div>
         <div>
-          <div className={styles.metaLabel}>NPWP pelanggan</div>
+          <div className={styles.metaLabel}>{t('detail.npwpPelanggan')}</div>
           <div className={styles.metaValue}>{faktur.customerNpwp ?? '—'}</div>
         </div>
         <div>
-          <div className={styles.metaLabel}>Tanggal</div>
-          <div className={styles.metaValue}>{faktur.invoiceDate}</div>
+          <div className={styles.metaLabel}>{t('detail.tanggal')}</div>
+          <div className={styles.metaValue}>{format.tanggal(faktur.invoiceDate)}</div>
         </div>
         <div>
-          <div className={styles.metaLabel}>Masa pajak</div>
+          <div className={styles.metaLabel}>{t('detail.masaPajak')}</div>
           <div className={styles.metaValue}>{faktur.taxPeriod}</div>
         </div>
         <div>
-          <div className={styles.metaLabel}>Kode pajak</div>
+          <div className={styles.metaLabel}>{t('detail.kodePajak')}</div>
           <div className={styles.metaValue}>{`${faktur.taxCode} · ${formatTarif(faktur.taxRate)}`}</div>
         </div>
         <div>
@@ -949,14 +981,23 @@ export function DetailFakturKeluaran({
           </div>
         </div>
         <div>
-          <div className={styles.metaLabel}>PPN</div>
-          <div className={styles.metaValue}>{formatAmount(faktur.taxAmount, konteks.currency)}</div>
+          <div className={styles.metaLabel}>{t('detail.ppn')}</div>
+          <div className={styles.metaValue}>{format.angka(faktur.taxAmount, konteks.currency)}</div>
         </div>
       </div>
 
       {faktur.status === 'cancelled' ? (
         <p className={styles.noticeDanger} role="status">
-          {`Dibatalkan${faktur.cancelledAt === null ? '' : ` pada ${faktur.cancelledAt.slice(0, 10)}`}. Alasan: ${faktur.cancelReason ?? '(tidak dicatat)'} — nomor ${faktur.formattedNumber ?? ''} tidak kembali ke pool dan tidak dapat dipakai ulang.`}
+          {t('detail.dibatalkan', {
+            pada:
+              faktur.cancelledAt === null
+                ? ''
+                : t('detail.dibatalkanPada', {
+                    tanggal: format.tanggal(faktur.cancelledAt.slice(0, 10)),
+                  }),
+            alasan: faktur.cancelReason ?? t('detail.alasanTidakDicatat'),
+            nomor: faktur.formattedNumber ?? '',
+          })}
         </p>
       ) : null}
 
@@ -965,30 +1006,30 @@ export function DetailFakturKeluaran({
       <TabPanel id="baris" activeId={tab}>
       <table className={styles.matchTable}>
         <caption>
-          Faktur penjualan yang dicakup — satu faktur pajak dapat mencakup lebih dari satu
+          {t('detail.captionSumber')}
         </caption>
         <thead>
           <tr>
-            <th scope="col">Faktur penjualan</th>
+            <th scope="col">{t('detail.kolomFakturPenjualan')}</th>
             <th scope="col" data-numeric="true">
-              DPP
+              {t('detail.dpp')}
             </th>
             <th scope="col" data-numeric="true">
-              PPN
+              {t('detail.ppn')}
             </th>
           </tr>
         </thead>
         <tbody>
           {faktur.sources.length === 0 ? (
             <tr>
-              <td colSpan={3}>Tidak ada faktur penjualan yang tercatat sebagai sumber.</td>
+              <td colSpan={3}>{t('detail.tanpaSumber')}</td>
             </tr>
           ) : (
             faktur.sources.map((sumber) => (
               <tr key={sumber.salesDocumentId}>
-                <td>{sumber.salesDocumentNumber ?? '(belum bernomor)'}</td>
-                <td data-numeric="true">{formatAmount(sumber.baseAmount, konteks.currency)}</td>
-                <td data-numeric="true">{formatAmount(sumber.taxAmount, konteks.currency)}</td>
+                <td>{sumber.salesDocumentNumber ?? t('detail.belumBernomor')}</td>
+                <td data-numeric="true">{format.angka(sumber.baseAmount, konteks.currency)}</td>
+                <td data-numeric="true">{format.angka(sumber.taxAmount, konteks.currency)}</td>
               </tr>
             ))
           )}
@@ -1004,17 +1045,19 @@ export function DetailFakturKeluaran({
       <TabPanel id="terkait" activeId={tab}>
         {faktur.sources.length === 0 ? (
           <p className={styles.notice}>
-            Faktur pajak ini tidak menunjuk faktur penjualan mana pun.
+            {t('detail.tanpaSumberTerkait')}
           </p>
         ) : (
           <ul>
             {faktur.sources.map((sumber) => (
               <li key={sumber.salesDocumentId}>
                 <a href={href(`penjualan/${sumber.salesDocumentId}`)}>
-                  {sumber.salesDocumentNumber ?? '(belum bernomor)'}
-                </a>{' '}
-                — DPP {formatAmount(sumber.baseAmount, konteks.currency)}, PPN{' '}
-                {formatAmount(sumber.taxAmount, konteks.currency)}
+                  {sumber.salesDocumentNumber ?? t('detail.belumBernomor')}
+                </a>
+                {t('detail.rincianSumber', {
+                  dpp: format.angka(sumber.baseAmount, konteks.currency),
+                  ppn: format.angka(sumber.taxAmount, konteks.currency),
+                })}
               </li>
             ))}
           </ul>
@@ -1024,17 +1067,17 @@ export function DetailFakturKeluaran({
       <TabPanel id="aktivitas" activeId={tab}>
         {faktur.cancelledAt === null ? (
           <p className={styles.notice}>
-            Audit trail belum tersedia di antarmuka. Penerbitan dan pembatalan tercatat di{' '}
-            <code>audit_log</code>, tetapi jalur bacanya belum dibangun.
+            {t('detail.auditBelumAda')} <code>audit_log</code>
+            {t('detail.auditBelumAdaLanjutan')}
           </p>
         ) : (
           <div className={styles.meta}>
             <div>
-              <div className={styles.metaLabel}>Dibatalkan</div>
+              <div className={styles.metaLabel}>{t('detail.labelDibatalkan')}</div>
               <div className={styles.metaValue}>{faktur.cancelledAt}</div>
             </div>
             <div>
-              <div className={styles.metaLabel}>Alasan</div>
+              <div className={styles.metaLabel}>{t('detail.alasan')}</div>
               <div className={styles.metaValue}>{faktur.cancelReason ?? '—'}</div>
             </div>
           </div>
@@ -1043,7 +1086,7 @@ export function DetailFakturKeluaran({
 
       <div>
         <Button variant="secondary" onClick={() => pergiKe('pajak/keluaran')}>
-          Kembali ke daftar
+          {t('detail.kembali')}
         </Button>
       </div>
     </div>
@@ -1087,11 +1130,7 @@ interface FakturMasukan {
  * sendiri karena ia sebab paling umum sebuah faktur tidak dapat dikreditkan,
  * dan orang perlu melihat daftarnya untuk menagih perbaikan.
  */
-const CHIP_MASUKAN: readonly FilterChip[] = [
-  { id: 'creditable', label: 'Dapat dikreditkan' },
-  { id: 'non_creditable', label: 'Tidak dapat dikreditkan' },
-  { id: 'non_pkp', label: 'Vendor non-PKP' },
-]
+const CHIP_MASUKAN = ['creditable', 'non_creditable', 'non_pkp'] as const
 
 function cocokMasukan(baris: FakturMasukan, id: string): boolean {
   if (id === 'creditable') return baris.isCreditable
@@ -1100,12 +1139,16 @@ function cocokMasukan(baris: FakturMasukan, id: string): boolean {
 }
 
 export function DaftarFakturMasukan({ konteks }: { readonly konteks: Konteks }): ReactNode {
+  const { t } = useTranslation('pajak')
+  const format = useFormat()
   const [state, setState] = useState<TableState<FakturMasukan>>({ kind: 'loading' })
   const [semua, setSemua] = useState<readonly FakturMasukan[]>([])
   const [filterAktif, setFilterAktif] = useState<readonly string[]>([])
 
   const labelFilter = (id: string): string =>
-    CHIP_MASUKAN.find((chip) => chip.id === id)?.label ?? id
+    t(`chipMasukan.${id}` as 'chipMasukan.creditable', { defaultValue: id })
+
+  const chip: readonly FilterChip[] = CHIP_MASUKAN.map((id) => ({ id, label: labelFilter(id) }))
 
   function tampilkan(baris: readonly FakturMasukan[], filter: readonly string[]): void {
     if (baris.length === 0) {
@@ -1140,7 +1183,7 @@ export function DaftarFakturMasukan({ konteks }: { readonly konteks: Konteks }):
       setState({
         kind: 'error',
         message:
-          galat instanceof ApiError ? galat.message : 'Tidak dapat memuat faktur pajak masukan.',
+          galat instanceof ApiError ? galat.message : t('masukan.gagal'),
       })
     }
   }
@@ -1153,7 +1196,7 @@ export function DaftarFakturMasukan({ konteks }: { readonly konteks: Konteks }):
     () => [
       {
         id: 'number',
-        header: 'Nomor faktur vendor',
+        header: t('masukan.kolomNomorVendor'),
         identifier: true,
         sortable: true,
         cell: (row) => row.supplierNumber,
@@ -1161,49 +1204,52 @@ export function DaftarFakturMasukan({ konteks }: { readonly konteks: Konteks }):
       },
       {
         id: 'vendor',
-        header: 'Vendor',
-        cell: (row) => (row.vendorIsPkp ? row.vendorName : `${row.vendorName} (non-PKP)`),
+        header: t('masukan.kolomVendor'),
+        cell: (row) =>
+          row.vendorIsPkp ? row.vendorName : t('masukan.vendorNonPkp', { nama: row.vendorName }),
       },
-      { id: 'npwp', header: 'NPWP vendor', cell: (row) => row.vendorNpwp ?? '—' },
+      { id: 'npwp', header: t('masukan.kolomNpwpVendor'), cell: (row) => row.vendorNpwp ?? '—' },
       {
         id: 'date',
-        header: 'Tanggal',
+        header: t('masukan.kolomTanggal'),
         sortable: true,
-        cell: (row) => row.invoiceDate,
+        cell: (row) => format.tanggalPendek(row.invoiceDate),
         sortValue: (row) => row.invoiceDate,
       },
-      { id: 'period', header: 'Masa', cell: (row) => row.taxPeriod },
+      { id: 'period', header: t('masukan.kolomMasa'), cell: (row) => row.taxPeriod },
       {
         id: 'credit_period',
-        header: 'Masa kredit',
+        header: t('masukan.kolomMasaKredit'),
         // Boleh berbeda dari masa fakturnya. Menyamakan keduanya di layar akan
         // menyembunyikan faktur yang sengaja dikreditkan di masa lain.
         cell: (row) => row.creditPeriod ?? '—',
       },
       {
         id: 'tax',
-        header: 'PPN',
+        header: t('masukan.kolomPpn'),
         align: 'end',
         sortable: true,
-        cell: (row) => formatAmount(row.taxAmount, konteks.currency),
+        cell: (row) => format.angka(row.taxAmount, konteks.currency),
         sortValue: (row) => row.taxAmount,
       },
       {
         id: 'kelengkapan',
-        header: 'Kelengkapan',
+        header: t('masukan.kolomKelengkapan'),
         cell: (row) => {
-          if (row.validatedAt === null) return <Badge>Belum divalidasi</Badge>
+          if (row.validatedAt === null) return <Badge>{t('masukan.belumDivalidasi')}</Badge>
           if (row.defects.length === 0) {
             return (
               <Badge tone={row.isCreditable ? 'success' : 'warning'}>
-                {row.isCreditable ? 'Lengkap — dapat dikreditkan' : 'Lengkap — tidak dikreditkan'}
+                {row.isCreditable
+                  ? t('masukan.lengkapDikreditkan')
+                  : t('masukan.lengkapTidakDikreditkan')}
               </Badge>
             )
           }
           return (
             <span>
               <Badge tone="danger">
-                {row.defects.length === 1 ? '1 syarat kurang' : `${row.defects.length} syarat kurang`}
+                {t('masukan.syaratKurang', { count: row.defects.length })}
               </Badge>
               {/* Kalimatnya ikut ditampilkan, bukan disembunyikan di balik
                   tooltip: yang tersembunyi tidak menolong siapa pun yang
@@ -1218,7 +1264,7 @@ export function DaftarFakturMasukan({ konteks }: { readonly konteks: Konteks }):
         },
       },
     ],
-    [konteks.currency],
+    [konteks.currency, t, format],
   )
 
   const { preferences } = usePreferences()
@@ -1227,12 +1273,12 @@ export function DaftarFakturMasukan({ konteks }: { readonly konteks: Konteks }):
   return (
     <div className={styles.stack}>
       <FilterBar
-        label="Saring faktur pajak masukan menurut kredit"
-        chips={CHIP_MASUKAN}
+        label={t('masukan.saring')}
+        chips={chip}
         activeIds={filterAktif}
         search={{
           value: tabel.kueri,
-          label: 'Cari nomor atau vendor',
+          label: t('masukan.cari'),
           onChange: tabel.setKueri,
         }}
         onToggle={(id) =>
@@ -1246,7 +1292,7 @@ export function DaftarFakturMasukan({ konteks }: { readonly konteks: Konteks }):
       />
 
     <DataTable
-      caption="Faktur Pajak Masukan"
+      caption={t('masukan.caption')}
       columns={columns}
       state={tabel.terapkan(state, filterAktif.map(labelFilter))}
       rowId={(row) => row.id}
@@ -1261,7 +1307,7 @@ export function DaftarFakturMasukan({ konteks }: { readonly konteks: Konteks }):
       companyName={konteks.companyName}
       emptyAction={
         <Button variant="secondary" onClick={() => pergiKe('pembelian/tagihan')}>
-          Buka faktur pembelian
+          {t('masukan.bukaPembelian')}
         </Button>
       }
       onSortChange={tabel.setSort}
@@ -1320,6 +1366,8 @@ function masaTerakhir(jumlah: number): readonly { value: string; label: string }
 }
 
 export function RekonsiliasiPajak({ konteks }: { readonly konteks: Konteks }): ReactNode {
+  const { t } = useTranslation('pajak')
+  const format = useFormat()
   const masa = useMemo(() => masaTerakhir(12), [])
   const [dipilih, setDipilih] = useState(masa[0]!.value)
   const [hasil, setHasil] = useState<Rekonsiliasi | null>(null)
@@ -1336,7 +1384,7 @@ export function RekonsiliasiPajak({ konteks }: { readonly konteks: Konteks }): R
     } catch (kesalahan) {
       setHasil(null)
       setGalat(
-        kesalahan instanceof ApiError ? kesalahan.message : 'Tidak dapat memuat rekonsiliasi.',
+        kesalahan instanceof ApiError ? kesalahan.message : t('rekonsiliasi.gagal'),
       )
     }
   }
@@ -1360,22 +1408,22 @@ export function RekonsiliasiPajak({ konteks }: { readonly konteks: Konteks }): R
     <div className={styles.stack}>
       <div className={styles.meta}>
         <div>
-          <div className={styles.metaLabel}>Company</div>
+          <div className={styles.metaLabel}>{t('rekonsiliasi.company')}</div>
           <div className={styles.metaValue}>{konteks.companyName}</div>
         </div>
         <div>
-          <div className={styles.metaLabel}>Masa pajak</div>
+          <div className={styles.metaLabel}>{t('rekonsiliasi.masaPajak')}</div>
           <div className={styles.metaValue}>{hasil?.period ?? dipilih}</div>
         </div>
         <div>
-          <div className={styles.metaLabel}>Keadaan</div>
+          <div className={styles.metaLabel}>{t('rekonsiliasi.keadaan')}</div>
           <div className={styles.metaValue}>
             {hasil === null ? (
               '—'
             ) : hasil.balanced ? (
-              <Badge tone="success">Cocok</Badge>
+              <Badge tone="success">{t('rekonsiliasi.cocok')}</Badge>
             ) : (
-              <Badge tone="danger">Ada selisih</Badge>
+              <Badge tone="danger">{t('rekonsiliasi.adaSelisih')}</Badge>
             )}
           </div>
         </div>
@@ -1384,8 +1432,8 @@ export function RekonsiliasiPajak({ konteks }: { readonly konteks: Konteks }): R
       <div className={styles.row}>
         <Select
           id="masa-pajak"
-          label="Masa pajak"
-          helper="Bulan kalender. Masa pajak tidak mengikuti tahun fiskal company."
+          label={t('rekonsiliasi.masaPajak')}
+          helper={t('rekonsiliasi.masaPajakHelper')}
           value={dipilih}
           options={masa.map((item) => ({ value: item.value, label: item.label }))}
           onChange={(nilai) => {
@@ -1403,8 +1451,7 @@ export function RekonsiliasiPajak({ konteks }: { readonly konteks: Konteks }): R
 
       {hasil !== null && hasil.rows.length === 0 ? (
         <p className={styles.notice} role="status">
-          Tidak ada pajak tercatat pada masa ini. Buku pajak dan buku besar sama-sama kosong, dan
-          itu memang cocok.
+          {t('rekonsiliasi.kosong')}
         </p>
       ) : null}
 
@@ -1412,21 +1459,20 @@ export function RekonsiliasiPajak({ konteks }: { readonly konteks: Konteks }): R
         <>
           <table className={styles.matchTable}>
             <caption>
-              Buku pajak berdampingan dengan akun pajak di buku besar — selisih dihitung per kode
-              pajak
+              {t('rekonsiliasi.caption')}
             </caption>
             <thead>
               <tr>
-                <th scope="col">Akun buku besar</th>
-                <th scope="col">Kode pajak yang mengisinya</th>
+                <th scope="col">{t('rekonsiliasi.kolomAkun')}</th>
+                <th scope="col">{t('rekonsiliasi.kolomKode')}</th>
                 <th scope="col" data-numeric="true">
-                  Buku pajak
+                  {t('rekonsiliasi.kolomBukuPajak')}
                 </th>
                 <th scope="col" data-numeric="true">
-                  Buku besar
+                  {t('rekonsiliasi.kolomBukuBesar')}
                 </th>
                 <th scope="col" data-numeric="true">
-                  Selisih
+                  {t('rekonsiliasi.kolomSelisih')}
                 </th>
               </tr>
             </thead>
@@ -1439,21 +1485,21 @@ export function RekonsiliasiPajak({ konteks }: { readonly konteks: Konteks }): R
                         tidak menyimpan kode pajak, jadi angkanya tidak dapat
                         dibagi ke sini tanpa mengarang. */}
                     {baris.codes.length === 0
-                      ? '(tidak ada baris buku pajak)'
+                      ? t('rekonsiliasi.tanpaBarisBukuPajak')
                       : baris.codes
                           .map(
                             (kode) =>
-                              `${kode.tax_code} ${formatAmount(kode.tax_ledger_total, konteks.currency)}`,
+                              `${kode.tax_code} ${format.angka(kode.tax_ledger_total, konteks.currency)}`,
                           )
                           .join(' · ')}
                   </td>
                   <td data-numeric="true">
-                    {formatAmount(baris.tax_ledger_total, konteks.currency)}
+                    {format.angka(baris.tax_ledger_total, konteks.currency)}
                   </td>
                   <td data-numeric="true">
-                    {formatAmount(baris.general_ledger_total, konteks.currency)}
+                    {format.angka(baris.general_ledger_total, konteks.currency)}
                   </td>
-                  <td data-numeric="true">{formatAmount(baris.difference, konteks.currency)}</td>
+                  <td data-numeric="true">{format.angka(baris.difference, konteks.currency)}</td>
                 </tr>
               ))}
             </tbody>
@@ -1461,8 +1507,10 @@ export function RekonsiliasiPajak({ konteks }: { readonly konteks: Konteks }): R
 
           <p className={hasil.balanced ? styles.noticeSuccess : styles.noticeDanger} role="status">
             {hasil.balanced
-              ? 'Setiap akun pajak cocok antara buku pajak dan buku besar.'
-              : `${hasil.rows.filter((baris) => baris.difference !== 0).length} akun berselisih. Baris yang bertanda di atas menunjukkan akun mana, beserta kode pajak yang mengisi sisi buku pajaknya.`}
+              ? t('rekonsiliasi.semuaCocok')
+              : t('rekonsiliasi.berselisih', {
+                  count: hasil.rows.filter((baris) => baris.difference !== 0).length,
+                })}
           </p>
         </>
       ) : null}
@@ -1491,6 +1539,8 @@ function FormVersiBaru({
   readonly onBatal: () => void
   readonly onSelesai: (pesan: string) => void
 }): ReactNode {
+  const { t } = useTranslation('pajak')
+  const format = useFormat()
   const [nama, setNama] = useState(dasar.name)
   const [tarif, setTarif] = useState('')
   const [berlaku, setBerlaku] = useState<Date | null>(null)
@@ -1506,20 +1556,24 @@ function FormVersiBaru({
     const angka = Number(tarif.replace(',', '.'))
 
     if (tarif.trim() === '' || Number.isNaN(angka)) {
-      daftar.push({ fieldId: 'tarif-baru', label: 'Tarif baru', message: 'Isi dengan angka.' })
+      daftar.push({
+        fieldId: 'tarif-baru',
+        label: t('versiBaru.tarifBaru'),
+        message: t('versiBaru.tarifWajib'),
+      })
     } else if (angka < 0 || angka > 100) {
       daftar.push({
         fieldId: 'tarif-baru',
-        label: 'Tarif baru',
-        message: 'Nilainya antara 0 dan 100.',
+        label: t('versiBaru.tarifBaru'),
+        message: t('versiBaru.tarifRentang'),
       })
     }
 
     if (berlaku === null) {
       daftar.push({
         fieldId: 'berlaku-dari',
-        label: 'Berlaku dari',
-        message: 'Isi tanggal mulai berlakunya versi baru.',
+        label: t('versiBaru.berlakuDari'),
+        message: t('versiBaru.berlakuDariWajib'),
       })
     }
 
@@ -1545,14 +1599,18 @@ function FormVersiBaru({
         is_creditable: kreditable,
       })
       onSelesai(
-        `Versi baru ${dasar.code} dibuat. Versi ${formatTarif(dasar.rate)} ditutup pada ${tanggalKeTeks(berlaku)}.`,
+        t('versiBaru.berhasil', {
+          kode: dasar.code,
+          tarif: formatTarif(dasar.rate),
+          tanggal: format.tanggalPendek(tanggalKeTeks(berlaku)),
+        }),
       )
     } catch (galat) {
       // Pesan server sudah menjelaskan sebabnya dengan tepat — "harus berlaku
       // setelah …", "versi sebelumnya sudah ditutup …". Mengarang pesan sendiri
       // di sini akan menggantikan yang benar dengan yang umum.
       setGalatServer(
-        galat instanceof ApiError ? galat.message : 'Versi baru tidak dapat disimpan.',
+        galat instanceof ApiError ? galat.message : t('versiBaru.gagalSimpan'),
       )
     } finally {
       setMenyimpan(false)
@@ -1560,11 +1618,14 @@ function FormVersiBaru({
   }
 
   return (
-    <section className={styles.stack} aria-label={`Versi baru untuk ${dasar.code}`}>
-      <h3>{`Versi baru untuk ${dasar.code}`}</h3>
+    <section className={styles.stack} aria-label={t('versiBaru.judul', { kode: dasar.code })}>
+      <h3>{t('versiBaru.judul', { kode: dasar.code })}</h3>
 
       <p className={styles.notice}>
-        {`Tarif tidak pernah diubah. Menyimpan formulir ini MEMBUAT VERSI BARU: versi ${formatTarif(dasar.rate)} yang berlaku sejak ${dasar.validFrom} akan ditutup pada tanggal yang Anda isi di bawah, dan seluruh dokumen bertanggal sebelum tanggal itu tetap dihitung dengan tarif lama.`}
+        {t('versiBaru.penjelasan', {
+          tarif: formatTarif(dasar.rate),
+          sejak: format.tanggalPendek(dasar.validFrom),
+        })}
       </p>
 
       <ErrorSummary errors={errors} />
@@ -1575,64 +1636,70 @@ function FormVersiBaru({
         </p>
       ) : null}
 
-      <TextField id="kode-pajak" label="Kode" value={dasar.code} readOnly onChange={() => undefined} />
       <TextField
-        id="jenis-pajak"
-        label="Jenis pajak"
-        value={LABEL_JENIS[dasar.taxType] ?? dasar.taxType}
+        id="kode-pajak"
+        label={t('versiBaru.kode')}
+        value={dasar.code}
         readOnly
         onChange={() => undefined}
       />
-      <TextField id="nama-pajak" label="Nama" value={nama} onChange={setNama} />
+      <TextField
+        id="jenis-pajak"
+        label={t('versiBaru.jenisPajak')}
+        value={t(`jenis.${dasar.taxType}` as 'jenis.vat_out', { defaultValue: dasar.taxType })}
+        readOnly
+        onChange={() => undefined}
+      />
+      <TextField id="nama-pajak" label={t('versiBaru.nama')} value={nama} onChange={setNama} />
       <TextField
         id="tarif-baru"
-        label="Tarif baru"
+        label={t('versiBaru.tarifBaru')}
         required
         value={tarif}
         placeholder="11"
-        helper="Dalam persen. Tarif versi ini tidak dapat diubah lagi setelah disimpan."
+        helper={t('versiBaru.tarifHelper')}
         {...galatField(errors, 'tarif-baru')}
         onChange={setTarif}
       />
       <DateField
         id="berlaku-dari"
-        label="Berlaku dari"
+        label={t('versiBaru.berlakuDari')}
         required
         value={berlaku}
-        helper="Hari pertama versi baru berlaku, sekaligus hari versi lama berhenti berlaku."
+        helper={t('versiBaru.berlakuDariHelper')}
         {...galatField(errors, 'berlaku-dari')}
         onChange={setBerlaku}
       />
       <Select
         id="dasar-hitung"
-        label="Dasar perhitungan"
+        label={t('versiBaru.dasarPerhitungan')}
         value={dasarHitung}
         options={[
-          { value: 'net', label: 'Neto — tarif dikalikan ke dasar' },
-          { value: 'gross', label: 'Bruto — dasar dikeluarkan dari nilai termasuk pajak' },
+          { value: 'net', label: t('versiBaru.dasarNet') },
+          { value: 'gross', label: t('versiBaru.dasarGross') },
         ]}
         onChange={setDasarHitung}
       />
       <Select
         id="akun-pajak"
-        label="Akun buku besar"
+        label={t('versiBaru.akunBukuBesar')}
         value={akunId}
         options={akun.map((item) => ({ value: item.id, label: `${item.code} — ${item.name}` }))}
         onChange={setAkunId}
       />
       <Checkbox
         id="dapat-dikreditkan"
-        label="Dapat dikreditkan"
+        label={t('versiBaru.dapatDikreditkan')}
         checked={kreditable}
         onChange={setKreditable}
       />
 
       <div className={styles.row}>
         <Button variant="ghost" onClick={onBatal}>
-          Batal
+          {t('aksi.batal', { ns: 'umum' })}
         </Button>
         <Button loading={menyimpan} onClick={() => void simpan()}>
-          Buat versi baru
+          {t('versiBaru.simpan')}
         </Button>
       </div>
     </section>

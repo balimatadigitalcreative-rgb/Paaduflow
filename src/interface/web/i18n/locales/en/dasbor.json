@@ -1,0 +1,57 @@
+{
+  "ringkasan": {
+    "judul": "Summary",
+    "memuat": "Loading dashboard figures…",
+    "gagal": "Unable to load the dashboard."
+  },
+  "kpi": {
+    "pendapatan": "Revenue this month",
+    "piutang": "Outstanding receivables",
+    "jatuh-tempo": "Overdue receivables",
+    "menunggu": "Awaiting approval",
+    "riwayat": "Twelve-month history of {{label}}",
+    "tanpaPembanding": "No comparison period",
+    "vsBulanLalu": "vs {{bulan}}",
+    "vsAkhirBulanLalu": "vs end of last month",
+    "posisiHariIni": "Position today"
+  },
+  "pendapatan": {
+    "judul": "Twelve-month revenue",
+    "keterangan": "Revenue over the last twelve months ({{mataUang}})",
+    "kolomNilai": "Revenue",
+    "kosongJudul": "No revenue recorded in the general ledger yet.",
+    "kosongPenjelasan": "These figures come from posted invoices, not drafts. Create and post one invoice to see it appear.",
+    "kosongAksi": "Create your first invoice"
+  },
+  "umurPiutang": {
+    "judul": "Receivables ageing",
+    "keterangan": "Receivables ageing by due date ({{mataUang}})",
+    "ember": {
+      "belum_tempo": "Not yet due",
+      "lewat_30": "1–30 days",
+      "lewat_60": "31–60 days",
+      "lewat_lebih": "More than 60 days",
+      "tanpa_tempo": "No due date"
+    }
+  },
+  "jatuhTempo": {
+    "judul": "Overdue receivables",
+    "kosong": "No invoices are past their due date.",
+    "pesan_one": "<0>{{count, bilangan}} invoice</0> is past due, totalling {{nilai}}.",
+    "pesan_other": "<0>{{count, bilangan}} invoices</0> are past due, totalling {{nilai}}.",
+    "tautan": "Open invoice list"
+  },
+  "persetujuan": {
+    "judul": "Awaiting approval",
+    "kosong": "No documents are awaiting a decision.",
+    "pesan_one": "<0>{{count, bilangan}} document</0> is awaiting your decision.",
+    "pesan_other": "<0>{{count, bilangan}} documents</0> are awaiting your decision.",
+    "tautan": "Open invoice list"
+  },
+  "company": {
+    "judul": "Companies you can access",
+    "tahunFiskal": "Fiscal year starts {{bulan}}",
+    "sedangAktif": "Currently active",
+    "beralih": "Switch to this company"
+  }
+}

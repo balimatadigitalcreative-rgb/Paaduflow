@@ -32,9 +32,24 @@ import '../../styles/tokens.css'
 import '../../styles/base.css'
 
 import { App } from './app.js'
+import { i18n } from './i18n/index.js'
 
 const root = document.getElementById('root')
 if (root === null) throw new Error('Elemen #root tidak ditemukan.')
+
+/*
+ * i18n dipasang SEBELUM render pertama, bukan di dalam sebuah efek.
+ *
+ * `Suspense` dengan penanda pemuatan akan bekerja juga, tetapi menghasilkan
+ * layar yang berkedip: shell tergambar tanpa teks, lalu terisi. Menunggu dua
+ * berkas locale — keduanya kecil dan datang dari server yang sama — lebih
+ * murah daripada kedipan itu.
+ *
+ * Bahasa yang dipakai di sini datang dari penyimpanan lokal sebagai TEBAKAN
+ * awal. Sumber kebenarannya preferensi di server, yang tiba sesaat kemudian
+ * lewat `/v1/me` dan menggantinya bila berbeda.
+ */
+await i18n()
 
 createRoot(root).render(
   <StrictMode>

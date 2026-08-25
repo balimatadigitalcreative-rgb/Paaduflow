@@ -1,0 +1,60 @@
+{
+  "daftar": {
+    "caption": "Faktur Penjualan",
+    "gagal": "Tidak dapat memuat daftar faktur.",
+    "saring": "Saring faktur menurut status",
+    "cari": "Cari nomor atau customer",
+    "buatPertama": "Buat faktur pertama",
+    "kolomNomor": "Nomor",
+    "kolomTanggal": "Tanggal",
+    "kolomCustomer": "Customer",
+    "kolomStatus": "Status",
+    "kolomTotal": "Total",
+    "draf": "(draf)"
+  },
+  "chip": {
+    "draft": "Draf",
+    "pending_approval": "Menunggu persetujuan",
+    "posted": "Terposting"
+  },
+  "detail": {
+    "gagalMuat": "Tidak dapat memuat faktur.",
+    "gagalTindakan": "Tindakan gagal tanpa keterangan.",
+    "memuat": "Memuat…",
+    "bagian": "Bagian faktur",
+    "tabRingkasan": "Ringkasan",
+    "tabBaris": "Baris",
+    "tabTerkait": "Dokumen terkait",
+    "tabAktivitas": "Aktivitas",
+    "nomor": "Nomor",
+    "customer": "Customer",
+    "tanggal": "Tanggal",
+    "pajak": "Pajak",
+    "total": "Total",
+    "captionBaris": "Baris faktur",
+    "kolomNo": "No",
+    "kolomDeskripsi": "Deskripsi",
+    "kolomKuantitas": "Kuantitas",
+    "kolomHargaSatuan": "Harga satuan",
+    "kolomDpp": "DPP",
+    "kolomPajak": "Pajak",
+    "belumAdaTerkait": "Belum ada dokumen terkait. Jurnal akan muncul di sini setelah faktur diposting.",
+    "jurnal": "Jurnal",
+    "lihatBukuBesar": "Lihat di buku besar",
+    "diposting": "Diposting",
+    "auditBelumAda": "Audit trail belum tersedia di antarmuka. Perubahan sudah tercatat di",
+    "auditBelumAdaLanjutan": ", tetapi jalur bacanya belum dibangun — dicatat sebagai keterbatasan, bukan sebagai fitur yang hilang diam-diam.",
+    "ajukan": "Ajukan",
+    "setujui": "Setujui",
+    "posting": "Posting ke buku besar",
+    "kembali": "Kembali ke daftar"
+  },
+  "baru": {
+    "customer": "Customer",
+    "customerGagal": "Daftar customer tidak dapat dimuat.",
+    "faktur": "Faktur",
+    "fakturGagal": "Faktur tidak dapat dibuat.",
+    "tanggalDokumen": "Tanggal dokumen",
+    "simpanDraf": "Simpan sebagai draf"
+  }
+}

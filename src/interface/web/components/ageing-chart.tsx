@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import styles from './primitives.module.css'
 
@@ -42,12 +43,14 @@ export function AgeingChart({
   format,
   onPilih,
 }: AgeingChartProps): ReactNode {
+  const { t } = useTranslation()
+
   const total = buckets.reduce((jumlah, satu) => jumlah + satu.amount, 0)
 
   if (total === 0) {
     return (
       <p className={styles.chartEmpty} role="status">
-        Tidak ada piutang beredar. Seluruh faktur terposting sudah lunas.
+        {t('grafik.piutangLunas')}
       </p>
     )
   }
@@ -119,7 +122,7 @@ export function AgeingChart({
           <tr>
             <th scope="col">Umur</th>
             <th scope="col">Nilai</th>
-            <th scope="col">Jumlah faktur</th>
+            <th scope="col">{t('grafik.jumlahFaktur')}</th>
           </tr>
         </thead>
         <tbody>

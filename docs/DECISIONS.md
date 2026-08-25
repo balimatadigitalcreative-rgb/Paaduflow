@@ -1104,6 +1104,99 @@ Kedua, penemuan otomatis tenant di `seed:tax-dev` memulangkan nol baris di bawah
 **Kekurangan hak dijelaskan di awal.** `periksaKemampuan` memeriksa INSERT pada dua puluh tabel yang benar-benar ditulis seed, sebelum satu baris pun disisipkan, dan pesannya menyebut peran yang dipakai, tabel yang ditolak, dan perintah `GRANT` yang memperbaikinya.
 
 **Kenapa tidak pernah ketahuan:** seluruh uji menyemai lewat koneksi superuser, sehingga RLS dilewati dan kebijakannya tidak pernah benar-benar diuji. Titik buta yang sama dengan D-148. `tests/integration/seed-demo.test.ts` kini menyemai sebagai `paadu_app`, sehingga setiap penegasan di dalamnya ikut membuktikan seed berjalan tanpa kredensial pemilik.
+
+### D-150 · Istilah pajak dan akuntansi Indonesia tidak pernah diterjemahkan
+**Status:** Berlaku
+Produk ini akan dikirim dalam Bahasa Indonesia dan Inggris sebagai dua bahasa setara, dengan Melayu dan mungkin Thai atau Vietnam menyusul.
+
+Tujuh istilah berikut **tetap apa adanya di seluruh bahasa**:
+
+`NPWP` · `NPPKP` · `e-Faktur` · `Faktur Pajak` · `DPP` · `PPN` · `PPh`
+
+**Alasannya hukum, bukan gaya.** Ketujuhnya adalah istilah yang dipakai Direktorat Jenderal Pajak, muncul di formulir resmi, dan menjadi nama kolom di berkas yang diunggah ke sistem mereka. Menerjemahkan `Faktur Pajak` menjadi "Tax Invoice" menghasilkan dokumen yang tidak cocok dengan yang diharapkan otoritas pajak — dan orang yang membacanya di Indonesia, dalam antarmuka berbahasa Inggris sekalipun, tetap menyebutnya Faktur Pajak.
+
+`DPP` khususnya tidak punya padanan tunggal: ia Dasar Pengenaan Pajak, dan menerjemahkannya menjadi "Tax Base" kehilangan kaitannya dengan istilah yang tertulis di peraturan.
+
+Ditegakkan dua arah. Berkas `umum.json` memuat ketujuhnya sebagai nilai yang identik di `id` dan `en`, sehingga penerjemah berikutnya melihat kesamaannya sebagai keputusan, bukan sebagai pekerjaan yang belum selesai.
+
+**Yang TIDAK ikut aturan ini:** kata umum yang kebetulan muncul di konteks pajak — "faktur", "pajak", "periode" sendirian tetap diterjemahkan. Yang dilindungi adalah istilah bernama, bukan kosakata di sekitarnya.
+
+### D-151 · Pemformatan mengikuti locale; nilai tidak pernah
+**Status:** Berlaku
+Angka, tanggal, dan mata uang ditampilkan menurut bahasa yang dipilih: `1.234.567` di Indonesia, `1,234,567` di Inggris; `20 Agustus 2026` versus `20 August 2026`.
+
+**Nilai tersimpan, muatan API, dan seluruh perhitungan tidak pernah berubah mengikuti locale.** Angka yang tampil berbeda tetapi dihitung berbeda adalah cacat yang tidak muncul sampai audit — dan saat itu ia sudah ada di ribuan dokumen.
+
+Ditegakkan lewat bentuk: `src/interface/web/i18n/format.ts` hanya menerima `number` dan mengembalikan `string`. Ia tidak punya jalan mengembalikan angka, dan itu disengaja — fungsi yang mengembalikan `number` dari sana cepat atau lambat akan dipakai dalam perhitungan.
+
+**Desimal ditetapkan mata uang, bukan bahasa.** IDR nol desimal di kedua bahasa; USD dua desimal di kedua bahasa. Membiarkan bahasa menentukannya akan membuat nominal Rupiah yang sama tampil `1.234` dan `1,234.00` di dua layar, dan yang membacanya menyimpulkan salah satunya salah.
+
+**Tanggal dokumen dibaca sebagai tanggal kalender, bukan momen.** Menguraikan `2026-08-20` sebagai momen UTC lalu menampilkannya di zona waktu pembaca menggeser sebagian tanggal satu hari — dan tanggal faktur yang meleset satu hari dapat memindahkannya ke masa pajak yang salah.
+
+**`FY2026 P8` tidak diterjemahkan.** Notasi periode fiskal sama di seluruh sistem akuntansi, dan orang keuangan Indonesia membacanya tanpa terjemahan. Menerjemahkannya hanya membuat dua orang di ruangan yang sama menyebut periode yang sama dengan dua nama.
+
+### D-152 · i18next dipilih sebagai pustaka i18n
+**Status:** Berlaku
+Dipertimbangkan tiga: `i18next` + `react-i18next`, `react-intl` (FormatJS), dan `lingui`.
+
+| Syarat | i18next | react-intl | lingui |
+|---|---|---|---|
+| Aturan plural CLDR | Lewat `Intl.PluralRules` | Lewat ICU MessageFormat | Lewat ICU MessageFormat |
+| Namespace per modul | Bawaan | Tidak ada — satu katalog datar | Lewat konvensi penamaan |
+| Pemuatan malas per bahasa+namespace | Bawaan | Dirakit sendiri | Bawaan |
+| Tipe kunci dari berkas locale | `CustomTypeOptions` | Perlu pembangkit | Perlu pembangkit |
+
+**Yang menentukan pilihannya adalah plural.** Indonesia, Melayu, Thai, dan Vietnam masing-masing hanya punya SATU bentuk plural; Inggris punya dua. Ketiga pustaka membaca aturannya dari CLDR dan karena itu benar, tetapi i18next menyimpan bentuk plural sebagai sufiks kunci (`barisTerpilih_one`, `barisTerpilih_other`) — sehingga berkas locale Indonesia hanya memuat `_other`, dan penerjemah berikutnya tidak perlu menuliskan bentuk yang tidak pernah dipakai bahasanya. Pemeriksa CI membandingkan kunci menurut BASIS-nya, bukan menurut sufiksnya, justru karena itu.
+
+Namespace per modul dipilih karena berpengaruh langsung ke ukuran unduhan: seseorang yang tidak pernah membuka modul Pajak tidak pernah mengunduh string Pajak, dalam bahasa mana pun. Terbukti di hasil build — satu chunk per bahasa per namespace, bukan satu katalog besar.
+
+`react-intl` gugur di namespace: katalognya datar, dan memecahnya menuntut merakit sendiri apa yang di sini sudah jadi. `lingui` kuat di ekstraksi otomatis, tetapi ekstraksinya berbasis teks sumber di dalam kode — dan itu berlawanan dengan kunci berstruktur `modul.layar.elemen` yang dituntut produk ini.
+
+### D-153 · Bahasa disimpan per pengguna di server; tema dan kepadatan tidak
+**Status:** Berlaku
+`users.preferred_language` — kolom di tabel identitas global, bukan tabel preferensi tersendiri, dan bukan di `company_access`.
+
+**Di server, bukan di peramban.** Orang yang sama masuk dari laptop kantor dan dari ponsel; bahasa yang hanya tersimpan di `localStorage` berarti ia memilih ulang di setiap perangkat, dan mengira pilihannya tidak tersimpan. `localStorage` tetap dipakai — tetapi hanya sebagai TEBAKAN awal supaya layar pertama tidak berkedip dalam bahasa yang salah sebelum `/v1/me` menjawab. Jawaban server selalu menang.
+
+**Di `users`, bukan di `company_access`.** Bahasa milik orangnya. Satu orang yang memegang tiga company tidak berganti bahasa saat berpindah antar company; ia hanya berpindah tempat kerja.
+
+**Tema dan kepadatan sengaja TIDAK ikut ke server.** Keduanya menyangkut layar yang sedang dipakai — laptop terang di kantor, layar gelap di rumah, mode padat di monitor besar. Menyeragamkannya lintas perangkat justru salah.
+
+**Daftar bahasa diulang di tiga tempat**: CHECK di kolom, `Type.Union` di skema HTTP, dan `BAHASA` di lapisan web. Menambah bahasa memang menuntut ketiganya berubah, dan itu yang diinginkan — berkas locale harus ikut dikirim. Kolom yang menerima `'ms'` sebelum berkasnya ada hanya memindahkan kegagalan ke layar pengguna, tempat ia muncul sebagai teks kosong alih-alih sebagai galat.
+
+`PUT`, bukan `POST`, dan tanpa `Idempotency-Key`: menyimpan pilihan yang sama dua kali menghasilkan keadaan yang sama. Idempotensinya melekat pada bentuk operasinya. `withIdempotency` pun menuntut konteks company untuk menyimpan jawabannya, sementara preferensi ini berlaku di seluruh company.
+
+**Efek samping yang layak disebut:** `GET /v1/me` menutup keterbatasan lama — sebelumnya tidak ada satu pun jalan baca yang mengetahui nama pengguna, dan menu profil menampilkan "Pengguna" bagi semua orang.
+
+### D-154 · Label tampilan dari server hanya cadangan; `id`-nya yang menghubungkan ke terjemahan
+**Status:** Berlaku
+Beberapa port mengirim kalimat jadi, bukan hanya data: `DashboardQueryPort` mengirim `label: 'Pendapatan bulan ini'` dan `comparisonBasis: 'vs Juli 2026'`; ember umur piutang mengirim `label: '1–30 hari'`. Keduanya dirancang sebelum ada bahasa kedua.
+
+**Yang tidak dilakukan: menyeret locale ke server.** Server yang tahu bahasa pembacanya akan menerima `Accept-Language`, dan sejak saat itu jawaban API berbeda menurut siapa yang bertanya — persis yang dilarang D-151. Muatan API adalah data, dan data tidak berubah menurut bahasa.
+
+**Yang dilakukan:** setiap entri sudah membawa `id` yang stabil (`pendapatan`, `piutang`, `lewat_30`). Layar menerjemahkan lewat `id` itu, dengan teks dari server sebagai `defaultValue`. Konsekuensinya: id baru yang belum punya terjemahan muncul apa adanya dalam bahasa sumber — terlihat janggal, tetapi terbaca — alih-alih hilang menjadi ruang kosong.
+
+`comparisonBasis` tidak punya id, dan itu ditangani dengan pemetaan eksplisit di `pages/dasbor.tsx`. Bila basis pembanding bertambah, memberinya `id` di port lebih baik daripada menambah cabang di pemetaan itu.
+
+### D-155 · Nama dokumen pajak berbadan hukum tidak diterjemahkan sebagai frasa utuh
+**Status:** Berlaku · Memperjelas D-150
+D-150 menetapkan istilah yang dilindungi. Ekstraksi memunculkan pertanyaan yang belum terjawab di sana: bagaimana dengan frasa yang MEMUAT istilah itu?
+
+Aturannya: **nama kategori dokumen yang ditetapkan peraturan tidak diterjemahkan sebagai frasa utuh.** `Faktur Pajak Keluaran`, `Faktur Pajak Masukan`, dan `Nomor Seri Faktur Pajak` tetap apa adanya di bahasa Inggris — seperti `Form W-2` tidak diterjemahkan ke bahasa Indonesia. "Keluaran" dan "Masukan" di sini bagian dari nama, bukan kata sifat yang berdiri sendiri.
+
+**Kosakata di sekitarnya tetap diterjemahkan.** Nama modul `Pajak` menjadi `Tax`; `Kode Pajak` menjadi `Tax Codes`; `Rekonsiliasi Pajak` menjadi `Tax Reconciliation`; `Terbitkan Faktur Pajak` menjadi `Issue Faktur Pajak` — kata kerjanya diterjemahkan, objeknya tidak.
+
+Ditegakkan `tests/unit/istilah-pajak.test.ts`, yang memeriksa dua arah: istilah yang ada di berkas Indonesia harus ada di berkas Inggris, dan padanan Inggris yang paling mungkin dikarang orang (`Tax Invoice`, `Value Added Tax`, `Taxpayer Identification Number`) tidak boleh muncul sama sekali. Masing-masing terdengar wajar dan tidak satu pun merujuk dokumen yang sama di mata Direktorat Jenderal Pajak.
+
+### D-156 · Kalimat berjumlah disimpan utuh, tidak dirakit dari potongan
+**Status:** Berlaku
+Beberapa tempat merakit kalimat dari kepingan: `` `Belum ${kata}` ``, `` `${jumlah} faktur` `` + `sudah lewat jatuh tempo`, `` `Jumlah ${judul.toLowerCase()}` ``. Semuanya benar selama bahasanya satu.
+
+Bahasa Inggris membalik urutannya (`Fully received`, bukan `Received fully`) dan menyesuaikan kata kerjanya dengan jumlah (`1 invoice IS past due`, `2 invoices ARE past due`). Tidak satu pun dapat dihasilkan perakitan semacam itu tanpa salah di salah satu bahasa.
+
+Karena itu: **satu kunci untuk satu kalimat utuh**, dengan interpolasi untuk angkanya dan sufiks plural untuk bentuknya. Yang memuat markup memakai `<Trans>` dengan indeks komponen, bukan penggabungan JSX. Fungsi yang dulu memulangkan kalimat kini memulangkan KUNCI — `ringkasKuantitas` di `pages/pembelian.tsx` adalah contohnya.
+
+**Berkas locale Indonesia hanya memuat `_other`.** Indonesia punya satu bentuk plural; menulis `_one` di sana berarti menulis kunci yang tidak akan pernah dipakai, dan menyesatkan penerjemah berikutnya. Pemeriksa CI membandingkan kunci menurut basisnya, bukan sufiksnya, justru karena itu.
 ---
 
 ## Sengaja Ditunda

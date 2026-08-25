@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import type { ReactNode } from 'react'
 
 import styles from './primitives.module.css'
@@ -15,20 +16,25 @@ export type BadgeTone = 'neutral' | 'accent' | 'success' | 'warning' | 'danger'
 /**
  * Kosakata status dokumen tetap lintas modul. Ia ditetapkan sekali di sini,
  * bukan diputuskan ulang per modul — Information Architecture §4.
+ *
+ * Teksnya kini tinggal di `umum.siklus`; yang tersisa di sini daftar statusnya.
+ * Sebelumnya keduanya menyatu, dan literal objek seperti itu tidak terlihat
+ * oleh pemeriksa string keras — sembilan kata Indonesia lolos ke setiap layar
+ * berbahasa Inggris tanpa satu pun peringatan.
  */
-export const DOCUMENT_STATUS_LABEL = {
-  draft: 'Draf',
-  submitted: 'Diajukan',
-  pending_approval: 'Menunggu persetujuan',
-  approved: 'Disetujui',
-  rejected: 'Ditolak',
-  posted: 'Diposting',
-  cancelled: 'Dibatalkan',
-  void: 'Void',
-  closed: 'Selesai',
-} as const
+export const DOCUMENT_STATUS = [
+  'draft',
+  'submitted',
+  'pending_approval',
+  'approved',
+  'rejected',
+  'posted',
+  'cancelled',
+  'void',
+  'closed',
+] as const
 
-export type DocumentStatus = keyof typeof DOCUMENT_STATUS_LABEL
+export type DocumentStatus = (typeof DOCUMENT_STATUS)[number]
 
 const STATUS_TONE: Record<DocumentStatus, BadgeTone> = {
   draft: 'neutral',
@@ -74,9 +80,11 @@ export function StatusBadge({
   readonly status: DocumentStatus
   readonly 'data-testid'?: string
 }): ReactNode {
+  const { t } = useTranslation()
+
   return (
     <Badge tone={STATUS_TONE[status]} {...rest}>
-      {DOCUMENT_STATUS_LABEL[status]}
+      {t(`siklus.${status}`)}
     </Badge>
   )
 }

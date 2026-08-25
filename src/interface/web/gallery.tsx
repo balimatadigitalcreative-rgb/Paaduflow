@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import type { ReactNode } from 'react'
 
-import { Badge, StatusBadge, Tag, type DocumentStatus } from './components/badge.js'
+import { Badge, StatusBadge, Tag } from './components/badge.js'
 import { Button, type ButtonVariant } from './components/button.js'
 import { Checkbox, Radio, Switch } from './components/choice.js'
 import { CurrencyInput } from './components/currency-input.js'
 import { TextArea, TextField } from './components/text-field.js'
-import { DOCUMENT_STATUS_LABEL } from './components/badge.js'
+import { DOCUMENT_STATUS } from './components/badge.js'
 
 /**
  * Galeri komponen.
@@ -108,7 +108,7 @@ export function Gallery(): ReactNode {
       <section>
         <h2>Badge</h2>
         <p>
-          {(Object.keys(DOCUMENT_STATUS_LABEL) as DocumentStatus[]).map((status) => (
+          {DOCUMENT_STATUS.map((status) => (
             <StatusBadge key={status} status={status} />
           ))}
         </p>

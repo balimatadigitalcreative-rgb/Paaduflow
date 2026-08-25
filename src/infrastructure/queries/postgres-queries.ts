@@ -19,6 +19,9 @@ import type {
   OutputTaxInvoiceDetail,
   OutputTaxInvoiceSummary,
   PartnerOption,
+  ProfilPengguna,
+  ProfilPenggunaPort,
+  BahasaPengguna,
   Page,
   PageRequest,
   PurchaseDocumentDetail,
@@ -120,6 +123,52 @@ export class PostgresCompanyDirectory implements CompanyDirectoryPort {
       fiscalYearStartMonth: row.fiscal_year_start_month,
       roleKey: row.role_key,
     }))
+  }
+}
+
+// ── Profil pengguna ────────────────────────────────────────────────────────
+
+export class PostgresProfilPengguna implements ProfilPenggunaPort {
+  constructor(private readonly db: Queryable) {}
+
+  /**
+   * Berjalan tanpa konteks tenant — `users` adalah tabel identitas global dan
+   * satu-satunya tanpa `tenant_id`, jadi tidak ada RLS yang menyaringnya.
+   *
+   * Karena itu `userId` di sini WAJIB berasal dari token yang sudah diperiksa,
+   * bukan dari isi permintaan. Tidak ada lapisan di bawah yang akan menangkap
+   * kekeliruan itu.
+   */
+  async baca(userId: string): Promise<ProfilPengguna | null> {
+    const { rows } = await this.db.query<{
+      id: string
+      email: string
+      full_name: string
+      preferred_language: BahasaPengguna
+    }>(
+      `SELECT id, email, full_name, preferred_language
+         FROM users
+        WHERE id = $1 AND deleted_at IS NULL`,
+      [userId],
+    )
+
+    const baris = rows[0]
+    if (baris === undefined) return null
+
+    return {
+      id: baris.id,
+      email: baris.email,
+      fullName: baris.full_name,
+      language: baris.preferred_language,
+    }
+  }
+
+  async simpanBahasa(userId: string, bahasa: BahasaPengguna): Promise<void> {
+    await this.db.query(
+      `UPDATE users SET preferred_language = $2, updated_by = $1
+        WHERE id = $1 AND deleted_at IS NULL`,
+      [userId, bahasa],
+    )
   }
 }
 

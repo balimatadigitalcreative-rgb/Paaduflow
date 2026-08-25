@@ -1,0 +1,120 @@
+{
+  "pencocokan": {
+    "not_matched": "Belum dicocokkan",
+    "matched": "Cocok",
+    "exception": "Ada selisih",
+    "overridden": "Selisih disetujui"
+  },
+  "chipPesanan": {
+    "draft": "Draf",
+    "pending_approval": "Menunggu persetujuan",
+    "approved": "Disetujui"
+  },
+  "chipTagihan": {
+    "draft": "Draf",
+    "approved": "Siap diposting",
+    "posted": "Terposting"
+  },
+  "daftar": {
+    "gagal": "Tidak dapat memuat daftar.",
+    "captionTagihan": "Faktur Pembelian",
+    "captionPesanan": "Pesanan Pembelian",
+    "saringTagihan": "Saring tagihan menurut status",
+    "saringPesanan": "Saring pesanan menurut status",
+    "cari": "Cari nomor atau vendor",
+    "kosongTagihan": "Mulai dari pesanan pembelian",
+    "kosongPesanan": "Pelajari alur pembelian",
+    "kolomNomor": "Nomor",
+    "kolomTanggal": "Tanggal",
+    "kolomVendor": "Vendor",
+    "kolomStatus": "Status",
+    "kolomPencocokan": "Pencocokan",
+    "kolomTotal": "Total",
+    "belumBernomor": "(belum bernomor)"
+  },
+  "pesanan": {
+    "gagalMuat": "Tidak dapat memuat pesanan.",
+    "memuat": "Memuat…",
+    "bagian": "Bagian pesanan",
+    "tabRingkasan": "Ringkasan",
+    "tabBaris": "Baris",
+    "tabTerkait": "Dokumen terkait",
+    "tabAktivitas": "Aktivitas",
+    "wajibKuantitas": "Isi kuantitas diterima pada sedikitnya satu baris.",
+    "belumAdaGudang": "Company ini belum punya gudang. Buat gudang lebih dulu.",
+    "gagalTerima": "Penerimaan tidak dapat dicatat.",
+    "nomor": "Nomor",
+    "vendor": "Vendor",
+    "total": "Total",
+    "captionBaris": "Baris pesanan — kuantitas diterima dan ditagih dilacak per baris, bukan per dokumen",
+    "kolomDeskripsi": "Deskripsi",
+    "kolomDipesan": "Dipesan",
+    "kolomDiterima": "Diterima",
+    "kolomDitagih": "Ditagih",
+    "kolomHargaSatuan": "Harga satuan",
+    "kolomTerimaSekarang": "Terima sekarang",
+    "terimaBaris": "Diterima baris {{nomor}}",
+    "tanpaSumber": "Pesanan ini dibuat langsung, bukan dari RFQ. Penerimaan dan tagihan yang lahir darinya belum ditautkan balik ke sini.",
+    "dokumenSumber": "Dokumen sumber",
+    "auditBelumAda": "Audit trail belum tersedia di antarmuka. Perubahan sudah tercatat di",
+    "auditBelumAdaLanjutan": ", tetapi jalur bacanya belum dibangun.",
+    "catatPenerimaan": "Catat penerimaan",
+    "hanyaDisetujui": "Penerimaan hanya dapat dicatat atas pesanan berstatus disetujui.",
+    "kembali": "Kembali ke daftar"
+  },
+  "penerimaan": {
+    "gagal": "Tidak dapat memuat penerimaan.",
+    "caption": "Penerimaan Barang",
+    "kolomNomor": "Nomor",
+    "kolomTanggalTerima": "Tanggal terima",
+    "kolomPesanan": "Pesanan",
+    "kolomVendor": "Vendor",
+    "kolomJumlahBaris": "Jumlah baris",
+    "bukaPesanan": "Buka pesanan pembelian"
+  },
+  "tagihan": {
+    "gagalMuat": "Tidak dapat memuat tagihan.",
+    "gagalPosting": "Posting gagal tanpa keterangan.",
+    "tertahanSelisih": "Pencocokan tiga arah menemukan selisih yang belum disetujui. Periksa tab Baris, lalu setujui pengecualiannya bila selisihnya memang disepakati.",
+    "tertahanBelumCocok": "Pencocokan tiga arah belum dijalankan atas tagihan ini.",
+    "memuat": "Memuat…",
+    "bagian": "Bagian tagihan",
+    "tabRingkasan": "Ringkasan",
+    "tabBaris": "Baris",
+    "tabTerkait": "Dokumen terkait",
+    "tabAktivitas": "Aktivitas",
+    "tidakDapatDiposting": "Tagihan tidak dapat diposting.",
+    "nomor": "Nomor",
+    "vendor": "Vendor",
+    "pencocokan": "Pencocokan",
+    "pengecualianDisetujui": "Pengecualian disetujui:",
+    "captionBaris": "Pencocokan tiga arah — dipesan, diterima, dan ditagih pada baris yang sama",
+    "kolomDeskripsi": "Deskripsi",
+    "kolomDipesan": "Dipesan",
+    "kolomDiterima": "Diterima",
+    "kolomDitagih": "Ditagih",
+    "kolomHargaPesanan": "Harga pesanan",
+    "kolomHargaTagihan": "Harga tagihan",
+    "sebelumnya": " (+{{jumlah}} sebelumnya)",
+    "tanpaPesanan": "Tagihan ini tidak menunjuk pesanan pembelian mana pun. Pencocokan tiga arah tetap berjalan atas baris yang ada, tetapi jejak konversinya tidak tercatat.",
+    "pesananPembelian": "Pesanan pembelian",
+    "bukaPesananSumber": "Buka pesanan sumber",
+    "auditBelumAda": "Audit trail belum tersedia di antarmuka. Persetujuan pengecualian tercatat di",
+    "auditBelumAdaLanjutan": "beserta alasannya, tetapi jalur bacanya belum dibangun.",
+    "belumDapatDiposting": "Tagihan ini belum dapat diposting.",
+    "posting": "Posting tagihan",
+    "kembali": "Kembali ke daftar"
+  },
+  "kuantitas": {
+    "diterima": {
+      "belum": "Belum diterima",
+      "penuh": "Diterima penuh",
+      "sebagian": "Sebagian diterima"
+    },
+    "ditagih": {
+      "belum": "Belum ditagih",
+      "penuh": "Ditagih penuh",
+      "sebagian": "Sebagian ditagih"
+    }
+  }
+}

@@ -19,6 +19,7 @@ import {
   PostgresDashboardQueries,
   PostgresProfitLoss,
   PostgresCompanyDirectory,
+  PostgresProfilPengguna,
   PostgresMasterData,
   PostgresPurchaseQueries,
   PostgresSalesQueries,
@@ -88,6 +89,20 @@ export function createAppServices(options: AppServicesOptions): AppServices {
       // Tanpa konteks tenant, alasan yang sama dengan di atas.
       return unitOfWork.asUser(userId, async (db) =>
         new PostgresCompanyDirectory(db).listForUser(userId),
+      )
+    },
+
+    async bacaProfil(userId: string) {
+      // `users` tabel identitas global tanpa RLS. `asUser` tetap dipakai supaya
+      // konteks pelaku terpasang untuk audit, bukan untuk penyaringan.
+      return unitOfWork.asUser(userId, async (db) =>
+        new PostgresProfilPengguna(db).baca(userId),
+      )
+    },
+
+    async simpanBahasa(userId: string, bahasa) {
+      await unitOfWork.asUser(userId, async (db) =>
+        new PostgresProfilPengguna(db).simpanBahasa(userId, bahasa),
       )
     },
 

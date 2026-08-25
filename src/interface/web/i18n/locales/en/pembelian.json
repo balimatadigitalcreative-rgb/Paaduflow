@@ -1,0 +1,120 @@
+{
+  "pencocokan": {
+    "not_matched": "Not matched",
+    "matched": "Matched",
+    "exception": "Variance found",
+    "overridden": "Variance approved"
+  },
+  "chipPesanan": {
+    "draft": "Draft",
+    "pending_approval": "Awaiting approval",
+    "approved": "Approved"
+  },
+  "chipTagihan": {
+    "draft": "Draft",
+    "approved": "Ready to post",
+    "posted": "Posted"
+  },
+  "daftar": {
+    "gagal": "Unable to load the list.",
+    "captionTagihan": "Purchase Invoices",
+    "captionPesanan": "Purchase Orders",
+    "saringTagihan": "Filter invoices by status",
+    "saringPesanan": "Filter orders by status",
+    "cari": "Search number or vendor",
+    "kosongTagihan": "Start from a purchase order",
+    "kosongPesanan": "Learn the purchasing flow",
+    "kolomNomor": "Number",
+    "kolomTanggal": "Date",
+    "kolomVendor": "Vendor",
+    "kolomStatus": "Status",
+    "kolomPencocokan": "Matching",
+    "kolomTotal": "Total",
+    "belumBernomor": "(not numbered yet)"
+  },
+  "pesanan": {
+    "gagalMuat": "Unable to load the order.",
+    "memuat": "Loading…",
+    "bagian": "Order sections",
+    "tabRingkasan": "Summary",
+    "tabBaris": "Lines",
+    "tabTerkait": "Related documents",
+    "tabAktivitas": "Activity",
+    "wajibKuantitas": "Enter a received quantity on at least one line.",
+    "belumAdaGudang": "This company has no warehouse yet. Create one first.",
+    "gagalTerima": "The receipt could not be recorded.",
+    "nomor": "Number",
+    "vendor": "Vendor",
+    "total": "Total",
+    "captionBaris": "Order lines — received and billed quantities are tracked per line, not per document",
+    "kolomDeskripsi": "Description",
+    "kolomDipesan": "Ordered",
+    "kolomDiterima": "Received",
+    "kolomDitagih": "Billed",
+    "kolomHargaSatuan": "Unit price",
+    "kolomTerimaSekarang": "Receive now",
+    "terimaBaris": "Received on line {{nomor}}",
+    "tanpaSumber": "This order was created directly, not from an RFQ. Receipts and invoices arising from it are not yet linked back here.",
+    "dokumenSumber": "Source document",
+    "auditBelumAda": "The audit trail is not available in the interface yet. Changes are already recorded in",
+    "auditBelumAdaLanjutan": ", but the read path has not been built.",
+    "catatPenerimaan": "Record receipt",
+    "hanyaDisetujui": "Receipts can only be recorded against approved orders.",
+    "kembali": "Back to the list"
+  },
+  "penerimaan": {
+    "gagal": "Unable to load goods receipts.",
+    "caption": "Goods Receipts",
+    "kolomNomor": "Number",
+    "kolomTanggalTerima": "Received date",
+    "kolomPesanan": "Order",
+    "kolomVendor": "Vendor",
+    "kolomJumlahBaris": "Line count",
+    "bukaPesanan": "Open purchase orders"
+  },
+  "tagihan": {
+    "gagalMuat": "Unable to load the invoice.",
+    "gagalPosting": "Posting failed without an explanation.",
+    "tertahanSelisih": "Three-way matching found a variance that has not been approved. Check the Lines tab, then approve the exception if the variance is agreed.",
+    "tertahanBelumCocok": "Three-way matching has not been run on this invoice.",
+    "memuat": "Loading…",
+    "bagian": "Invoice sections",
+    "tabRingkasan": "Summary",
+    "tabBaris": "Lines",
+    "tabTerkait": "Related documents",
+    "tabAktivitas": "Activity",
+    "tidakDapatDiposting": "This invoice cannot be posted.",
+    "nomor": "Number",
+    "vendor": "Vendor",
+    "pencocokan": "Matching",
+    "pengecualianDisetujui": "Exception approved:",
+    "captionBaris": "Three-way matching — ordered, received, and billed on the same line",
+    "kolomDeskripsi": "Description",
+    "kolomDipesan": "Ordered",
+    "kolomDiterima": "Received",
+    "kolomDitagih": "Billed",
+    "kolomHargaPesanan": "Order price",
+    "kolomHargaTagihan": "Invoice price",
+    "sebelumnya": " (+{{jumlah}} previously)",
+    "tanpaPesanan": "This invoice does not reference any purchase order. Three-way matching still runs on the lines present, but the conversion trail is not recorded.",
+    "pesananPembelian": "Purchase order",
+    "bukaPesananSumber": "Open the source order",
+    "auditBelumAda": "The audit trail is not available in the interface yet. Exception approvals are recorded in",
+    "auditBelumAdaLanjutan": "along with their reasons, but the read path has not been built.",
+    "belumDapatDiposting": "This invoice cannot be posted yet.",
+    "posting": "Post invoice",
+    "kembali": "Back to the list"
+  },
+  "kuantitas": {
+    "diterima": {
+      "belum": "Not received",
+      "penuh": "Fully received",
+      "sebagian": "Partially received"
+    },
+    "ditagih": {
+      "belum": "Not billed",
+      "penuh": "Fully billed",
+      "sebagian": "Partially billed"
+    }
+  }
+}

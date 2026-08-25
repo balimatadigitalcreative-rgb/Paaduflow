@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { FormEvent, ReactNode } from 'react'
 
 import { api, ApiError } from '../api/client.js'
@@ -16,6 +17,7 @@ import styles from './pages.module.css'
  * disamarkan.
  */
 export function HalamanMasuk({ onMasuk }: { readonly onMasuk: () => void }): ReactNode {
+  const { t } = useTranslation()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [errors, setErrors] = useState<readonly FieldError[]>([])
@@ -30,8 +32,8 @@ export function HalamanMasuk({ onMasuk }: { readonly onMasuk: () => void }): Rea
       await api.masuk(email, password)
       onMasuk()
     } catch (galat) {
-      const pesan = galat instanceof ApiError ? galat.message : 'Tidak dapat menghubungi server.'
-      setErrors([{ fieldId: 'masuk-email', label: 'Email', message: pesan }])
+      const pesan = galat instanceof ApiError ? galat.message : t('masuk.tidakTerhubung')
+      setErrors([{ fieldId: 'masuk-email', label: t('masuk.email'), message: pesan }])
     } finally {
       setSedang(false)
     }
@@ -39,8 +41,8 @@ export function HalamanMasuk({ onMasuk }: { readonly onMasuk: () => void }): Rea
 
   return (
     <main className={styles.masuk}>
-      <h1>Paadu Flow</h1>
-      <p>Masuk untuk melanjutkan.</p>
+      <h1>{t('masuk.judul')}</h1>
+      <p>{t('masuk.ajakan')}</p>
 
       {errors.length > 0 ? <ErrorSummary errors={errors} /> : null}
 
@@ -53,7 +55,7 @@ export function HalamanMasuk({ onMasuk }: { readonly onMasuk: () => void }): Rea
       >
         <TextField
           id="masuk-email"
-          label="Email"
+          label={t('masuk.email')}
           type="email"
           value={email}
           onChange={setEmail}
@@ -61,14 +63,14 @@ export function HalamanMasuk({ onMasuk }: { readonly onMasuk: () => void }): Rea
         />
         <TextField
           id="masuk-sandi"
-          label="Kata sandi"
+          label={t('masuk.sandi')}
           type="password"
           value={password}
           onChange={setPassword}
           required
         />
         <Button type="submit" loading={sedang}>
-          Masuk
+          {t('masuk.tombol')}
         </Button>
       </form>
     </main>

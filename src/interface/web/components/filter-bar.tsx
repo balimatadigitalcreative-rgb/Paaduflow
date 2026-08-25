@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import styles from './primitives.module.css'
 
@@ -46,6 +47,8 @@ export function FilterBar({
   onToggle,
   onClearAll,
 }: FilterBarProps): ReactNode {
+  const { t } = useTranslation()
+
   const jumlah = activeIds.length
 
   return (
@@ -83,8 +86,8 @@ export function FilterBar({
             {jumlah === 1 ? '1 filter aktif' : `${jumlah} filter aktif`}
           </span>
           <button type="button" className={styles.filterClear} onClick={onClearAll}>
-            Hapus semua
-          </button>
+        {t('aksi.hapusSemua')}
+      </button>
         </>
       )}
     </div>

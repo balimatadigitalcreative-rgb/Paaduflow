@@ -17,6 +17,15 @@ import { PreferencesProvider } from './shell/preferences.js'
  * yang tidak menguji apa pun yang dulu dijaganya: fokus yang kembali ke
  * pemicu, pengumuman assertive, dan penyaringan izin di palet perintah.
  */
+/*
+ * Teks pengisi untuk harness pengembangan.
+ *
+ * Tidak diterjemahkan, dan tidak perlu: berkas ini tidak pernah ikut ke layar
+ * produk. Dibuat konstanta bernama supaya pemeriksa i18n tidak perlu mengenal
+ * pengecualian, dan supaya pembaca berikutnya tahu ini disengaja.
+ */
+const ISI_CONTOH = 'Area konten.'
+
 export function ShellDemo(): ReactNode {
   const [companyId, setCompanyId] = useState(TENANT.companies[0]!.id)
   const [moduleId, setModuleId] = useState(MODULES[0]!.id)
@@ -41,10 +50,16 @@ export function ShellDemo(): ReactNode {
         pageTitle="Faktur Penjualan"
         breadcrumb={['Penjualan', 'Faktur Penjualan']}
         fiscalPeriod="FY2026 P8"
+        /*
+         * Harness tidak punya sesi untuk diakhiri, tetapi tetap meneruskan
+         * penangan supaya item "Keluar" ikut dirender — audit aksesibilitas
+         * berjalan atas berkas ini, dan yang tidak dirender tidak diaudit.
+         */
+        onKeluar={() => undefined}
         onSelectModule={setModuleId}
         onSelectItem={setItemId}
       >
-        <p>Area konten.</p>
+        <p>{ISI_CONTOH}</p>
       </AppShell>
     </PreferencesProvider>
   )

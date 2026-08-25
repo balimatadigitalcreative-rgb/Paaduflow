@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { ReactNode } from 'react'
 
 import { Field, useFieldIds, type BaseFieldProps } from './field.js'
@@ -76,6 +77,8 @@ export interface ComboboxProps extends BaseFieldProps {
 }
 
 export function Combobox(props: ComboboxProps): ReactNode {
+  const { t } = useTranslation()
+
   const ids = useFieldIds(props)
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
@@ -159,17 +162,17 @@ export function Combobox(props: ComboboxProps): ReactNode {
       {open ? (
         <div className={styles.listbox}>
           {props.state.kind === 'loading' ? (
-            <p className={styles.listMessage}>Memuat…</p>
+            <p className={styles.listMessage}>{t('status.memuat')}</p>
           ) : props.state.kind === 'error' ? (
             <p className={styles.listMessage} role="alert">
               {props.state.message}
             </p>
           ) : props.state.kind === 'empty' ? (
-            <p className={styles.listMessage}>Belum ada data.</p>
+            <p className={styles.listMessage}>{t('status.belumAdaPilihan')}</p>
           ) : props.state.kind === 'no_match' ? (
             // Berbeda dari kosong: yang satu berarti belum ada apa-apa, yang
             // lain berarti pencariannya yang tidak cocok.
-            <p className={styles.listMessage}>Tidak ada hasil untuk pencarian ini.</p>
+            <p className={styles.listMessage}>{t('status.tidakAdaHasilPencarian')}</p>
           ) : (
             <ul id={listId} role="listbox" aria-label={props.label} className={styles.paletteList}>
               {options.map((option, index) => (

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { ReactNode } from 'react'
 
 import type { ProfitLossReport, ProfitLossRow } from '#application/queries'
@@ -120,6 +121,7 @@ function jumlahkan(rows: readonly ProfitLossRow[], jenis: string, banding: boole
 }
 
 export function LabaRugi({ konteks }: { readonly konteks: Konteks }): ReactNode {
+  const { t } = useTranslation('akuntansi')
   const bulanIni = bulanDari(new Date())
   const [dari, setDari] = useState(bulanIni.from)
   const [sampai, setSampai] = useState(bulanIni.to)
@@ -145,7 +147,7 @@ export function LabaRugi({ konteks }: { readonly konteks: Konteks }): ReactNode 
       setMuat({
         kind: 'galat',
         pesan:
-          kesalahan instanceof ApiError ? kesalahan.message : 'Tidak dapat memuat laba rugi.',
+          kesalahan instanceof ApiError ? kesalahan.message : t('labaRugi.gagal'),
       })
     }
   }
@@ -177,14 +179,14 @@ export function LabaRugi({ konteks }: { readonly konteks: Konteks }): ReactNode 
           menyimpan dua bentuk tanggal yang harus dijaga tetap sepakat.
         */}
         <DateField
-          label="Dari"
+          label={t('labaRugi.dari')}
           value={new Date(`${dari}T00:00:00Z`)}
           onChange={(nilai) => {
             if (nilai !== null) setDari(nilai.toISOString().slice(0, 10))
           }}
         />
         <DateField
-          label="Sampai"
+          label={t('labaRugi.sampai')}
           value={new Date(`${sampai}T00:00:00Z`)}
           onChange={(nilai) => {
             if (nilai !== null) setSampai(nilai.toISOString().slice(0, 10))
@@ -196,9 +198,9 @@ export function LabaRugi({ konteks }: { readonly konteks: Konteks }): ReactNode 
             checked={bandingkan}
             onChange={(event) => setBandingkan(event.target.checked)}
           />{' '}
-          Bandingkan dengan bulan sebelumnya
+          {t('labaRugi.bandingkan')}
         </label>
-        <Button onClick={() => void ambil()}>Terapkan</Button>
+        <Button onClick={() => void ambil()}>{t('labaRugi.terapkan')}</Button>
       </div>
 
       {/*
@@ -207,10 +209,7 @@ export function LabaRugi({ konteks }: { readonly konteks: Konteks }): ReactNode 
         menawarkan tindakan yang mungkin.
       */}
       <p className={`${styles.notice} ${styles.hanyaSempit}`} role="status">
-        <strong>Laporan ini dirancang untuk layar lebih lebar.</strong> Kolom
-        perbandingan dan selisihnya tidak muat dibaca di sini. Buka di tablet atau
-        laptop untuk membacanya utuh — angkanya tetap dapat dilihat di bawah, tetapi
-        akan memerlukan gulir mendatar.
+        <strong>{t('labaRugi.sempitJudul')}</strong> {t('labaRugi.sempitPenjelasan')}
       </p>
 
       <Hasil
@@ -237,10 +236,11 @@ function Hasil({
   onLipat: (accountId: string) => void
   onCobaLagi: () => void
 }): ReactNode {
+  const { t } = useTranslation('akuntansi')
   if (muat.kind === 'memuat') {
     return (
       <p role="status" className={styles.metaLabel}>
-        Sedang menghitung…
+        {t('labaRugi.menghitung')}
       </p>
     )
   }
@@ -253,7 +253,7 @@ function Hasil({
         </p>
         <div>
           <Button variant="secondary" onClick={onCobaLagi}>
-            Coba lagi
+            {t('aksi.cobaLagi', { ns: 'umum' })}
           </Button>
         </div>
       </div>
@@ -266,11 +266,8 @@ function Hasil({
   if (!adaAngka) {
     return (
       <div className={styles.notice}>
-        <strong>Tidak ada transaksi pada periode ini.</strong>
-        <p>
-          Laporan dihitung dari jurnal yang sudah diposting. Coba periode lain, atau posting
-          faktur lebih dulu.
-        </p>
+        <strong>{t('labaRugi.kosongJudul')}</strong>
+        <p>{t('labaRugi.kosongPenjelasan')}</p>
       </div>
     )
   }
@@ -292,19 +289,19 @@ function Hasil({
       */}
       <div className={styles.meta}>
         <div>
-          <div className={styles.metaLabel}>Company</div>
+          <div className={styles.metaLabel}>{t('labaRugi.company')}</div>
           <div className={styles.metaValue}>{konteks.companyName}</div>
         </div>
         <div>
-          <div className={styles.metaLabel}>Periode</div>
+          <div className={styles.metaLabel}>{t('labaRugi.periode')}</div>
           <div className={styles.metaValue}>{data.period.label}</div>
         </div>
         <div>
-          <div className={styles.metaLabel}>Mata uang</div>
+          <div className={styles.metaLabel}>{t('labaRugi.mataUang')}</div>
           <div className={styles.metaValue}>{data.currency}</div>
         </div>
         <div>
-          <div className={styles.metaLabel}>Dibangkitkan</div>
+          <div className={styles.metaLabel}>{t('labaRugi.dibangkitkan')}</div>
           <div className={styles.metaValue}>{data.generatedAt.slice(0, 16).replace('T', ' ')}</div>
         </div>
       </div>
@@ -312,12 +309,20 @@ function Hasil({
       <div className={styles.laporanGulir}>
         <table className={styles.matchTable}>
           <caption>
-            Laba Rugi — {konteks.companyName}, {data.period.label}
-            {data.comparison === null ? '' : ` dibandingkan ${data.comparison.label}`}
+            {data.comparison === null
+              ? t('labaRugi.caption', {
+                  company: konteks.companyName,
+                  periode: data.period.label,
+                })
+              : t('labaRugi.captionBanding', {
+                  company: konteks.companyName,
+                  periode: data.period.label,
+                  pembanding: data.comparison.label,
+                })}
           </caption>
           <thead>
             <tr>
-              <th scope="col">Akun</th>
+              <th scope="col">{t('labaRugi.kolomAkun')}</th>
               <th scope="col" data-numeric="true">
                 {data.period.label}
               </th>
@@ -327,7 +332,7 @@ function Hasil({
                     {data.comparison.label}
                   </th>
                   <th scope="col" data-numeric="true">
-                    Selisih
+                    {t('labaRugi.kolomSelisih')}
                   </th>
                 </>
               )}
@@ -335,7 +340,8 @@ function Hasil({
           </thead>
 
           <Kelompok
-            judul="Pendapatan"
+            judul={t('labaRugi.pendapatan')}
+            judulJumlah={t('labaRugi.jumlahPendapatan')}
             jenis="revenue"
             data={data}
             dilipat={dilipat}
@@ -345,7 +351,8 @@ function Hasil({
           />
 
           <Kelompok
-            judul="Beban"
+            judul={t('labaRugi.beban')}
+            judulJumlah={t('labaRugi.jumlahBeban')}
             jenis="expense"
             data={data}
             dilipat={dilipat}
@@ -356,7 +363,7 @@ function Hasil({
 
           <tfoot>
             <tr>
-              <th scope="row">Laba bersih</th>
+              <th scope="row">{t('labaRugi.labaBersih')}</th>
               <td data-numeric="true">{formatAccounting(laba, data.currency)}</td>
               {data.comparison === null ? null : (
                 <>
@@ -375,8 +382,7 @@ function Hasil({
       </div>
 
       <p className={styles.metaLabel}>
-        Ekspor belum tersedia. Angka di layar ini dapat disalin apa adanya; ekspor XLSX yang
-        mengirim angka sebagai angka menyusul.
+        {t('labaRugi.ekspor')}
       </p>
     </div>
   )
@@ -384,6 +390,7 @@ function Hasil({
 
 function Kelompok({
   judul,
+  judulJumlah,
   jenis,
   data,
   dilipat,
@@ -392,6 +399,14 @@ function Kelompok({
   totalBanding,
 }: {
   readonly judul: string
+  /*
+   * Judul subtotal datang UTUH, bukan dirakit dari `judul.toLowerCase()`.
+   *
+   * "Jumlah pendapatan" bekerja di Indonesia; "Total revenue" tidak dapat
+   * dibentuk dengan menempelkan kata di depan judulnya, dan bahasa berikutnya
+   * akan punya aturannya sendiri lagi.
+   */
+  readonly judulJumlah: string
   readonly jenis: string
   readonly data: ProfitLossReport
   readonly dilipat: ReadonlySet<string>
@@ -399,6 +414,7 @@ function Kelompok({
   readonly total: number
   readonly totalBanding: number | null
 }): ReactNode {
+  const { t } = useTranslation('akuntansi')
   const baris = susun(data.rows, jenis, dilipat)
   const adaBanding = data.comparison !== null
 
@@ -430,7 +446,9 @@ function Kelompok({
               >
                 <span aria-hidden="true">{dilipat.has(satu.baris.accountId) ? '▸' : '▾'}</span>
                 <span className={styles.visuallyHiddenInline}>
-                  {dilipat.has(satu.baris.accountId) ? 'Buka' : 'Lipat'} {satu.baris.name}
+                  {dilipat.has(satu.baris.accountId)
+                    ? t('labaRugi.buka', { nama: satu.baris.name })
+                    : t('labaRugi.lipat', { nama: satu.baris.name })}
                 </span>
               </button>
             ) : null}{' '}
@@ -458,7 +476,7 @@ function Kelompok({
       ))}
 
       <tr data-subtotal="true">
-        <th scope="row">Jumlah {judul.toLowerCase()}</th>
+        <th scope="row">{judulJumlah}</th>
         <td data-numeric="true">{formatAccounting(total, data.currency)}</td>
         {adaBanding ? (
           <>

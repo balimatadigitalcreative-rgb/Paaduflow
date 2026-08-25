@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { IconChevronDown } from '@tabler/icons-react'
 import type { ReactNode } from 'react'
 
@@ -36,6 +37,8 @@ export function CompanySwitcher({
   activeCompanyId,
   onSwitch,
 }: CompanySwitcherProps): ReactNode {
+  const { t } = useTranslation('shell')
+
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [highlighted, setHighlighted] = useState(0)
@@ -138,7 +141,7 @@ export function CompanySwitcher({
         <div
           id={panelId}
           role="dialog"
-          aria-label="Pilih company"
+          aria-label={t('company.pilih')}
           className={styles.switcherPanel}
           onKeyDown={onKeyDown}
         >
@@ -146,8 +149,8 @@ export function CompanySwitcher({
             ref={searchRef}
             type="search"
             className={styles.paletteInput}
-            placeholder="Cari company"
-            aria-label="Cari company"
+            placeholder={t('company.cari')}
+            aria-label={t('company.cari')}
             value={query}
             onChange={(event) => {
               setQuery(event.target.value)
@@ -155,7 +158,7 @@ export function CompanySwitcher({
             }}
           />
 
-          <ul role="listbox" aria-label="Company" className={styles.paletteList}>
+          <ul role="listbox" aria-label={t('company.label')} className={styles.paletteList}>
             {aktif.length > 0 ? (
               <li role="presentation" className={styles.groupLabel}>
                 {tenant.name}
@@ -182,7 +185,7 @@ export function CompanySwitcher({
                       <span>{company.taxId ?? 'Tanpa NPWP'}</span>
                       <span>{company.currency}</span>
                       <span>{company.fiscalYearLabel}</span>
-                      {company.status === 'inactive' ? <span>Nonaktif</span> : null}
+                      {company.status === 'inactive' ? <span>{t('company.nonaktif')}</span> : null}
                     </span>
                   </span>
                 </button>
@@ -192,7 +195,7 @@ export function CompanySwitcher({
 
           {otherTenants.length > 0 ? (
             <>
-              <p className={styles.groupLabel}>Tenant lain</p>
+              <p className={styles.groupLabel}>{t('company.tenantLain')}</p>
               <ul role="list" className={styles.paletteList}>
                 {otherTenants.map((lain) => (
                   <li key={lain.id}>

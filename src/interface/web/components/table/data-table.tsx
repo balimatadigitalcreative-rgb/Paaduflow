@@ -1,5 +1,6 @@
 import { IconAlertTriangle, IconFileOff, IconFilterOff, IconRefresh } from '@tabler/icons-react'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { ReactNode } from 'react'
 
 import { Button } from '../button.js'
@@ -58,6 +59,8 @@ export interface DataTableProps<T> {
 const SKELETON_ROWS = 8
 
 export function DataTable<T>(props: DataTableProps<T>): ReactNode {
+  const { t } = useTranslation()
+
   const [selection, setSelection] = useState<Selection>(NOTHING)
   const [konfirmasi, setKonfirmasi] = useState<BulkAction | null>(null)
 
@@ -101,19 +104,19 @@ export function DataTable<T>(props: DataTableProps<T>): ReactNode {
           ))}
 
           <Button variant="ghost" size="sm" onClick={() => setSelection(NOTHING)}>
-            Batalkan pilihan
+            {t('tabel.batalkanPilihan')}
           </Button>
         </div>
       ) : null}
 
       {konfirmasi === null ? null : (
-        <div role="alertdialog" aria-label="Konfirmasi aksi massal" className={styles.confirm}>
+        <div role="alertdialog" aria-label={t('tabel.konfirmasiMassal')} className={styles.confirm}>
           {/* Jumlah DAN nama company — pemeriksaan terakhir sebelum kesalahan
               menjadi permanen. */}
           <p>{`${konfirmasi.label} ${selectionCount(selection)} baris di ${props.companyName}?`}</p>
           <div className={styles.emptyActions}>
             <Button variant="ghost" size="sm" onClick={() => setKonfirmasi(null)}>
-              Batal
+              {t('aksi.batal')}
             </Button>
             <Button
               variant={konfirmasi.destructive === true ? 'danger' : 'primary'}
@@ -124,7 +127,7 @@ export function DataTable<T>(props: DataTableProps<T>): ReactNode {
                 setSelection(NOTHING)
               }}
             >
-              Lanjutkan
+              {t('aksi.lanjutkan')}
             </Button>
           </div>
         </div>
@@ -138,7 +141,7 @@ export function DataTable<T>(props: DataTableProps<T>): ReactNode {
             <tr>
               <th scope="col" className={styles.selectCell}>
                 <Checkbox
-                  label="Pilih baris di halaman ini"
+                  label={t('tabel.pilihBarisHalaman')}
                   checked={semuaHalamanTerpilih}
                   indeterminate={isPagePartiallySelected(selection, pageIds)}
                   onChange={() => setSelection(togglePage(selection, pageIds))}
@@ -255,7 +258,7 @@ export function DataTable<T>(props: DataTableProps<T>): ReactNode {
                 }
               }}
             >
-              Berikutnya
+              {t('aksi.berikutnya')}
             </Button>
           </div>
         </div>
@@ -275,6 +278,8 @@ function EmptyState({
   onRetry: (() => void) | undefined
   onClearFilters: (() => void) | undefined
 }): ReactNode {
+  const { t } = useTranslation()
+
   /*
    * Ikon di state kosong membuat halaman kosong terasa DISENGAJA, bukan rusak.
    *
@@ -287,8 +292,8 @@ function EmptyState({
     return (
       <div className={styles.empty}>
         <IconFileOff className={styles.emptyIkon} stroke={1.5} aria-hidden="true" />
-        <p className={styles.emptyTitle}>Belum ada data di sini</p>
-        <p>Dokumen yang Anda buat akan muncul di daftar ini.</p>
+        <p className={styles.emptyTitle}>{t('status.tidakAdaData')}</p>
+        <p>{t('status.belumAdaDokumen')}</p>
         <div className={styles.emptyActions}>{action}</div>
       </div>
     )
@@ -298,12 +303,12 @@ function EmptyState({
     return (
       <div className={styles.empty} role="alert">
         <IconAlertTriangle className={styles.emptyIkon} stroke={1.5} aria-hidden="true" />
-        <p className={styles.emptyTitle}>Gagal memuat data</p>
+        <p className={styles.emptyTitle}>{t('status.gagalMemuat')}</p>
         <p>{state.message}</p>
         <div className={styles.emptyActions}>
           <Button variant="secondary" size="sm" onClick={onRetry}>
             <IconRefresh className={styles.ikonTombol} stroke={1.5} aria-hidden="true" />
-            Coba lagi
+            {t('aksi.cobaLagi')}
           </Button>
         </div>
       </div>
@@ -315,8 +320,8 @@ function EmptyState({
   return (
     <div className={styles.empty}>
       <IconFilterOff className={styles.emptyIkon} stroke={1.5} aria-hidden="true" />
-      <p className={styles.emptyTitle}>Tidak ada hasil untuk filter ini</p>
-      <p>Filter yang sedang aktif:</p>
+      <p className={styles.emptyTitle}>{t('status.tidakAdaHasil')}</p>
+      <p>{t('status.filterAktif')}</p>
       <div className={styles.filterSummary}>
         {state.activeFilters.map((label) => (
           <span key={label}>{label}</span>
@@ -325,7 +330,7 @@ function EmptyState({
       <div className={styles.emptyActions}>
         <Button variant="secondary" size="sm" onClick={onClearFilters}>
           <IconFilterOff className={styles.ikonTombol} stroke={1.5} aria-hidden="true" />
-          Hapus filter
+          {t('aksi.hapusFilter')}
         </Button>
       </div>
     </div>
