@@ -7,6 +7,7 @@ import {
 import { CompanyAccessService } from '#application/identity/company-access'
 import type { BreachedPasswordList, Mailer } from '#application/identity/ports'
 import { PostgresIdempotencyStore } from '#infrastructure/db/postgres-idempotency-store'
+import { siarkanPembatalan } from '#infrastructure/db/siaran-cache-izin'
 import { PostgresUnitOfWork } from '#infrastructure/db/unit-of-work'
 import { PostgresAuthorizationRepository } from '#infrastructure/modules/identity/postgres-authorization-repository'
 import { PostgresCompanyAccessRepository } from '#infrastructure/modules/identity/postgres-company-access-repository'
@@ -37,6 +38,14 @@ export interface AppServicesOptions {
   readonly mailer: Mailer
   readonly breachList: BreachedPasswordList
   readonly now?: () => Date
+  /**
+   * Cache izin, bila pemanggilnya perlu memegangnya sendiri.
+   *
+   * Proses api memerlukannya untuk memasang pendengar pembatalan lintas proses
+   * pada objek yang sama. Dibiarkan kosong, cache dibuat di sini — yang benar
+   * untuk test dan untuk pemakaian satu proses.
+   */
+  readonly permissionCache?: PermissionCache
 }
 
 /**
@@ -49,7 +58,7 @@ export interface AppServicesOptions {
  */
 export function createAppServices(options: AppServicesOptions): AppServices {
   const unitOfWork = new PostgresUnitOfWork(options.pool)
-  const permissionCache: PermissionCache = createPermissionCache()
+  const permissionCache: PermissionCache = options.permissionCache ?? createPermissionCache()
   const now = options.now ?? (() => new Date())
 
   const identity = createIdentityModule({
@@ -116,6 +125,9 @@ export function createAppServices(options: AppServicesOptions): AppServices {
           now,
           undefined,
           permissionCache,
+          // `db`, bukan `options.pool`. Siaran wajib ikut transaksi yang
+          // menulis perubahannya — lihat `siaran-cache-izin.ts`.
+          (userId, companyId) => siarkanPembatalan(db, userId, companyId),
         )
         const companyAccess = new CompanyAccessService(
           new PostgresCompanyAccessRepository(db),

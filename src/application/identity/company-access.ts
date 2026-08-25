@@ -117,8 +117,10 @@ export class CompanyAccessService {
 
     if (outcome === 'already_exists') return { kind: 'already_exists' }
 
-    // Izin efektif orang yang baru diberi akses harus langsung berlaku.
-    this.authorization.invalidate(input.userId, resolved.access.companyId)
+    // Izin efektif orang yang baru diberi akses harus langsung berlaku — di
+    // SELURUH proses, bukan hanya di proses ini. Ditunggu supaya siarannya ikut
+    // masuk ke transaksi yang sama dengan pemberian aksesnya.
+    await this.authorization.invalidate(input.userId, resolved.access.companyId)
     return { kind: 'granted', id }
   }
 }

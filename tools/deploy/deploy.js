@@ -27,7 +27,15 @@ const SERVER = process.env.DEPLOY_SSH ?? 'paadu@72.61.124.95'
 const APP_DIR = process.env.DEPLOY_DIR ?? '/home/paadu/app'
 const BRANCH = process.env.DEPLOY_BRANCH ?? 'main'
 const PM2_NAME = process.env.DEPLOY_PM2 ?? 'paadu-api'
-const HEALTH = process.env.DEPLOY_HEALTH ?? 'http://127.0.0.1:3000/healthz'
+/**
+ * Kesiapan, bukan sekadar hidup.
+ *
+ * `/healthz` hanya menyatakan event loop berjalan; ia menjawab 200 pada proses
+ * yang belum pernah berhasil menyentuh basis data. Deploy yang memeriksanya
+ * akan dinyatakan berhasil tepat ketika ia gagal — kekeliruan yang sama dengan
+ * yang dicatat D-145, hanya bentuknya berbeda.
+ */
+const HEALTH = process.env.DEPLOY_HEALTH ?? 'http://127.0.0.1:3000/readyz'
 
 /**
  * Berkas berisi MIGRATION_DATABASE_URL, di LUAR direktori aplikasi.
@@ -332,11 +340,51 @@ if (daftar.length === 0) {
   }
 }
 
-langkah(5, `pm2 restart ${PM2_NAME}`)
-const restart = await ssh(`pm2 restart ${PM2_NAME} --update-env`, { tampilkan: true })
-if (restart.kode !== 0) berhenti('pm2 restart', restart)
+langkah(5, 'Menyegarkan proses')
 
-langkah(6, 'Verifikasi kesehatan')
+/*
+ * `reload`, bukan `restart` — tetapi hanya bila prosesnya SUDAH cluster.
+ *
+ * `pm2 reload` mengganti instance satu per satu, sehingga selalu ada yang
+ * melayani. Yang tidak dapat dilakukannya adalah mengubah `exec_mode`: proses
+ * yang berjalan dalam mode fork akan tetap fork setelah reload, tanpa satu pun
+ * peringatan, dan seluruh niat rolling restart lenyap diam-diam.
+ *
+ * Karena itu modenya diperiksa lebih dulu. Perpindahan fork → cluster menuntut
+ * `delete` lalu `start`, dan itu SATU-SATUNYA penyegaran yang memutus layanan
+ * sesaat. Disebut keras di layar supaya tidak mengejutkan siapa pun.
+ */
+const rupa = await ssh(
+  `pm2 jlist 2>/dev/null | node -e "` +
+    `let d='';process.stdin.on('data',c=>d+=c).on('end',()=>{` +
+    `try{const a=JSON.parse(d).find(x=>x.name==='${PM2_NAME}');` +
+    `console.log(a?a.pm2_env.exec_mode:'tidak-ada')}catch{console.log('tidak-terbaca')}})"`,
+)
+const modeSekarang = rupa.keluaran.trim()
+
+if (modeSekarang === 'cluster_mode') {
+  console.log(redup(`     mode cluster terdeteksi — pm2 reload (satu per satu)`))
+  const reload = await ssh(`pm2 reload ${PM2_NAME} --update-env`, { tampilkan: true })
+  if (reload.kode !== 0) berhenti('pm2 reload', reload)
+} else {
+  console.log('')
+  console.log(
+    merah(`     Proses berjalan dalam mode "${modeSekarang}", bukan cluster.`),
+  )
+  console.log('     Perpindahan mode menuntut delete lalu start, dan itu MEMUTUS')
+  console.log('     layanan beberapa detik. Ini terjadi sekali; deploy berikutnya')
+  console.log('     memakai reload dan tidak memutus apa pun.')
+  console.log('')
+
+  const pindah = await ssh(
+    `cd ${APP_DIR} && pm2 delete ${PM2_NAME} 2>/dev/null; ` +
+      `PAADU_DIR=${APP_DIR} pm2 start ecosystem.config.cjs && pm2 save`,
+    { tampilkan: true },
+  )
+  if (pindah.kode !== 0) berhenti('pm2 start (pindah ke cluster)', pindah)
+}
+
+langkah(6, 'Verifikasi kesiapan')
 
 /** Beberapa kali, karena proses butuh sesaat untuk mendengarkan. */
 let sehat = null
@@ -353,7 +401,7 @@ for (let percobaan = 1; percobaan <= 10; percobaan += 1) {
 
 if (sehat === null) {
   console.error('')
-  console.error(merah('  ✕ Gagal pada: verifikasi kesehatan'))
+  console.error(merah('  ✕ Gagal pada: verifikasi kesiapan'))
   console.error(`      ${HEALTH} tidak menjawab 200 setelah 10 percobaan.`)
   console.error('')
   console.error('  30 baris terakhir log PM2:')

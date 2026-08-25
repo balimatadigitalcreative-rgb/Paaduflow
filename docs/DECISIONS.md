@@ -1197,6 +1197,71 @@ Bahasa Inggris membalik urutannya (`Fully received`, bukan `Received fully`) dan
 Karena itu: **satu kunci untuk satu kalimat utuh**, dengan interpolasi untuk angkanya dan sufiks plural untuk bentuknya. Yang memuat markup memakai `<Trans>` dengan indeks komponen, bukan penggabungan JSX. Fungsi yang dulu memulangkan kalimat kini memulangkan KUNCI — `ringkasKuantitas` di `pages/pembelian.tsx` adalah contohnya.
 
 **Berkas locale Indonesia hanya memuat `_other`.** Indonesia punya satu bentuk plural; menulis `_one` di sana berarti menulis kunci yang tidak akan pernah dipakai, dan menyesatkan penerjemah berikutnya. Pemeriksa CI membandingkan kunci menurut basisnya, bukan sufiksnya, justru karena itu.
+
+### D-157 · Mode cluster dua instance, dengan siaran pembatalan izin
+**Status:** Berlaku
+`ecosystem.config.cjs` dulu memuat catatan yang menahan diri: *"Satu instance. Menaikkannya menuntut jawaban lebih dulu atas sesi, idempotency, dan penomoran dokumen di bawah beberapa proses."* Ketiganya diperiksa sebelum angka itu diubah, dan jawabannya sama: penjaganya ada di basis data, bukan di proses.
+
+| | Mekanisme |
+|---|---|
+| Sesi | Tabel `sessions`, dicari lewat hash refresh token |
+| Idempotency | `ON CONFLICT (tenant_id, endpoint, idempotency_key) DO NOTHING` |
+| Nomor dokumen | `paadu.next_document_number()` dengan `SELECT … FOR UPDATE` |
+| Urutan mutasi stok | `nextval('stock_movement_sequence')` |
+| Throttle login | Dihitung dari tabel `auth_events` |
+
+**Tidak ada pekerjaan terjadwal di proses api.** `startScheduler()` melempar — relay outbox dan pemeriksa invarian tinggal di proses `scheduler` yang belum dirakit (D-044). Saat proses itu kelak dibangun, ia **tidak boleh** dijalankan cluster: pekerjaan berjadwal yang menyala dua kali lebih berbahaya daripada restart sesaat.
+
+**Satu-satunya yang benar-benar mengasumsikan satu proses adalah cache izin.** `invalidate()` hanya membersihkan `Map` di proses yang menangani permintaannya; instance lain menyajikan izin yang sudah dicabut sampai TTL 30 detik habis. Komentar di `authorization.ts` menamai kegagalan itu jauh sebelum cluster dinyalakan.
+
+Diselesaikan dengan `LISTEN`/`NOTIFY` PostgreSQL, bukan Redis: basis datanya sudah ada, sudah menjadi sumber kebenaran izin, dan sudah menjadi titik gagal bersama.
+
+**Siarannya wajib dikirim di transaksi yang sama dengan perubahannya.** PostgreSQL menyampaikan `NOTIFY` saat commit. Mengirimnya lewat koneksi lain menyampaikannya *sebelum* commit — proses lain lalu membuang cache, membaca izin yang belum berubah, dan menyimpannya kembali. Hasilnya lebih buruk daripada tidak menyiarkan: entri basi yang baru disegarkan bertahan satu TTL penuh sejak commit. Diuji langsung di `tests/integration/kesiapan-dan-penutupan.test.ts`.
+
+`NOTIFY` tidak tahan mati, dan itu diterima: pesan yang hilang berarti kembali ke perilaku lama — basi paling lama satu TTL — bukan basi selamanya. Koneksi pendengar yang putus mengosongkan seluruh cache saat menyambung ulang, karena proses itu tidak dapat tahu pembatalan mana yang terlewat.
+
+**`script` harus menunjuk `dist/server/main.js`, bukan `npm start`.** Mode cluster menuntut PM2 mem-fork skripnya sendiri agar soket pendengar dapat dibagi. `npm start` menyalakan Node sebagai proses cucu; PM2 tidak dapat membagi soket ke sana, dan setiap worker akan mati dengan `EADDRINUSE`.
+
+### D-158 · Liveness dan readiness dipisahkan
+**Status:** Berlaku · Menggantikan perilaku `/healthz` sebelumnya
+`/healthz` dulu menyentuh basis data. Niatnya benar — endpoint yang menjawab 200 pada proses yang tidak dapat melayani apa pun membuat deploy dinyatakan berhasil tepat ketika ia gagal. Tetapi menggabungkan keduanya salah ke arah lain: gangguan basis data sesaat membuat *liveness* gagal, dan pemantau yang me-restart saat liveness gagal akan membunuh proses yang sehat — tepat ketika basis datanya sedang pulih dan restart adalah hal terakhir yang menolong.
+
+| | Pertanyaan | Tindakan bila gagal | Menyentuh DB |
+|---|---|---|---|
+| `/healthz` | Apakah proses ini hidup? | Restart | Tidak |
+| `/readyz` | Boleh dikirimi permintaan? | Alihkan | Ya |
+
+`/readyz` menjawab 503 dalam tiga keadaan: belum selesai menyala, sedang menutup, atau basis data tidak terjangkau. Keadaan kedua yang membuat reload mulus — instance berhenti menyatakan siap **sebelum** berhenti mendengarkan.
+
+`/healthz` tetap 200 saat proses sedang menutup. Proses yang sedang menyelesaikan permintaan terakhirnya memang hidup.
+
+Skrip deploy kini memverifikasi `/readyz`, bukan `/healthz`.
+
+### D-159 · Penutupan rapi, dan angka batasnya
+**Status:** Berlaku
+Sebelumnya tidak ada satu pun penangan SIGTERM/SIGINT. `pm2 reload` mengirim SIGINT lalu SIGKILL setelah `kill_timeout` — permintaan yang sedang berjalan diputus di tengah. Faktur yang sedang diposting tidak merusak basis data (transaksinya rollback), tetapi merusak kepercayaan: orang menekan "Posting", melihat galat, dan tidak tahu apakah fakturnya terposting.
+
+Urutan penutupan: berhenti menyatakan siap → jeda 2 detik → tutup HTTP dan tunggu permintaan berjalan → tutup pendengar → tutup pool.
+
+**Angka batasnya diturunkan dari pengukuran, bukan dari kebiasaan.** Diukur di produksi: login median 0,24–0,49 detik, dengan **ekor 3,27 detik** saat threadpool libuv penuh (argon2 native, empat utas). Batas tunggu ditetapkan 15 detik — berjarak jauh dari ekornya, bukan pas-pasan, karena yang dipotong batas ini adalah permintaan seseorang yang sedang bekerja.
+
+`kill_timeout` PM2 ditetapkan 25 detik, wajib lebih besar daripada 2 + 15. Bila lebih kecil, SIGKILL datang di tengah penutupan yang sedang rapi, dan seluruh pekerjaan ini sia-sia tanpa satu pun tanda di log.
+
+`forceCloseConnections: 'idle'` di Fastify: Nginx memegang koneksi upstream tetap terbuka di antara permintaan, dan tanpa opsi ini `close()` menunggu koneksi menganggur itu kedaluwarsa sendiri. `'idle'`, bukan `true` — `true` memutus koneksi yang sedang melayani permintaan.
+
+Proses selalu keluar dengan kode 0, termasuk saat ada langkah yang lewat batas. Kode selain 0 memberi tahu PM2 bahwa proses ini mati, dan PM2 akan menyalakannya kembali di tengah reload yang justru sedang mematikannya dengan sengaja.
+
+### D-160 · Retry Nginx dibatasi pada permintaan idempoten
+**Status:** Berlaku
+`proxy_next_upstream error timeout http_502 http_503 http_504`, **tanpa** `non_idempotent`.
+
+Tanpa `non_idempotent`, Nginx tidak pernah mengulang POST/PUT/PATCH yang sudah sampai ke aplikasi. Itu yang benar di sini: mengulang `POST …/sales-documents/:id/post` yang sebenarnya sudah diproses dapat memposting faktur dua kali. `Idempotency-Key` melindunginya hanya bila kliennya mengirimkannya — dan Nginx tidak dapat tahu apakah ia mengirimkannya.
+
+**Alamat upstream ditulis dua kali, dan itu disengaja.** PM2 mode cluster mengikat satu porta di proses master, sehingga Nginx hanya melihat satu alamat. `proxy_next_upstream` bekerja dengan berpindah ke peer *berikutnya*; dengan satu peer tidak ada berikutnya, dan Nginx langsung memulangkan 502. Entri kedua membuat percobaan ulang membuka koneksi baru ke soket yang sama, yang diserahkan master ke worker sehat.
+
+**Perannya sekunder, dan itu perlu dikatakan.** Yang benar-benar membuat deploy tidak memutus layanan adalah mode cluster dan penutupan rapi — soketnya tidak pernah tertutup, dan worker menyelesaikan permintaannya sebelum keluar. Retry menjaring sisanya: worker yang mati di tengah permintaan. Master PM2 yang mati tidak tertolong, dan memang tidak seharusnya.
+
+Konfigurasinya terversi di `deploy/nginx/paaduflow.conf`.
 ---
 
 ## Sengaja Ditunda

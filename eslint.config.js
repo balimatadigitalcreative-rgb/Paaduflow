@@ -25,6 +25,11 @@ export default tseslint.config(
         URLSearchParams: 'readonly',
         setTimeout: 'readonly',
         clearTimeout: 'readonly',
+        // Global Node 18+ yang dipakai skrip perkakas. Didaftarkan satu per
+        // satu, bukan lewat preset lingkungan: daftar yang eksplisit membuat
+        // pemakaian API peramban di kode server tetap tertangkap.
+        fetch: 'readonly',
+        AbortSignal: 'readonly',
       },
     },
   },

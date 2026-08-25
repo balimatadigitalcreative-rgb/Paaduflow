@@ -74,6 +74,15 @@ export function createPermissionCache(): PermissionCache {
   return new Map()
 }
 
+/**
+ * Menyiarkan pembatalan ke proses lain.
+ *
+ * Disuntikkan, bukan diimpor: lapisan aplikasi tidak boleh mengenal
+ * PostgreSQL. Bawaannya tidak melakukan apa pun, sehingga satu proses dan
+ * seluruh test tetap berjalan tanpa merakit apa-apa.
+ */
+export type SiaranPembatalan = (userId: string, companyId?: string) => Promise<void>
+
 export class AuthorizationService {
   private readonly cache: PermissionCache
 
@@ -82,6 +91,7 @@ export class AuthorizationService {
     private readonly now: () => Date = () => new Date(),
     private readonly ttlMs: number = DEFAULT_TTL_MS,
     cache: PermissionCache = new Map(),
+    private readonly siarkan: SiaranPembatalan = async () => undefined,
   ) {
     this.cache = cache
   }
@@ -117,15 +127,26 @@ export class AuthorizationService {
     return value
   }
 
-  /** Dipanggil saat peran atau akses berubah — Modul 02 §9. */
-  invalidate(userId: string, companyId?: string): void {
+  /**
+   * Dipanggil saat peran atau akses berubah — Modul 02 §9.
+   *
+   * `async`, dan itu bukan sekadar bentuk: pembatalan harus sampai ke SELURUH
+   * proses, bukan hanya ke proses yang kebetulan menangani permintaan ini.
+   * Menunggu siarannya berarti perubahan aksesnya tidak dinyatakan selesai
+   * sebelum pemberitahuannya ikut masuk ke transaksi yang sama — dan urutan
+   * itulah yang membuat proses lain tidak pernah membaca ulang izin yang belum
+   * commit. Rinciannya di `siaran-cache-izin.ts`.
+   */
+  async invalidate(userId: string, companyId?: string): Promise<void> {
     if (companyId !== undefined) {
       this.cache.delete(`${userId}:${companyId}`)
-      return
+    } else {
+      for (const key of this.cache.keys()) {
+        if (key.startsWith(`${userId}:`)) this.cache.delete(key)
+      }
     }
-    for (const key of this.cache.keys()) {
-      if (key.startsWith(`${userId}:`)) this.cache.delete(key)
-    }
+
+    await this.siarkan(userId, companyId)
   }
 
   async authorize(

@@ -22,9 +22,32 @@ export type PaaduServer = FastifyInstance<
   TypeBoxTypeProvider
 >
 
+/**
+ * Keadaan proses, dibaca `/readyz`.
+ *
+ * Objek yang dapat diubah, bukan nilai: yang menyalakan proses dan yang
+ * menjawab permintaan adalah dua tempat berbeda, dan keduanya harus melihat
+ * bendera yang sama.
+ */
+export interface KeadaanProses {
+  /** Menjadi true setelah listen berhasil dan basis data terbukti terjangkau. */
+  siap: boolean
+  /** Menjadi true saat sinyal penutupan diterima. */
+  menutup: boolean
+}
+
+export function keadaanAwal(): KeadaanProses {
+  return { siap: false, menutup: false }
+}
+
 export interface HttpOptions {
   readonly services: AppServices
   readonly logger?: boolean
+  /**
+   * Dibiarkan kosong di test: tanpa ini `/readyz` menganggap proses selalu
+   * siap, yang benar untuk `app.inject()` — di sana tidak ada fase menyala.
+   */
+  readonly keadaan?: KeadaanProses
 }
 
 /**
@@ -41,6 +64,21 @@ export interface HttpOptions {
 export async function buildHttpApp(options: HttpOptions): Promise<PaaduServer> {
   const app = Fastify({
     logger: options.logger ?? false,
+
+    /*
+     * Koneksi keep-alive yang MENGANGGUR ditutup paksa saat `app.close()`.
+     *
+     * Nginx memegang koneksi upstream tetap terbuka di antara permintaan.
+     * Tanpa opsi ini, `close()` menunggu koneksi-koneksi itu kedaluwarsa
+     * sendiri — penutupan yang seharusnya selesai dalam milidetik menggantung
+     * sampai batas waktu, dan reload yang seharusnya mulus menjadi lambat
+     * tepat saat instance berikutnya menunggu giliran.
+     *
+     * `'idle'`, bukan `true`: `true` memutus koneksi yang SEDANG melayani
+     * permintaan, yang persis kebalikan dari yang diinginkan di sini.
+     */
+    forceCloseConnections: 'idle',
+
     // Header klien dipakai apa adanya bila ada. Rantai jejak yang dimulai di
     // gateway tidak boleh putus hanya karena layanan ini membuat id baru.
     genReqId: (request) => {
@@ -95,27 +133,72 @@ export async function buildHttpApp(options: HttpOptions): Promise<PaaduServer> {
 
   app.get('/openapi.json', { schema: { hide: true } }, async () => app.swagger())
 
-  /**
-   * Kesehatan proses — tanpa autentikasi, dan sengaja demikian.
+  /*
+   * ═════════════════════════════════════════════════════════════════════════
+   *   DUA ENDPOINT, DUA PERTANYAAN BERBEDA
    *
-   * Dipanggil skrip deploy dan pemantau, yang keduanya tidak punya token. Ia
-   * tidak membocorkan apa pun: hanya menyatakan proses menyala dan basis
-   * datanya terjangkau.
+   *   `/healthz`  — "apakah proses ini hidup?"      → restart bila gagal
+   *   `/readyz`   — "boleh dikirimi permintaan?"    → alihkan bila gagal
    *
-   * Basis data ikut disentuh dengan `SELECT 1`. Tanpa itu, endpoint ini akan
-   * menjawab 200 pada proses yang menyala sempurna tetapi tidak dapat melayani
-   * satu permintaan pun — dan deploy akan dinyatakan berhasil tepat ketika ia
-   * gagal.
+   *   Sebelumnya keduanya satu endpoint yang ikut menyentuh basis data.
+   *   Akibatnya: gangguan basis data sesaat membuat liveness gagal, dan
+   *   pemantau yang me-restart saat liveness gagal akan membunuh proses yang
+   *   sebenarnya sehat — tepat pada saat basis datanya sedang pulih dan
+   *   restart adalah hal terakhir yang menolong.
+   *
+   *   Keduanya tanpa autentikasi, dan sengaja demikian: yang memanggilnya
+   *   adalah skrip deploy dan pemantau, dan keduanya tidak punya token.
+   *   Tidak ada yang bocor — hanya "hidup" dan "siap".
+   * ═════════════════════════════════════════════════════════════════════════
    */
-  app.get('/healthz', { schema: { hide: true } }, async (_request, reply) => {
+
+  /**
+   * Liveness. TIDAK menyentuh basis data, dan itu keputusan.
+   *
+   * Yang dijawab endpoint ini hanya satu hal: event loop masih berjalan dan
+   * dapat membalas. Proses yang menjawab ini tidak perlu di-restart, apa pun
+   * keadaan basis datanya.
+   *
+   * Tetap 200 saat proses sedang menutup. Proses yang sedang menyelesaikan
+   * permintaan terakhirnya memang hidup; menjawab 503 di sini hanya akan
+   * mengundang pemantau membunuhnya lebih cepat daripada ia sempat selesai.
+   */
+  app.get('/healthz', { schema: { hide: true } }, async (_request, reply) =>
+    reply.status(200).send({ status: 'hidup' }),
+  )
+
+  /**
+   * Readiness. Menyentuh basis data, dan tahu kapan proses sedang menutup.
+   *
+   * Menjawab 503 dalam tiga keadaan, dan ketiganya berarti hal yang sama bagi
+   * pengarah lalu lintas — jangan kirim ke sini:
+   *
+   *   1. Proses belum selesai menyala (`siap` masih false)
+   *   2. Proses sedang menutup (`menutup` sudah true)
+   *   3. Basis data tidak terjangkau
+   *
+   * Keadaan 2 yang membuat reload berjalan mulus: instance yang akan dimatikan
+   * berhenti menyatakan siap SEBELUM ia berhenti mendengarkan.
+   */
+  app.get('/readyz', { schema: { hide: true } }, async (_request, reply) => {
+    const keadaan = options.keadaan
+
+    if (keadaan !== undefined && keadaan.menutup) {
+      return reply.status(503).send({ status: 'menutup', database: 'tidak diperiksa' })
+    }
+
+    if (keadaan !== undefined && !keadaan.siap) {
+      return reply.status(503).send({ status: 'menyala', database: 'tidak diperiksa' })
+    }
+
     try {
       await options.services.ping()
-      return reply.status(200).send({ status: 'ok', database: 'ok' })
+      return reply.status(200).send({ status: 'siap', database: 'ok' })
     } catch (galat) {
       // 503, bukan 500: keadaannya sementara dan pemanggilnya boleh mencoba
       // lagi. Pesannya ikut supaya deploy tidak perlu menebak.
       return reply.status(503).send({
-        status: 'degraded',
+        status: 'belum siap',
         database: 'unreachable',
         message: galat instanceof Error ? galat.message : 'Basis data tidak terjangkau.',
       })
