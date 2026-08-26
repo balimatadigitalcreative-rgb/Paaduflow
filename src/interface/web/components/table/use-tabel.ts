@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 import type { Column, SortEntry, TableState } from './types.js'
 
@@ -51,6 +52,7 @@ export function useTabel<T>(
   columns: readonly Column<T>[],
   cariDi: (row: T) => readonly (string | null)[],
 ): Tabel<T> {
+  const { t } = useTranslation()
   const [sort, setSort] = useState<readonly SortEntry[]>([])
   const [kueri, setKueri] = useState('')
 
@@ -109,7 +111,7 @@ export function useTabel<T>(
       return {
         kind: 'no_match',
         activeFilters:
-          dicari === '' ? filterAktif : [...filterAktif, `pencarian "${dicari}"`],
+          dicari === '' ? filterAktif : [...filterAktif, t('tabel.pencarian', { kata: dicari })],
       }
     }
 

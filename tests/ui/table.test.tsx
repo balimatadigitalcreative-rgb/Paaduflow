@@ -136,11 +136,11 @@ test('checkbox header hanya memilih halaman ini, dan menawarkan seluruh hasil te
 
   // Afordans kedua muncul, terpisah, dan menyebutkan angkanya.
   const seluruh = screen.getByRole('button', {
-    name: 'Pilih semua 1284 baris yang cocok dengan filter',
+    name: 'Pilih semua 1.284 baris yang cocok dengan filter',
   })
   await pengguna.click(seluruh)
 
-  expect(screen.getByText('Seluruh 1284 baris yang cocok dengan filter terpilih')).toBeDefined()
+  expect(screen.getByText('Seluruh 1.284 baris yang cocok dengan filter terpilih')).toBeDefined()
 })
 
 test('aksi massal atas seluruh hasil mengirim filter, bukan daftar id', async () => {
@@ -150,13 +150,13 @@ test('aksi massal atas seluruh hasil mengirim filter, bukan daftar id', async ()
 
   await pengguna.click(screen.getByRole('checkbox', { name: 'Pilih baris di halaman ini' }))
   await pengguna.click(
-    screen.getByRole('button', { name: 'Pilih semua 1284 baris yang cocok dengan filter' }),
+    screen.getByRole('button', { name: 'Pilih semua 1.284 baris yang cocok dengan filter' }),
   )
   await pengguna.click(screen.getByRole('button', { name: 'Batalkan' }))
 
   // Konfirmasi menyebut jumlah DAN nama company — lapis 4 indikator konteks.
   const dialog = screen.getByRole('alertdialog')
-  expect(dialog.textContent).toContain('1284')
+  expect(dialog.textContent).toContain('1.284')
   expect(dialog.textContent).toContain('PT Nusantara Jaya')
 
   await pengguna.click(within(dialog).getByRole('button', { name: 'Lanjutkan' }))
@@ -197,5 +197,9 @@ test('skeleton memakai jumlah kolom yang sama dengan tabel terisi', () => {
 
 test('footer menyebut total, karena teks "pilih semua N" bergantung padanya', () => {
   render(<Tabel state={SIAP} />)
-  expect(screen.getByText('3 dari 1284 baris')).toBeDefined()
+  /*
+   * "1.284", bukan "1284". Angka di layar kini mengikuti pemisah ribuan
+   * bahasanya — sebelumnya ia disambung apa adanya dari templat.
+   */
+  expect(screen.getByText('3 dari 1.284 baris')).toBeDefined()
 })

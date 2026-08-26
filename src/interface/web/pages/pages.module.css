@@ -259,11 +259,23 @@
 /* Baris tengah: pendapatan mendapat dua pertiga, umur piutang sepertiga.
    Pendapatan dibaca sebagai bentuk sepanjang waktu dan butuh lebar; umur
    piutang dibaca sebagai komposisi pada satu saat dan cukup di kolom sempit. */
+/*
+ * Kedua panel berakhir pada tinggi yang sama.
+ *
+ * `align-items: start` sebelumnya membiarkan tiap panel setinggi isinya, dan
+ * karena grafik pendapatan lebih pendek daripada umur piutang, kolom kiri
+ * berhenti lebih awal dan meninggalkan lubang yang terlihat.
+ *
+ * `stretch` saja tidak cukup — panel yang diregangkan hanya memindahkan ruang
+ * kosong ke dalam kartunya. Yang benar-benar menutupnya adalah grafik yang
+ * ikut memanjang: `.chartArea` memakai `flex: 1`, sehingga batangnya tumbuh
+ * mengisi tinggi yang tersedia alih-alih mengambang di atas ruang kosong.
+ */
 .dasborTengah {
   display: grid;
   grid-template-columns: 2fr 1fr;
   gap: var(--space-4);
-  align-items: start;
+  align-items: stretch;
 }
 
 .dasborBawah {
@@ -274,7 +286,8 @@
 }
 
 .panelDasbor {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: var(--space-3);
   padding: var(--space-4);
   background: var(--bg-surface);

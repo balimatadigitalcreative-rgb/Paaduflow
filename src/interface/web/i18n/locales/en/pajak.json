@@ -198,5 +198,9 @@
     "judul": "New version for {{kode}}",
     "penjelasan": "A rate is never edited. Saving this form CREATES A NEW VERSION: the {{tarif}} version in force since {{sejak}} will close on the date you enter below, and every document dated before that date is still calculated with the old rate.",
     "berhasil": "New version of {{kode}} created. The {{tarif}} version closed on {{tanggal}}."
+  },
+  "pesan": {
+    "terbit_one": "Faktur Pajak {{nomor}} issued, covering {{count, bilangan}} sales invoice.",
+    "terbit_other": "Faktur Pajak {{nomor}} issued, covering {{count, bilangan}} sales invoices."
   }
 }

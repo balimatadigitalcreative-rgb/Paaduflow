@@ -9,7 +9,8 @@
     "cari": "Cari",
     "notifikasi": "Notifikasi",
     "breadcrumb": "Remah roti",
-    "panelDetail": "Detail"
+    "panelDetail": "Detail",
+    "navigasiModul": "Navigasi {{modul}}"
   },
   "modul": {
     "dasbor": "Dasbor",
@@ -39,7 +40,8 @@
     "cari": "Cari company",
     "nonaktif": "Nonaktif",
     "tenantLain": "Tenant lain",
-    "label": "Company"
+    "label": "Company",
+    "lain": "company lain"
   },
   "peran": {
     "tenant_owner": "Pemilik Tenant",

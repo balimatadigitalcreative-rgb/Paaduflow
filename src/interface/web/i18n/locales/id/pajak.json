@@ -195,5 +195,8 @@
     "judul": "Versi baru untuk {{kode}}",
     "penjelasan": "Tarif tidak pernah diubah. Menyimpan formulir ini MEMBUAT VERSI BARU: versi {{tarif}} yang berlaku sejak {{sejak}} akan ditutup pada tanggal yang Anda isi di bawah, dan seluruh dokumen bertanggal sebelum tanggal itu tetap dihitung dengan tarif lama.",
     "berhasil": "Versi baru {{kode}} dibuat. Versi {{tarif}} ditutup pada {{tanggal}}."
+  },
+  "pesan": {
+    "terbit_other": "Faktur pajak {{nomor}} terbit, mencakup {{count, bilangan}} faktur penjualan."
   }
 }

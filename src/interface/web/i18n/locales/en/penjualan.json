@@ -56,5 +56,10 @@
     "fakturGagal": "The invoice could not be created.",
     "tanggalDokumen": "Document date",
     "simpanDraf": "Save as draft"
+  },
+  "pesan": {
+    "diajukan": "Invoice {{nomor}} submitted and assigned its official number.",
+    "disetujui": "Invoice {{nomor}} approved and ready to post.",
+    "diposting": "Invoice {{nomor}} posted. Journal {{jurnal}} is now in the general ledger."
   }
 }

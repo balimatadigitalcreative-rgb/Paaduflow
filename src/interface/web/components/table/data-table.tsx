@@ -78,7 +78,10 @@ export function DataTable<T>(props: DataTableProps<T>): ReactNode {
         <div className={styles.selectionBar}>
           {/* Kalimat yang membedakan kedua mode, selalu terlihat selama mode aktif. */}
           <span className={styles.selectionText} aria-live="polite">
-            {describeSelection(selection)}
+            {(() => {
+              const ringkas = describeSelection(selection)
+              return ringkas === null ? '' : t(ringkas.kunci, { count: ringkas.jumlah })
+            })()}
           </span>
 
           {bolehPilihSeluruhHasil ? (
@@ -88,7 +91,7 @@ export function DataTable<T>(props: DataTableProps<T>): ReactNode {
               size="sm"
               onClick={() => setSelection(selectAllMatching(props.filter, total))}
             >
-              {`Pilih semua ${total} baris yang cocok dengan filter`}
+              {t('tabel.pilihSemuaCocok', { jumlah: total })}
             </Button>
           ) : null}
 
@@ -113,7 +116,11 @@ export function DataTable<T>(props: DataTableProps<T>): ReactNode {
         <div role="alertdialog" aria-label={t('tabel.konfirmasiMassal')} className={styles.confirm}>
           {/* Jumlah DAN nama company — pemeriksaan terakhir sebelum kesalahan
               menjadi permanen. */}
-          <p>{`${konfirmasi.label} ${selectionCount(selection)} baris di ${props.companyName}?`}</p>
+          <p>{t('tabel.tanyaMassal', {
+            aksi: konfirmasi.label,
+            jumlah: selectionCount(selection),
+            company: props.companyName,
+          })}</p>
           <div className={styles.emptyActions}>
             <Button variant="ghost" size="sm" onClick={() => setKonfirmasi(null)}>
               {t('aksi.batal')}
@@ -203,7 +210,7 @@ export function DataTable<T>(props: DataTableProps<T>): ReactNode {
                     <tr key={id} className={styles.row}>
                       <td className={styles.selectCell}>
                         <Checkbox
-                          label={`Pilih baris ${id}`}
+                          label={t('tabel.pilihBaris', { nomor: id })}
                           checked={isRowSelected(selection, id)}
                           onChange={() => setSelection(toggleRow(selection, id))}
                         />
@@ -246,7 +253,7 @@ export function DataTable<T>(props: DataTableProps<T>): ReactNode {
         <div className={styles.footer}>
           {/* `total` tetap wajib meski pagination berbasis kursor: teks
               "pilih semua N" bergantung padanya — D-041. */}
-          <span>{`${rows.length} dari ${total} baris`}</span>
+          <span>{t('tabel.dariTotal', { tampil: rows.length, total })}</span>
           <div className={styles.pager}>
             <Button
               variant="secondary"

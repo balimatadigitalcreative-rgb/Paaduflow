@@ -205,7 +205,7 @@ export function LineItemEditor(props: LineItemEditorProps): ReactNode {
                     className={field.numeric ? styles.numericInput : styles.cellInput}
                     type="text"
                     inputMode={field.numeric ? 'decimal' : 'text'}
-                    aria-label={`${field.label} baris ${index + 1}`}
+                    aria-label={t('baris.selBaris', { kolom: field.label, nomor: index + 1 })}
                     value={String(line[field.id])}
                     onChange={(event) => ubah(index, field.id, event.target.value)}
                     onKeyDown={(event) => onKeyDown(event, index, field.id)}
@@ -232,9 +232,9 @@ export function LineItemEditor(props: LineItemEditorProps): ReactNode {
         <dd className={styles.totalValue}>{formatAmount(hasil.documentDiscount, props.currency)}</dd>
         <dt>DPP</dt>
         <dd className={styles.totalValue}>{formatAmount(hasil.taxBase, props.currency)}</dd>
-        <dt>Pajak</dt>
+        <dt>{t('baris.pajak')}</dt>
         <dd className={styles.totalValue}>{formatAmount(hasil.taxTotal, props.currency)}</dd>
-        <dt className={styles.grandTotal}>Total</dt>
+        <dt className={styles.grandTotal}>{t('baris.total')}</dt>
         <dd className={`${styles.totalValue} ${styles.grandTotal}`}>
           {formatAmount(hasil.total, props.currency)}
         </dd>

@@ -702,7 +702,7 @@ export function TerbitkanFakturPajak({ konteks }: { readonly konteks: Konteks })
         `${perusahaan(konteks.companyId)}/output-tax-invoices/${draf.data.id}/issue`,
       )
       setSukses(
-        `Faktur pajak ${terbit.data.number} terbit, mencakup ${terpilih.length} faktur penjualan.`,
+        t('pesan.terbit', { nomor: terbit.data.number, count: terpilih.length }),
       )
       await muat()
     } catch (kesalahan) {

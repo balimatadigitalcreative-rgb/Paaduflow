@@ -79,12 +79,24 @@ export function selectionCount(selection: Selection): number {
  *
  * Keduanya harus dapat dibedakan kapan pun, karena konsekuensinya berbeda jauh.
  */
-export function describeSelection(selection: Selection): string {
-  if (selection.mode === 'none') return ''
+/**
+ * Mengembalikan KUNCI terjemahan beserta jumlahnya, bukan kalimat jadi.
+ *
+ * Berkas ini tidak memuat satu pun tag, dan justru itu yang membuat kalimat di
+ * dalamnya bertahan lama tanpa diterjemahkan: pemeriksa string keras semula
+ * hanya melihat berkas `.tsx`. Kalimat yang dipindahkan ke fungsi pembantu
+ * keluar dari jangkauan tanpa ada yang menyadarinya.
+ *
+ * `null` berarti tidak ada yang perlu dikatakan.
+ */
+export function describeSelection(
+  selection: Selection,
+): { readonly kunci: 'tabel.terpilihHalaman' | 'tabel.terpilihSeluruh'; readonly jumlah: number } | null {
+  if (selection.mode === 'none') return null
   if (selection.mode === 'page') {
-    return `${selection.ids.size} baris di halaman ini terpilih`
+    return { kunci: 'tabel.terpilihHalaman', jumlah: selection.ids.size }
   }
-  return `Seluruh ${selection.total} baris yang cocok dengan filter terpilih`
+  return { kunci: 'tabel.terpilihSeluruh', jumlah: selection.total }
 }
 
 /** `Shift`+klik menambah level; klik biasa mengganti seluruhnya. */

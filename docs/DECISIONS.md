@@ -1392,6 +1392,44 @@ Aturan migrasi aditif (D-161) yang membuat rollback aman dalam keadaan biasa: ko
 
 **HEAD dibiarkan terlepas setelah rollback.** `main` tetap menunjuk rilis baru, sehingga deploy berikutnya menariknya kembali ke depan. Memindahkan branch akan membuat perbaikan yang sudah di-push tampak sudah terpasang padahal belum.
 
+### D-166 · Sidebar disembunyikan pada modul bertujuan tunggal
+**Status:** Berlaku
+Dasbor punya satu layar. Kolom 240px yang berisi satu item — dan item itu adalah halaman yang sedang dibuka — tidak memberi tahu apa pun: rail sudah menunjukkan modul mana yang aktif, dan page header sudah menyebut nama halamannya.
+
+**Yang tidak dipilih: mengarang sub-halaman untuk mengisi kolom.** Itu keputusan produk yang diambil demi tata letak, dan urutan itu selalu salah. Screen_Specs_HiFi §3 mendefinisikan dasbor sebagai satu layar; menambah "Ringkasan", "Tren", dan "Peringatan" hanya untuk mengisi ruang akan menciptakan tiga layar yang harus dirawat selamanya karena satu kolom terlihat kosong sekali.
+
+Layout_System §3 menyebut pengelompokan baku **Transaksi · Data induk · Laporan · Pengaturan** berlaku "untuk modul transaksional". Dasbor bukan salah satunya, jadi ini bukan penyimpangan dari dokumen — ia penerapan yang tepat dari batas yang sudah ditulis di sana.
+
+Ambangnya **dua**, dihitung dari item yang benar-benar diizinkan bagi pengguna itu. Sidebar yang menyusut menjadi satu item karena izin ikut hilang, dengan alasan yang sama.
+
+### D-167 · Warna aksen kartu KPI menyatakan arah, bukan kategori
+**Status:** Berlaku · Mengganti pemetaan kategori
+Garis aksen di tepi atas kartu KPI dulu berwarna menurut KATEGORI kartu: hijau untuk pendapatan, kuning untuk piutang, merah untuk jatuh tempo. Empat warna berjajar yang tidak berubah apa pun angkanya.
+
+Itu bukan sekadar hiasan; **ia menyesatkan**. Hijau, kuning, dan merah adalah kosakata status di seluruh sisa antarmuka ini, dan memakainya untuk menandai "kartu ini tentang piutang" mengajarkan bahwa piutang selalu peringatan. Pembaca yang mempercayainya akan membaca kartu merah sebagai kabar buruk meski angkanya membaik.
+
+Sekarang warnanya berarti satu hal: apakah angka ini bergerak ke arah yang diinginkan. Nilainya sudah dihitung komponen ini sejak awal — `higherIsBetter` dipisahkan dari arah panah justru supaya "naik" tidak otomatis berarti "baik". Kartu tanpa pembanding tidak berwarna sama sekali; tidak ada yang dapat dikatakan, jadi tidak ada yang dikatakan.
+
+Warna tidak pernah sendirian: panah dan tanda + / − sudah membawa arah yang sama (WCAG 1.4.1). Garis ini menguatkan, bukan menggantikan.
+
+### D-168 · Pemeriksa string keras diperluas ke tiga bentuk yang lolos
+**Status:** Berlaku · Memperluas D-152
+Tangkapan layar produksi memperlihatkan "TRANSAKSI" di sebelah "Dashboard" dan "4 faktur" di antara label Inggris. Pemeriksa melaporkan nol utang saat itu — dan laporannya benar menurut polanya sendiri.
+
+Tiga bentuk lolos, dan ketiganya kini punya polanya:
+
+| Bentuk | Contoh nyata | Mengapa lolos |
+|---|---|---|
+| Kata pendek di JSX | `<th>Bulan</th>` | Pola lama menuntut enam huruf |
+| Templat berisi kata | `` `${count} faktur` `` | Bukan berbentuk `>Teks<` sama sekali |
+| Locale dipatok | `toLocaleString('id-ID')` | Bukan kalimat, jadi tak ada pola teks yang melihatnya |
+
+Templat kini diperiksa di berkas `.ts` **juga**. Kalimat yang terlihat pengguna tidak selalu lahir di berkas JSX: `describeSelection` di `selection.ts` memulangkan kalimat utuh dari berkas tanpa satu pun tag, dan membatasi pemeriksaan ke `.tsx` berarti setiap kalimat yang dipindahkan ke fungsi pembantu keluar dari jangkauan.
+
+**Positif palsu ditutup dengan syarat yang sempit, bukan dengan daftar pengecualian panjang.** Akronim lolos karena polanya menuntut huruf kecil di posisi kedua (`PPN` bukan kata). Jalur dan query string lolos karena kata harus berdiri sendiri, tidak menempel pada `/`, `.`, `?`, atau `=`. Hanya tujuh kata protokol yang disebut satu per satu — daftar sependek itu terlihat di tinjauan kode; daftar panjang akan menjadi tempat menyembunyikan kebocoran.
+
+Sapuan ini menemukan **22 kebocoran nyata** di sebelas berkas, termasuk seluruh pesan toast modul Penjualan, Pembelian, dan Pajak.
+
 ## Sengaja Ditunda
 
 Bukan kelalaian. Setiap butir punya syarat kapan ia layak diputuskan.

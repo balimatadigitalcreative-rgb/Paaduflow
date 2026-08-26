@@ -110,8 +110,16 @@ test('sparkline membawa tabel tersembunyi dan tidak digambar tanpa riwayat', () 
     />,
   )
 
-  expect(screen.getByRole('table', { name: /Riwayat/i })).toBeDefined()
-  expect(screen.getByRole('img', { name: /Riwayat/i })).toBeDefined()
+  /*
+   * Namanya kini LABEL kartunya, bukan "Riwayat <label>".
+   *
+   * Cadangan lamanya menempelkan kata Indonesia di dalam komponen, dan kata
+   * itu tetap muncul di layar berbahasa Inggris. Yang memanggil komponen ini
+   * mengirim `seriesLabel` yang sudah diterjemahkan; cadangannya kini hanya
+   * mengulang label yang sudah diterjemahkan pula.
+   */
+  expect(screen.getByRole('table', { name: /Pendapatan bulan ini/i })).toBeDefined()
+  expect(screen.getByRole('img', { name: /Pendapatan bulan ini/i })).toBeDefined()
 
   /*
    * Deret kosong berarti tidak ada riwayat yang bermakna. Menggambar garis
@@ -131,7 +139,7 @@ test('sparkline membawa tabel tersembunyi dan tidak digambar tanpa riwayat', () 
     />,
   )
 
-  expect(screen.queryByRole('img', { name: /Riwayat/i })).toBeNull()
+  expect(screen.queryByRole('img', { name: /Piutang jatuh tempo/i })).toBeNull()
 })
 
 test('palet data-viz dibaca lewat token Lapis 2, bukan langsung dari primitif', () => {

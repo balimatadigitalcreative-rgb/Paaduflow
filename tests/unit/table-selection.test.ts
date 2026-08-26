@@ -80,9 +80,20 @@ describe('kalimat pembeda', () => {
     const halaman = describeSelection(togglePage(NOTHING, HALAMAN))
     const seluruh = describeSelection(selectAllMatching({}, 1284))
 
-    expect(halaman).toBe('3 baris di halaman ini terpilih')
-    expect(seluruh).toBe('Seluruh 1284 baris yang cocok dengan filter terpilih')
-    expect(halaman).not.toBe(seluruh)
+    /*
+     * Yang dikembalikan kini KUNCI, bukan kalimat.
+     *
+     * Kalimatnya dulu ditulis di berkas ini — `.ts`, tanpa satu pun tag — dan
+     * bertahan lama tanpa diterjemahkan justru karena pemeriksa string keras
+     * hanya melihat berkas `.tsx`.
+     *
+     * Yang diuji tetap hal yang sama: kedua mode harus berbunyi BERBEDA.
+     * Konsekuensinya berbeda jauh, dan pengguna harus dapat membedakannya
+     * kapan pun.
+     */
+    expect(halaman).toEqual({ kunci: 'tabel.terpilihHalaman', jumlah: 3 })
+    expect(seluruh).toEqual({ kunci: 'tabel.terpilihSeluruh', jumlah: 1284 })
+    expect(halaman!.kunci).not.toBe(seluruh!.kunci)
   })
 })
 

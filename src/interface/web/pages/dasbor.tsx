@@ -37,18 +37,6 @@ export interface CompanyDapatDiakses {
   readonly role: string
 }
 
-/**
- * Peta kartu ke kategori aksennya.
- *
- * Di sini, bukan di server: warna adalah keputusan tampilan, dan port dasbor
- * tidak boleh tahu apa pun tentang garis di tepi kartu.
- */
-const KATEGORI_KARTU: Record<string, 'pendapatan' | 'piutang' | 'tempo' | 'tindakan'> = {
-  pendapatan: 'pendapatan',
-  piutang: 'piutang',
-  'jatuh-tempo': 'tempo',
-  menunggu: 'tindakan',
-}
 
 /**
  * Basis pembanding dari server dipetakan ke kunci terjemahan.
@@ -167,8 +155,7 @@ function RingkasanAngka({
    */
   if (muat.kind === 'memuat') {
     return (
-      <section className={styles.stack} aria-busy="true">
-        <h2>{t('ringkasan.judul')}</h2>
+      <section className={styles.stack} aria-busy="true" aria-label={t('ringkasan.judul')}>
         <div className={styles.kpiRow}>
           {[0, 1, 2, 3].map((nomor) => (
             <div key={nomor} className={styles.kpiSkeleton} aria-hidden="true" />
@@ -184,8 +171,7 @@ function RingkasanAngka({
 
   if (muat.kind === 'galat') {
     return (
-      <section className={styles.stack}>
-        <h2>{t('ringkasan.judul')}</h2>
+      <section className={styles.stack} aria-label={t('ringkasan.judul')}>
         <p className={`${styles.notice} ${styles.noticeDanger}`} role="alert">
           {muat.pesan}
         </p>
@@ -215,9 +201,7 @@ function RingkasanAngka({
   }))
 
   return (
-    <section className={styles.stack}>
-      <h2>{t('ringkasan.judul')}</h2>
-
+    <section className={styles.stack} aria-label={t('ringkasan.judul')}>
       <div className={styles.kpiRow}>
         {data.kpis.map((kartu) => (
           <KpiCard
@@ -234,7 +218,6 @@ function RingkasanAngka({
             comparisonBasis={basisPembanding(t, kartu.comparisonBasis)}
             higherIsBetter={kartu.higherIsBetter}
             href={kartu.href}
-            kategori={KATEGORI_KARTU[kartu.id] ?? 'tindakan'}
             series={kartu.series}
             seriesLabel={t('kpi.riwayat', {
               label: t(`kpi.${kartu.id}`, { defaultValue: kartu.label }).toLowerCase(),
@@ -262,6 +245,7 @@ function RingkasanAngka({
               points={titik}
               caption={t('pendapatan.keterangan', { mataUang: data.currency })}
               valueHeader={t('pendapatan.kolomNilai')}
+              format={(nilai) => format.angka(nilai, data.currency)}
             />
           ) : (
             <div className={styles.notice}>

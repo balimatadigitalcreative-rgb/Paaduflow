@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { useFormat } from '../i18n/use-format.js'
 import styles from './primitives.module.css'
 
 /**
@@ -46,18 +47,11 @@ export interface KpiCardProps {
   readonly series?: readonly number[]
   /** Dibaca screen reader sebagai keterangan tabel sparkline. */
   readonly seriesLabel?: string
-  /**
-   * Kategori kartu, menentukan warna garis aksen di tepi atasnya.
-   *
-   * Bukan warna, melainkan PERAN. Kartu tidak tahu warna apa pun; CSS yang
-   * memetakannya ke token peran, sehingga mode gelap dan brand tenant tidak
-   * perlu menyentuh komponen ini.
-   */
-  readonly kategori?: 'pendapatan' | 'piutang' | 'tempo' | 'tindakan'
 }
 
 export function KpiCard(props: KpiCardProps): ReactNode {
   const { t } = useTranslation()
+  const format = useFormat()
 
   const { changePercent } = props
   const naik = changePercent !== null && changePercent > 0
@@ -71,8 +65,12 @@ export function KpiCard(props: KpiCardProps): ReactNode {
   const panah = datar ? '→' : naik ? '↑' : '↓'
   const tanda = changePercent === null ? '' : changePercent > 0 ? '+' : ''
 
+  // Pemisah desimal mengikuti bahasa. Sebelumnya dipatok 'id-ID', sehingga
+  // "12,4%" tetap muncul begitu di layar Inggris.
+  const persen = format.persen(changePercent ?? 0)
+
   return (
-    <a className={styles.kpiCard} href={props.href} data-kategori={props.kategori ?? 'tindakan'}>
+    <a className={styles.kpiCard} href={props.href} data-nada={nada}>
       <span className={styles.kpiLabel}>{props.label}</span>
       <strong className={styles.kpiValue}>{props.value}</strong>
 
@@ -82,7 +80,7 @@ export function KpiCard(props: KpiCardProps): ReactNode {
         <span className={styles.kpiTrend} data-tone={nada}>
           <span aria-hidden="true">{panah}</span>
           {/* Tanda dan panah keduanya ada, sehingga arah terbaca tanpa warna. */}
-          <span>{`${tanda}${changePercent.toLocaleString('id-ID', { maximumFractionDigits: 1 })}%`}</span>
+          <span>{`${tanda}${persen}%`}</span>
           <span className={styles.kpiBasis}>{props.comparisonBasis}</span>
         </span>
       )}
@@ -91,7 +89,7 @@ export function KpiCard(props: KpiCardProps): ReactNode {
         <Sparkline
           nilai={props.series}
           nada={nada}
-          keterangan={props.seriesLabel ?? `Riwayat ${props.label}`}
+          keterangan={props.seriesLabel ?? props.label}
         />
       )}
     </a>
@@ -118,6 +116,7 @@ function Sparkline({
   readonly nada: string
   readonly keterangan: string
 }): ReactNode {
+  const format = useFormat()
   const { t } = useTranslation()
 
   const tertinggi = Math.max(...nilai)
@@ -160,14 +159,14 @@ function Sparkline({
         <thead>
           <tr>
             <th scope="col">{t('grafik.periode')}</th>
-            <th scope="col">Nilai</th>
+            <th scope="col">{t('grafik.nilai')}</th>
           </tr>
         </thead>
         <tbody>
           {nilai.map((satu, indeks) => (
             <tr key={`${indeks}-${satu}`}>
-              <th scope="row">{`Periode ${indeks + 1}`}</th>
-              <td>{satu.toLocaleString('id-ID')}</td>
+              <th scope="row">{t('grafik.periodeKe', { nomor: indeks + 1 })}</th>
+              <td>{format.bilangan(satu)}</td>
             </tr>
           ))}
         </tbody>

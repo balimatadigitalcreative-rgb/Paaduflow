@@ -83,7 +83,7 @@ export function FilterBar({
       {jumlah === 0 ? null : (
         <>
           <span className={styles.filterCount}>
-            {jumlah === 1 ? '1 filter aktif' : `${jumlah} filter aktif`}
+            {jumlah === 1 ? '1 filter aktif' : t('filter.aktif', { count: jumlah })}
           </span>
           <button type="button" className={styles.filterClear} onClick={onClearAll}>
         {t('aksi.hapusSemua')}

@@ -139,16 +139,108 @@ function periksaLocale() {
  * adalah pemeriksa yang akan dimatikan orang saat ia mengganggu — dan pemeriksa
  * yang dimatikan tidak menangkap apa pun.
  */
-const POLA_JSX = />[\s]*[A-Z][a-zA-Z][^<>{}]{4,}[\s]*</g
+/**
+ * Pola string yang terlihat pengguna.
+ *
+ * Sengaja tidak sempurna — pemeriksa yang menuntut analisis sempurna adalah
+ * pemeriksa yang akan dimatikan orang saat ia mengganggu, dan yang dimatikan
+ * tidak menangkap apa pun.
+ *
+ * Tiga pola, dan ketiganya lahir dari kebocoran SUNGGUHAN yang lolos versi
+ * sebelumnya dan sampai ke layar produksi:
+ *
+ *   POLA_JSX_PANJANG   kalimat di dalam JSX      — pola asli
+ *   POLA_JSX_PENDEK    satu kata berkapital      — "Bulan", "Umur", "Nilai"
+ *   POLA_TEMPLAT       templat berisi kata       — `${jumlah} faktur`
+ *   POLA_LOCALE        locale yang dipatok       — toLocaleString('id-ID')
+ */
+const POLA_JSX_PANJANG = />[\s]*[A-Z][a-zA-Z][^<>{}]{4,}[\s]*</g
+
+/**
+ * Satu kata berkapital di dalam JSX, minimal tiga huruf.
+ *
+ * `[A-Z][a-z]` menuntut huruf kecil di posisi kedua, dan itu yang membedakan
+ * kata dari akronim: "Bulan" tertangkap, "PKP" dan "PPN" tidak. Istilah pajak
+ * memang tidak diterjemahkan (D-150), jadi mengeluhkannya hanya melatih orang
+ * mengabaikan pemeriksa ini.
+ */
+const POLA_JSX_PENDEK = />[\s]*[A-Z][a-z][a-zA-Z]+[\s]*</g
+
 const POLA_ATRIBUT =
   /\b(?:aria-label|title|placeholder|caption|label|message|header)=["'][A-Z][^"']{4,}["']/g
 
-function hitungStringKeras(isi, adaJsx) {
+/**
+ * Locale yang dipatok di dalam kode.
+ *
+ * `toLocaleString('id-ID')` tetap memformat angka menurut Indonesia di layar
+ * berbahasa Inggris. Kebocoran ini tidak berbentuk kalimat, sehingga tidak ada
+ * pola teks yang dapat menangkapnya — ia harus dicari sebagai apa adanya.
+ */
+const POLA_LOCALE = /\b(?:toLocaleString|toLocaleDateString|toLocaleTimeString)\s*\(\s*['"][a-z]{2}-[A-Z]{2}['"]/g
+
+/** Templat berkutip balik, beserta posisinya. */
+const POLA_TEMPLAT = /`(?:[^`\\]|\\.)*`/g
+
+/**
+ * Atribut yang isinya memang bukan bahasa: kelas, jalur, kunci, id.
+ *
+ * Templat di sana wajar memuat kata — `#/pajak/keluaran/${id}` bukan kalimat.
+ */
+const ATRIBUT_TEKNIS = /(?:className|href|id|key|to|src|action|aria-controls|aria-labelledby|data-[\w-]+)\s*=\s*$/
+
+/**
+ * Kata alami di dalam bagian TETAP sebuah templat.
+ *
+ * Bagian `${…}` dibuang lebih dulu; yang tersisa harus memuat kata sepanjang
+ * tiga huruf yang berdiri sendiri — tidak menempel pada garis miring, titik,
+ * tanda pagar, atau garis bawah. Tanpa syarat itu, `#/pajak/keluaran/` ikut
+ * tertangkap karena memuat "pajak".
+ *
+ * Tanda `?`, `=`, dan `&` ikut dikecualikan: tanpa itu, `?period=` di dalam
+ * URL tertangkap sebagai kata "period".
+ */
+const KATA_ALAMI = /(?:^|[^A-Za-z/#._\-?=&])[A-Za-z]{3,}(?:[^A-Za-z/#._\-?=&]|$)/
+
+/**
+ * Kata yang tidak pernah menjadi teks layar.
+ *
+ * Daftarnya pendek dan disebut satu per satu, bukan pola: `Bearer` di
+ * `Authorization: Bearer <token>` adalah kosakata protokol, dan tidak ada
+ * bahasa yang menerjemahkannya. Daftar yang panjang akan menjadi tempat
+ * menyembunyikan kebocoran; daftar sependek ini terlihat di tinjauan kode.
+ */
+const KATA_TEKNIS = /^(?:Bearer|Basic|Digest|application|charset|multipart|boundary)$/i
+
+function templatMencurigakan(isi, indeks, teks) {
+  const sebelum = teks.slice(Math.max(0, indeks - 40), indeks)
+  if (ATRIBUT_TEKNIS.test(sebelum.trimEnd())) return false
+
+  const tetap = isi.slice(1, -1).replace(/\$\{[^}]*\}/g, ' ')
+  if (!KATA_ALAMI.test(tetap)) return false
+
+  // Satu kata teknis yang berdiri sendiri bukan kalimat.
+  return !KATA_TEKNIS.test(tetap.trim())
+}
+
+/**
+ * Menghitung string keras, tanpa menghitung satu tempat dua kali.
+ *
+ * Pola panjang dan pola pendek dapat mencocoki potongan yang sama; yang
+ * dihitung adalah POSISI-nya, sehingga satu kebocoran tetap satu.
+ */
+export function hitungStringKeras(isi, adaJsx) {
   const tanpaKomentar = isi
     .replace(/\/\*[\s\S]*?\*\//g, '')
     .replace(/(^|[^:])\/\/.*$/gm, '$1')
 
-  let jumlah = (tanpaKomentar.match(POLA_ATRIBUT) ?? []).length
+  const posisi = new Set()
+
+  const kumpulkan = (pola) => {
+    for (const cocok of tanpaKomentar.matchAll(pola)) posisi.add(cocok.index)
+  }
+
+  kumpulkan(POLA_ATRIBUT)
+  kumpulkan(POLA_LOCALE)
 
   /*
    * Pola teks JSX hanya dipakai di berkas `.tsx`.
@@ -158,9 +250,25 @@ function hitungStringKeras(isi, adaJsx) {
    * bukan teks pengguna kehilangan wibawa, lalu dimatikan orang saat ia
    * mengganggu.
    */
-  if (adaJsx) jumlah += (tanpaKomentar.match(POLA_JSX) ?? []).length
+  if (adaJsx) {
+    kumpulkan(POLA_JSX_PANJANG)
+    kumpulkan(POLA_JSX_PENDEK)
+  }
 
-  return jumlah
+  /*
+   * Templat diperiksa di `.ts` JUGA, bukan hanya di `.tsx`.
+   *
+   * Kalimat yang terlihat pengguna tidak selalu lahir di berkas JSX.
+   * `describeSelection` di `selection.ts` memulangkan "Seluruh N baris yang
+   * cocok dengan filter terpilih" — kalimat utuh, di berkas tanpa satu pun tag.
+   * Membatasi pemeriksaan ini ke `.tsx` berarti setiap kalimat yang dipindahkan
+   * ke fungsi pembantu keluar dari jangkauan.
+   */
+  for (const cocok of tanpaKomentar.matchAll(POLA_TEMPLAT)) {
+    if (templatMencurigakan(cocok[0], cocok.index, tanpaKomentar)) posisi.add(cocok.index)
+  }
+
+  return posisi.size
 }
 
 function periksaStringKeras() {

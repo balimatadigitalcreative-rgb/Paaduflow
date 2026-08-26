@@ -9,7 +9,8 @@
     "cari": "Search",
     "notifikasi": "Notifications",
     "breadcrumb": "Breadcrumb",
-    "panelDetail": "Details"
+    "panelDetail": "Details",
+    "navigasiModul": "{{modul}} navigation"
   },
   "modul": {
     "dasbor": "Dashboard",
@@ -39,7 +40,8 @@
     "cari": "Search companies",
     "nonaktif": "Inactive",
     "tenantLain": "Other tenants",
-    "label": "Company"
+    "label": "Company",
+    "lain": "another company"
   },
   "peran": {
     "tenant_owner": "Tenant Owner",

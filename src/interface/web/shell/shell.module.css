@@ -285,6 +285,16 @@
 }
 
 .breadcrumb {
+  /*
+   * `list-style: none`, dan itu bukan kerapian.
+   *
+   * Breadcrumb adalah `<ol>` karena urutannya bermakna. Item flex tetap
+   * berjenis `list-item`, sehingga penandanya tetap digambar: layar
+   * menampilkan "1. DASHBOARD". Angka itu tidak berarti apa-apa bagi pembaca —
+   * ia menghitung ruas jalur, bukan langkah yang harus diikuti.
+   */
+  list-style: none;
+  padding-inline-start: 0;
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);

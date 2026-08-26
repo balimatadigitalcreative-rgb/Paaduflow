@@ -56,5 +56,10 @@
     "fakturGagal": "Faktur tidak dapat dibuat.",
     "tanggalDokumen": "Tanggal dokumen",
     "simpanDraf": "Simpan sebagai draf"
+  },
+  "pesan": {
+    "diajukan": "Faktur {{nomor}} diajukan dan mendapat nomor resminya.",
+    "disetujui": "Faktur {{nomor}} disetujui dan siap diposting.",
+    "diposting": "Faktur {{nomor}} diposting. Jurnal {{jurnal}} sudah masuk buku besar."
   }
 }

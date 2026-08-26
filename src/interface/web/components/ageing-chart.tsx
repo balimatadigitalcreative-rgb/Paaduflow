@@ -108,7 +108,7 @@ export function AgeingChart({
               <span className={styles.ageingLabel}>{satu.label}</span>
               <span className={styles.ageingNilai}>{format(satu.amount)}</span>
               <span className={styles.ageingJumlah}>
-                {satu.count === 0 ? '—' : `${satu.count} faktur`}
+                {satu.count === 0 ? '—' : t('grafik.faktur', { count: satu.count })}
               </span>
             </button>
           </li>
@@ -120,8 +120,8 @@ export function AgeingChart({
         <caption>{caption}</caption>
         <thead>
           <tr>
-            <th scope="col">Umur</th>
-            <th scope="col">Nilai</th>
+            <th scope="col">{t('grafik.umur')}</th>
+            <th scope="col">{t('grafik.nilai')}</th>
             <th scope="col">{t('grafik.jumlahFaktur')}</th>
           </tr>
         </thead>

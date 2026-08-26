@@ -341,11 +341,11 @@ export function DetailFaktur({
       const nomor = jawaban.data.number ?? dokumen?.number ?? 'ini'
       toast(
         aksi === 'submit'
-          ? { message: `Faktur ${nomor} diajukan dan mendapat nomor resminya.`, tone: 'baik' }
+          ? { message: t('pesan.diajukan', { nomor }), tone: 'baik' }
           : aksi === 'approve'
-            ? { message: `Faktur ${nomor} disetujui dan siap diposting.`, tone: 'baik' }
+            ? { message: t('pesan.disetujui', { nomor }), tone: 'baik' }
             : {
-                message: `Faktur ${nomor} diposting. Jurnal ${jawaban.data.journal_id} sudah masuk buku besar.`,
+                message: t('pesan.diposting', { nomor, jurnal: jawaban.data.journal_id }),
                 tone: 'baik',
               },
       )

@@ -145,6 +145,9 @@ const MEREK = 'Paadu'
 
 export function AppShell(props: AppShellProps): ReactNode {
   const { t } = useTranslation('shell')
+
+  /** Tujuan yang benar-benar dapat dibuka pengguna ini, lintas grup. */
+  const jumlahTujuan = props.sidebarItems.filter((item) => item.permitted).length
   const { preferences, setTheme, setDensity, toggleSidebar } = usePreferences()
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [contextMessage, setContextMessage] = useState<string | null>(null)
@@ -235,7 +238,7 @@ export function AppShell(props: AppShellProps): ReactNode {
   function pindahCompany(companyId: string): void {
     props.switcher.onSwitch(companyId)
     const company = props.switcher.tenant.companies.find((item) => item.id === companyId)
-    setContextMessage(`Konteks berpindah ke ${company?.legalName ?? 'company lain'}.`)
+    setContextMessage(t('company.berpindah', { nama: company?.legalName ?? t('company.lain') }))
     // Drawer ditutup supaya banner konteks tidak tertutup olehnya di ponsel —
     // lapis ketiga tidak berguna bila tidak terlihat.
     setDrawerOpen(false)
@@ -369,10 +372,25 @@ export function AppShell(props: AppShellProps): ReactNode {
       </nav>
       )}
 
+      {/*
+        Sidebar hanya dirender bila modulnya punya LEBIH DARI SATU tujuan.
+
+        Dasbor punya satu layar. Kolom 240px yang berisi satu item — dan item
+        itu adalah halaman yang sedang dibuka — tidak memberi tahu apa pun:
+        rail sudah menunjukkan modul mana yang aktif, dan page header sudah
+        menyebut nama halamannya. Yang tersisa hanya ruang kosong yang membuat
+        halaman terlihat belum selesai.
+
+        Yang TIDAK dilakukan: mengarang sub-halaman untuk mengisi kolom. Itu
+        keputusan produk yang diambil demi tata letak, dan urutan itu selalu
+        salah. Layout_System §3 pun menyebut pengelompokan baku berlaku "untuk
+        modul transaksional" — dasbor bukan salah satunya.
+      */}
+      {jumlahTujuan < 2 ? null : (
       <nav
         className={styles.sidebar}
         data-collapsed={preferences.sidebarCollapsed}
-        aria-label={`Navigasi ${props.activeModule.name}`}
+        aria-label={t('navigasi.navigasiModul', { modul: props.activeModule.name })}
       >
         {SIDEBAR_ORDER.map((group) => {
           // Item tanpa izin disembunyikan, bukan dinonaktifkan. Grup yang
@@ -381,7 +399,9 @@ export function AppShell(props: AppShellProps): ReactNode {
           if (isi.length === 0) return null
           return (
             <div key={group}>
-              <p className={styles.groupLabel}>{group}</p>
+              {/* Nama grup diterjemahkan. Ia sempat dirender apa adanya, dan
+                  "TRANSAKSI" berdiri di sebelah "Dashboard" di layar Inggris. */}
+              <p className={styles.groupLabel}>{t(`grup.${group}`)}</p>
               <ul role="list" className={styles.paletteList}>
                 {isi.map((item) => (
                   <li key={item.id}>
@@ -400,6 +420,7 @@ export function AppShell(props: AppShellProps): ReactNode {
           )
         })}
       </nav>
+      )}
 
       <div className={styles.content}>
         {/* Perpindahan konteks diumumkan assertive, bukan polite. Ia memengaruhi

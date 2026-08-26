@@ -30,24 +30,37 @@
   "tabel": {
     "barisTerpilih_other": "{{count, bilangan}} baris terpilih",
     "pilihSemuaCocok": "Pilih semua {{jumlah, bilangan}} baris yang cocok dengan filter",
-    "dariTotal": "{{tampil, bilangan}} dari {{total, bilangan}}",
+    "dariTotal": "{{tampil, bilangan}} dari {{total, bilangan}} baris",
     "batalkanPilihan": "Batalkan pilihan",
     "pilihBarisHalaman": "Pilih baris di halaman ini",
-    "konfirmasiMassal": "Konfirmasi aksi massal"
+    "konfirmasiMassal": "Konfirmasi aksi massal",
+    "pilihBaris": "Pilih baris {{nomor}}",
+    "tanyaMassal": "{{aksi}} {{jumlah, bilangan}} baris di {{company}}?",
+    "terpilihHalaman_other": "{{count, bilangan}} baris di halaman ini terpilih",
+    "terpilihSeluruh_other": "Seluruh {{count, bilangan}} baris yang cocok dengan filter terpilih",
+    "pencarian": "pencarian \"{{kata}}\""
   },
   "baris": {
     "petunjukPanjang": "Baris dokumen. Enter turun baris, Enter di sel terakhir menambah baris, Ctrl+D menyalin dari baris atas, Ctrl+Backspace menghapus baris.",
     "petunjukPendek": "Enter turun baris · Enter di sel terakhir menambah baris · Ctrl+D menyalin dari atas · Ctrl+Backspace menghapus baris · tempelan dari Excel mengisi banyak baris",
     "neto": "Neto",
     "subtotal": "Subtotal",
-    "diskonDokumen": "Diskon dokumen"
+    "diskonDokumen": "Diskon dokumen",
+    "pajak": "Pajak",
+    "total": "Total",
+    "selBaris": "{{kolom}} baris {{nomor}}"
   },
   "grafik": {
     "tanpaPeriodePembanding": "Tidak ada periode pembanding",
     "periode": "Periode",
     "jumlahFaktur": "Jumlah faktur",
     "piutangLunas": "Tidak ada piutang beredar. Seluruh faktur terposting sudah lunas.",
-    "belumAdaPeriode": "Belum ada data untuk periode ini."
+    "belumAdaPeriode": "Belum ada data untuk periode ini.",
+    "bulan": "Bulan",
+    "nilai": "Nilai",
+    "umur": "Umur",
+    "periodeKe": "Periode {{nomor}}",
+    "faktur_other": "{{count, bilangan}} faktur"
   },
   "masuk": {
     "judul": "Paadu Flow",
@@ -82,6 +95,14 @@
     "not_received": "Belum diterima",
     "partially_received": "Diterima sebagian",
     "received": "Diterima"
+  },
+  "form": {
+    "ringkasanGalat_other": "Ada {{count, bilangan}} isian yang perlu diperbaiki",
+    "tinggalkanHalaman": "Perubahan pada dokumen ini belum tersimpan. Tinggalkan halaman dan buang perubahannya?",
+    "pindahCompany": "Perubahan pada dokumen ini belum tersimpan. Berpindah ke {{tujuan}} juga mengubah konteks company — dokumen ini tidak akan terbawa."
+  },
+  "filter": {
+    "aktif_other": "{{count, bilangan}} filter aktif"
   },
   "pajakIstilah": {
     "catatan": "Istilah di bawah TIDAK PERNAH diterjemahkan — lihat D-150.",

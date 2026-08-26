@@ -31,24 +31,40 @@
     "barisTerpilih_one": "{{count, bilangan}} row selected",
     "barisTerpilih_other": "{{count, bilangan}} rows selected",
     "pilihSemuaCocok": "Select all {{jumlah, bilangan}} rows matching the filters",
-    "dariTotal": "{{tampil, bilangan}} of {{total, bilangan}}",
+    "dariTotal": "{{tampil, bilangan}} of {{total, bilangan}} rows",
     "batalkanPilihan": "Clear selection",
     "pilihBarisHalaman": "Select rows on this page",
-    "konfirmasiMassal": "Confirm bulk action"
+    "konfirmasiMassal": "Confirm bulk action",
+    "pilihBaris": "Select row {{nomor}}",
+    "tanyaMassal": "{{aksi}} {{jumlah, bilangan}} rows in {{company}}?",
+    "terpilihHalaman_one": "{{count, bilangan}} row on this page selected",
+    "terpilihHalaman_other": "{{count, bilangan}} rows on this page selected",
+    "terpilihSeluruh_one": "All {{count, bilangan}} row matching the filter selected",
+    "terpilihSeluruh_other": "All {{count, bilangan}} rows matching the filter selected",
+    "pencarian": "search \"{{kata}}\""
   },
   "baris": {
     "petunjukPanjang": "Document lines. Enter moves down a row, Enter in the last cell adds a row, Ctrl+D copies from the row above, Ctrl+Backspace deletes a row.",
     "petunjukPendek": "Enter moves down · Enter in the last cell adds a row · Ctrl+D copies from above · Ctrl+Backspace deletes a row · pasting from Excel fills many rows",
     "neto": "Net",
     "subtotal": "Subtotal",
-    "diskonDokumen": "Document discount"
+    "diskonDokumen": "Document discount",
+    "pajak": "Tax",
+    "total": "Total",
+    "selBaris": "{{kolom}} on row {{nomor}}"
   },
   "grafik": {
     "tanpaPeriodePembanding": "No comparison period",
     "periode": "Period",
     "jumlahFaktur": "Invoice count",
     "piutangLunas": "No receivables outstanding. Every posted invoice has been settled.",
-    "belumAdaPeriode": "No data for this period yet."
+    "belumAdaPeriode": "No data for this period yet.",
+    "bulan": "Month",
+    "nilai": "Value",
+    "umur": "Age",
+    "periodeKe": "Period {{nomor}}",
+    "faktur_one": "{{count, bilangan}} invoice",
+    "faktur_other": "{{count, bilangan}} invoices"
   },
   "masuk": {
     "judul": "Paadu Flow",
@@ -83,6 +99,16 @@
     "not_received": "Not received",
     "partially_received": "Partially received",
     "received": "Received"
+  },
+  "form": {
+    "ringkasanGalat_one": "{{count, bilangan}} field needs fixing",
+    "ringkasanGalat_other": "{{count, bilangan}} fields need fixing",
+    "tinggalkanHalaman": "This document has unsaved changes. Leave the page and discard them?",
+    "pindahCompany": "This document has unsaved changes. Switching to {{tujuan}} also changes the company context — this document will not come along."
+  },
+  "filter": {
+    "aktif_one": "{{count, bilangan}} filter active",
+    "aktif_other": "{{count, bilangan}} filters active"
   },
   "pajakIstilah": {
     "catatan": "The terms below are NEVER translated — see D-150.",

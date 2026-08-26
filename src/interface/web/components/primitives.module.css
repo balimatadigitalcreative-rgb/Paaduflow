@@ -563,14 +563,24 @@
 }
 
 /*
- * Aksen kategori: garis tipis di tepi atas kartu.
+ * Aksen di tepi atas kartu: BAIK, BURUK, atau tidak ada.
  *
- * Garis, bukan latar berwarna. Latar berwarna di empat kartu bersebelahan
- * menghasilkan dasbor yang terbaca sebagai empat peringatan — dan Color_System
- * section 1 melarang warna brand membawa status justru karena itu.
+ * Sebelumnya warnanya ditentukan KATEGORI kartu — hijau untuk pendapatan,
+ * kuning untuk piutang, merah untuk jatuh tempo. Empat warna berjajar yang
+ * tidak berubah apa pun angkanya.
  *
- * Warnanya dari token peran yang sudah ada. Tidak ada token baru, dan tidak ada
- * warna yang dikarang.
+ * Itu bukan sekadar hiasan; ia menyesatkan. Hijau, kuning, dan merah adalah
+ * kosakata status di seluruh sisa antarmuka ini, dan memakainya untuk menandai
+ * "kartu ini tentang piutang" mengajarkan bahwa piutang selalu peringatan.
+ * Pembaca yang mempercayainya akan membaca kartu merah sebagai kabar buruk
+ * meski angkanya membaik.
+ *
+ * Sekarang warnanya berarti satu hal saja: apakah angka ini bergerak ke arah
+ * yang diinginkan. Kartu tanpa pembanding tidak berwarna sama sekali — tidak
+ * ada yang dapat dikatakan, jadi tidak ada yang dikatakan.
+ *
+ * Warna tidak pernah sendirian: panah dan tanda + / − sudah membawa arah yang
+ * sama (WCAG 1.4.1). Garis ini menguatkan, bukan menggantikan.
  */
 .kpiCard::before {
   content: '';
@@ -578,23 +588,15 @@
   inset-block-start: 0;
   inset-inline: 0;
   block-size: var(--border-width-focus);
-  background: var(--text-accent);
+  background: transparent;
 }
 
-.kpiCard[data-kategori='pendapatan']::before {
+.kpiCard[data-nada='baik']::before {
   background: var(--text-success);
 }
 
-.kpiCard[data-kategori='piutang']::before {
-  background: var(--text-warning);
-}
-
-.kpiCard[data-kategori='tempo']::before {
+.kpiCard[data-nada='buruk']::before {
   background: var(--text-danger);
-}
-
-.kpiCard[data-kategori='tindakan']::before {
-  background: var(--text-accent);
 }
 
 /*
@@ -742,11 +744,54 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+  block-size: 100%;
+}
+
+/*
+ * Grid dua kolom: sumbu nilai, lalu areanya.
+ *
+ * Baris kedua memuat label bulan, hanya di kolom grafik — sehingga setiap
+ * label berdiri tepat di bawah batangnya.
+ */
+.chartArea {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: 1fr auto;
+  gap: var(--space-1) var(--space-2);
+  /* Tumbuh mengisi panel: bila panel di sebelahnya lebih tinggi, grafik ikut
+     memanjang alih-alih meninggalkan lubang di bawah kolomnya. */
+  flex: 1;
+  min-block-size: var(--size-chart-bar);
+}
+
+/*
+ * Sumbu nilai.
+ *
+ * Tanpa ini, dua belas batang hanya bentuk: tidak ada cara mengetahui apakah
+ * yang tertinggi berarti lima juta atau lima ratus juta. `tabular-nums` supaya
+ * ketiga angkanya rata kanan pada lebar digit yang sama.
+ */
+.chartAxis {
+  grid-row: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  text-align: end;
+  font-size: var(--font-size-caption);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+}
+
+.chartGrid {
+  stroke: var(--border-subtle);
+  stroke-width: var(--border-width-hairline);
 }
 
 .chartSvg {
+  grid-row: 1;
   inline-size: 100%;
-  block-size: var(--space-10);
+  block-size: 100%;
+  min-block-size: var(--size-chart-bar);
 }
 
 .chartBar {
@@ -754,6 +799,7 @@
 }
 
 .chartLabels {
+  grid-column: 2;
   display: flex;
   justify-content: space-between;
   font-size: var(--font-size-caption);

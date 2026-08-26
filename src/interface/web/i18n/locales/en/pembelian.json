@@ -116,5 +116,12 @@
       "penuh": "Fully billed",
       "sebagian": "Partially billed"
     }
+  },
+  "pesan": {
+    "penerimaanTercatat_one": "Receipt against {{dokumen}} recorded for {{count, bilangan}} line. Stock increased.",
+    "penerimaanTercatat_other": "Receipt against {{dokumen}} recorded for {{count, bilangan}} lines. Stock increased.",
+    "tagihanDiposting": "Invoice {{nomor}} posted. Journal {{jurnal}} is now in the general ledger.",
+    "pesananIni": "this order",
+    "tagihanIni": "this one"
   }
 }

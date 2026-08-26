@@ -116,5 +116,11 @@
       "penuh": "Ditagih penuh",
       "sebagian": "Sebagian ditagih"
     }
+  },
+  "pesan": {
+    "penerimaanTercatat_other": "Penerimaan atas {{dokumen}} tercatat untuk {{count, bilangan}} baris. Persediaan bertambah.",
+    "tagihanDiposting": "Tagihan {{nomor}} diposting. Jurnal {{jurnal}} sudah masuk buku besar.",
+    "pesananIni": "pesanan ini",
+    "tagihanIni": "ini"
   }
 }

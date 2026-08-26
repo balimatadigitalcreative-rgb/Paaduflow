@@ -27,6 +27,7 @@ export interface FieldError {
  * border merah adalah tidak manusiawi.
  */
 export function ErrorSummary({ errors }: { readonly errors: readonly FieldError[] }): ReactNode {
+  const { t } = useTranslation()
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -40,7 +41,7 @@ export function ErrorSummary({ errors }: { readonly errors: readonly FieldError[
   return (
     <div ref={ref} className={styles.errorSummary} role="alert" tabIndex={-1}>
       <p className={styles.errorTitle}>
-        {`Ada ${errors.length} isian yang perlu diperbaiki`}
+        {t('form.ringkasanGalat', { count: errors.length })}
       </p>
       <ul className={styles.errorList}>
         {errors.map((error) => (
@@ -127,8 +128,8 @@ export function UnsavedChangesGuard(props: UnsavedChangesGuardProps): ReactNode 
     <div role="alertdialog" aria-label={t('status.adaPerubahan')} className={styles.guard}>
       <p>
         {props.pending.reason === 'switch_company'
-          ? `Perubahan pada dokumen ini belum tersimpan. Berpindah ke ${props.pending.label} juga mengubah konteks company — dokumen ini tidak akan terbawa.`
-          : `Perubahan pada dokumen ini belum tersimpan. Tinggalkan halaman dan buang perubahannya?`}
+          ? t('form.pindahCompany', { tujuan: props.pending.label })
+          : t('form.tinggalkanHalaman')}
       </p>
       <div className={styles.guardActions}>
         <Button variant="ghost" onClick={props.onStay}>

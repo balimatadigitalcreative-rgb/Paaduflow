@@ -440,7 +440,10 @@ export function DetailPesanan({
        * informasi adalah bug.
        */
       toast({
-        message: `Penerimaan atas ${dokumen.number ?? 'pesanan ini'} tercatat untuk ${baris.length} baris. Persediaan bertambah.`,
+        message: t('pesan.penerimaanTercatat', {
+          dokumen: dokumen.number ?? t('pesan.pesananIni'),
+          count: baris.length,
+        }),
         tone: 'baik',
       })
       setTerima({})
@@ -715,7 +718,10 @@ export function DetailTagihan({
         `${perusahaan(konteks.companyId)}/bills/${documentId}/post`,
       )
       toast({
-        message: `Tagihan ${panel?.billNumber ?? 'ini'} diposting. Jurnal ${jawaban.data.journal_id} sudah masuk buku besar.`,
+        message: t('pesan.tagihanDiposting', {
+          nomor: panel?.billNumber ?? t('pesan.tagihanIni'),
+          jurnal: jawaban.data.journal_id,
+        }),
         tone: 'baik',
       })
       await muat()
