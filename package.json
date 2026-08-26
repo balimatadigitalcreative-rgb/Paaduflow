@@ -19,6 +19,7 @@
     "check:contrast": "node tools/a11y/contrast.js",
     "lint": "npm run lint:js && npm run lint:css && npm run check:append-only && npm run check:env && npm run audit:kontras && npm run check:i18n",
     "audit:kontras": "node tools/audit/kontras.js",
+    "audit:token": "node tools/audit/token-terdeklarasi.js",
     "check:i18n": "node tools/i18n/periksa.js",
     "check:env": "node tools/check-env-example.js",
     "lint:js": "eslint .",

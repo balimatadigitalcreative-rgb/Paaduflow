@@ -379,8 +379,31 @@ const bangun = await diServer(
   [
     `cd ${APP_DIR}`,
     `rm -rf dist/web-baru dist/web-lama`,
+    /*
+     * `tokens:build` dipanggil EKSPLISIT.
+     *
+     * Ia biasanya menyala sendiri sebagai `prebuild:web`, tetapi kait
+     * `pre<skrip>` npm hanya berjalan lewat `npm run build:web`. Langkah ini
+     * memanggil `npx vite build` langsung — demi `--outDir` — sehingga kaitnya
+     * dilewati tanpa satu pun tanda.
+     *
+     * Akibatnya `src/styles/tokens.css` di server tertinggal pada versi deploy
+     * sebelumnya. Token BARU tidak pernah sampai: variabelnya dipakai komponen,
+     * deklarasinya tidak ada, dan `var(--token)` yang tidak terdefinisi tidak
+     * melempar apa pun — ia hanya diam.
+     *
+     * Ditemukan saat `--size-chart-bar` tidak muncul di CSS produksi meskipun
+     * deploy berakhir hijau. Ini bentuk lain dari D-145.
+     */
+    `npm run tokens:build`,
     `npx vite build --outDir ${APP_DIR}/dist/web-baru --emptyOutDir`,
     `npm run build:server`,
+    /*
+     * Token yang dipakai tanpa deklarasi diperiksa DI SINI, atas hasil build
+     * di server — bukan di CI. Di kode sumber semuanya selalu benar; yang
+     * tertinggal adalah berkas bangkitan, dan hanya server yang tahu itu.
+     */
+    `node tools/audit/token-terdeklarasi.js ${APP_DIR}/dist/web-baru`,
     `if [ -d dist/web ]; then mv dist/web dist/web-lama; fi`,
     `mv dist/web-baru dist/web`,
     `rm -rf dist/web-lama`,
