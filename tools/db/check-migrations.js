@@ -1,20 +1,25 @@
 /**
- * Pemeriksa migrasi — menegakkan D-033.
+ * Pemeriksa migrasi — menegakkan D-033 dan D-161.
  *
- * Tiga hal yang dijaga, dan ketiganya menggagalkan build:
+ * Empat hal yang dijaga, dan seluruhnya menggagalkan build:
  *
- * 1. Migrasi hanya menambah. Perubahan yang merusak dipecah tiga rilis
- *    (Resilience §6), bukan diselundupkan ke satu migrasi.
- * 2. Nomor berurutan tanpa celah dan tanpa duplikat. Dua migrasi bernomor sama
+ * 1. Migrasi hanya menambah. Perubahan yang merusak kode yang sedang berjalan
+ *    dipecah tiga rilis (D-161), bukan diselundupkan ke satu migrasi.
+ * 2. Migrasi yang mengunci tabel lama tidak dijalankan sebaris dengan deploy.
+ * 3. Nomor berurutan tanpa celah dan tanpa duplikat. Dua migrasi bernomor sama
  *    akan diterapkan dengan urutan yang bergantung sistem berkas.
- * 3. Migrasi yang sudah pernah tercatat tidak diubah lagi. Basis data yang
+ * 4. Migrasi yang sudah pernah tercatat tidak diubah lagi. Basis data yang
  *    sudah menerapkannya tidak akan pernah menerapkan versi barunya, sehingga
  *    skema produksi dan berkas di repo diam-diam berbeda.
  *
- * Pintu darurat: baris `-- paadu:allow-breaking <alasan>` tepat sebelum
- * pernyataan yang melanggar. Ia sengaja jelek dibaca dan ikut terlihat di
- * tinjauan kode — pengecualian yang mudah ditulis adalah pengecualian yang
- * akan sering ditulis.
+ * Aturan isinya tinggal di `aturan-migrasi.js` — dipisahkan supaya dapat diuji
+ * satu per satu terhadap migrasi yang sengaja dibuat melanggar. Penjaga yang
+ * tidak pernah diuji terhadap pelanggaran sungguhan biasanya tidak bekerja.
+ *
+ * Pintu darurat: `-- paadu:allow-breaking <alasan>` di komentar pernyataan yang
+ * melanggar. Alasannya WAJIB, dan wajib cukup panjang untuk dibaca peninjau —
+ * penanda yang dapat ditempel dalam dua kata adalah penanda yang akan ditempel
+ * tanpa dipikirkan.
  */
 
 import { createHash } from 'node:crypto'
@@ -22,48 +27,24 @@ import { readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import { AMBANG_PENJAGA, periksaIsiMigrasi } from './aturan-migrasi.js'
+
 const MIGRATIONS_DIR = fileURLToPath(new URL('../../migrations', import.meta.url))
 const LOCKFILE = join(MIGRATIONS_DIR, 'CHECKSUMS.txt')
-const ESCAPE = /--\s*paadu:allow-breaking\b/i
-
-/** Pola yang merusak kompatibilitas dua arah. */
-const FORBIDDEN = [
-  { pattern: /\bDROP\s+COLUMN\b/i, reason: 'DROP COLUMN' },
-  { pattern: /\bDROP\s+TABLE\b/i, reason: 'DROP TABLE' },
-  { pattern: /\bRENAME\s+(COLUMN|TO)\b/i, reason: 'RENAME' },
-  { pattern: /\bALTER\s+COLUMN\s+\w+\s+(SET\s+DATA\s+)?TYPE\b/i, reason: 'ALTER COLUMN … TYPE' },
-  { pattern: /\bALTER\s+COLUMN\s+\w+\s+SET\s+NOT\s+NULL\b/i, reason: 'SET NOT NULL' },
-  { pattern: /\bTRUNCATE\b/i, reason: 'TRUNCATE' },
-  { pattern: /\bDROP\s+(TYPE|SCHEMA|FUNCTION|POLICY|TRIGGER)\b/i, reason: 'DROP objek' },
-]
-
-/** Bagian `-- Down Migration` sengaja memuat RAISE, bukan DDL. Ia tidak diperiksa. */
-function upSection(sql) {
-  const marker = sql.search(/^\s*--\s*Down Migration/im)
-  return marker === -1 ? sql : sql.slice(0, marker)
-}
-
 function migrationFiles() {
   return readdirSync(MIGRATIONS_DIR)
     .filter((name) => name.endsWith('.sql'))
     .sort()
 }
 
-function checkAdditiveOnly(name, sql) {
-  const problems = []
-  const lines = upSection(sql).split(/\r?\n/)
-
-  lines.forEach((line, index) => {
-    const bare = line.replace(/--.*$/, '')
-    for (const { pattern, reason } of FORBIDDEN) {
-      if (!pattern.test(bare)) continue
-      const previous = lines[index - 1] ?? ''
-      if (ESCAPE.test(previous) || ESCAPE.test(line)) continue
-      problems.push(`${name}:${index + 1} — ${reason} tanpa penanda paadu:allow-breaking`)
-    }
-  })
-
-  return problems
+/**
+ * Memeriksa isi satu migrasi terhadap aturan keamanan.
+ *
+ * Seluruh logikanya di `aturan-migrasi.js`; yang tersisa di sini hanya
+ * meratakan hasilnya menjadi baris pesan.
+ */
+function periksaIsi(name, sql) {
+  return periksaIsiMigrasi(name, sql).masalah.map((satu) => satu.pesan)
 }
 
 function checkNumbering(names) {
@@ -146,12 +127,12 @@ export function checkMigrations({ update = false } = {}) {
 
   return [
     ...checkNumbering(names),
-    ...files.flatMap(({ name, sql }) => checkAdditiveOnly(name, sql)),
+    ...files.flatMap(({ name, sql }) => periksaIsi(name, sql)),
     ...checkChecksums(files, update),
   ]
 }
 
-export { checkAdditiveOnly, checkNumbering }
+export { periksaIsi, checkNumbering }
 
 const isDirectRun = process.argv[1] === fileURLToPath(import.meta.url)
 
@@ -162,9 +143,16 @@ if (isDirectRun) {
   if (problems.length > 0) {
     console.error('Pemeriksaan migrasi gagal:\n')
     for (const problem of problems) console.error(`  ${problem}`)
-    console.error('\nRujukan: docs/DECISIONS.md D-033 dan migrations/README.md')
+    console.error('\nRujukan: docs/DECISIONS.md D-033 dan D-161, serta migrations/README.md')
     process.exit(1)
   }
 
-  console.log(update ? 'Sidik jari migrasi diperbarui.' : 'Migrasi lolos pemeriksaan.')
+  if (update) {
+    console.log('Sidik jari migrasi diperbarui.')
+  } else {
+    console.log(
+      `Migrasi lolos pemeriksaan. Aturan isi berlaku sejak ` +
+        `${String(AMBANG_PENJAGA + 1).padStart(4, '0')}; yang sebelumnya sudah diterapkan produksi.`,
+    )
+  }
 }

@@ -46,6 +46,18 @@ const HEALTH = process.env.DEPLOY_HEALTH ?? 'http://127.0.0.1:3000/readyz'
  */
 const MIGRATION_ENV = process.env.DEPLOY_MIGRATION_ENV ?? '/home/paadu/.env.deploy'
 
+/**
+ * Tempat cadangan pra-migrasi.
+ *
+ * Di LUAR direktori aplikasi, sengaja: `git reset --hard` di langkah 1 tidak
+ * boleh dapat menyentuhnya, dan cadangan yang ikut terhapus saat deploy
+ * berikutnya bukan cadangan.
+ */
+const BACKUP_DIR = process.env.DEPLOY_BACKUP_DIR ?? '/home/paadu/cadangan'
+
+/** Cadangan yang lebih tua dari ini dibuang. */
+const BACKUP_SIMPAN_HARI = Number(process.env.DEPLOY_BACKUP_HARI ?? 14)
+
 const WARNA = process.stdout.isTTY === true
 const merah = (teks) => (WARNA ? `[31m${teks}[0m` : teks)
 const hijau = (teks) => (WARNA ? `[32m${teks}[0m` : teks)
@@ -360,6 +372,74 @@ if (daftar.length === 0) {
     process.exit(1)
   }
 
+  /*
+   * ═══════════════════════════════════════════════════════════════════════
+   *   CADANGAN, TEPAT SEBELUM MIGRASI
+   *
+   *   Bukan cadangan harian, dan bukan cadangan sebelum deploy. Tepat sebelum
+   *   MIGRASI — karena migrasi adalah satu-satunya langkah deploy yang dapat
+   *   mengubah data, dan satu-satunya yang tidak dapat dibatalkan dengan
+   *   menyalakan kembali versi lama.
+   *
+   *   Titik pulihnya karena itu berumur detik, bukan jam.
+   *
+   *   `-Fc` (format custom): terkompresi, dan `pg_restore` dapat memulihkan
+   *   satu tabel saja darinya. Cadangan SQL polos memaksa memulihkan
+   *   semuanya atau tidak sama sekali.
+   * ═══════════════════════════════════════════════════════════════════════
+   */
+  langkah('4b', 'Cadangan pra-migrasi')
+
+  const cap = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
+  const berkasCadangan = `${BACKUP_DIR}/pramigrasi-${cap}.dump`
+
+  const cadangan = await ssh(
+    [
+      `mkdir -p ${BACKUP_DIR}`,
+      `set -a && . ${MIGRATION_ENV} && set +a`,
+      // `--no-owner` supaya dapat dipulihkan ke basis data mana pun saat
+      // menyelidiki, bukan hanya ke yang pemiliknya persis sama.
+      `pg_dump "$MIGRATION_DATABASE_URL" -Fc --no-owner -f ${berkasCadangan}`,
+      `ls -l ${berkasCadangan} | awk '{print $5}'`,
+    ].join(' && '),
+  )
+
+  if (cadangan.kode !== 0) {
+    /*
+     * Cadangan gagal berarti migrasi TIDAK berjalan.
+     *
+     * Melanjutkan tanpa titik pulih persis membuang gunanya langkah ini —
+     * dan yang paling mungkin membuat pg_dump gagal (disk penuh, kredensial
+     * salah) juga akan membuat migrasinya bermasalah.
+     */
+    berhenti(
+      'cadangan pra-migrasi',
+      cadangan,
+      `Migrasi TIDAK dijalankan; basis data belum tersentuh.\n` +
+        `      Periksa ruang disk dan izin tulis di ${BACKUP_DIR}.`,
+    )
+  }
+
+  const bait = Number(cadangan.keluaran.trim().split('\n').pop())
+  const ukuran = Number.isFinite(bait)
+    ? `${(bait / 1024 / 1024).toFixed(1)} MB`
+    : 'ukuran tidak terbaca'
+
+  console.log(hijau(`     ✓ ${berkasCadangan}`))
+  console.log(redup(`       ${ukuran}`))
+  console.log(
+    redup(`       Pulihkan: pg_restore -d "$MIGRATION_DATABASE_URL" --clean ${berkasCadangan}`),
+  )
+
+  // Cadangan lama dibuang di sini, bukan lewat cron: yang membuatnya adalah
+  // deploy, jadi yang membersihkannya juga deploy. Cron terpisah adalah hal
+  // lain yang dapat mati tanpa ada yang menyadarinya.
+  await ssh(
+    `find ${BACKUP_DIR} -name 'pramigrasi-*.dump' -mtime +${BACKUP_SIMPAN_HARI} -delete 2>/dev/null || true`,
+  )
+
+  langkah('4c', 'Menjalankan migrasi')
+
   const migrasi = await ssh(
     `cd ${APP_DIR} && set -a && . ${MIGRATION_ENV} && set +a && npm run migrate`,
     { tampilkan: true },
@@ -368,7 +448,9 @@ if (daftar.length === 0) {
     berhenti(
       'npm run migrate',
       migrasi,
-      'Server BELUM di-restart, sehingga kode lama masih melayani. Perbaiki lalu ulangi.',
+      'Server BELUM di-restart, sehingga kode lama masih melayani.\n' +
+        `      Titik pulih: ${berkasCadangan}\n` +
+        `      Pulihkan   : pg_restore -d "$MIGRATION_DATABASE_URL" --clean ${berkasCadangan}`,
     )
   }
 }

@@ -1262,6 +1262,108 @@ Tanpa `non_idempotent`, Nginx tidak pernah mengulang POST/PUT/PATCH yang sudah s
 **Perannya sekunder, dan itu perlu dikatakan.** Yang benar-benar membuat deploy tidak memutus layanan adalah mode cluster dan penutupan rapi — soketnya tidak pernah tertutup, dan worker menyelesaikan permintaannya sebelum keluar. Retry menjaring sisanya: worker yang mati di tengah permintaan. Master PM2 yang mati tidak tertolong, dan memang tidak seharusnya.
 
 Konfigurasinya terversi di `deploy/nginx/paaduflow.conf`.
+
+### D-161 · Perubahan skema yang merusak dipecah tiga rilis
+**Status:** Berlaku · Menegakkan D-033 dan Resilience §6
+
+Sejak D-157, `pm2 reload` mengganti instance satu per satu. Selama beberapa detik **kode lama dan kode baru melayani permintaan dari basis data yang sama**, dan migrasi sudah berjalan sebelum reload dimulai. Jendela itu yang membuat aturan di bawah bukan soal kerapian.
+
+Kolom yang dihapus membuat setiap `SELECT` kode lama gagal. Kolom `NOT NULL` tanpa bawaan membuat setiap `INSERT` kode lama gagal — dan `INSERT` yang gagal di tengah posting faktur adalah dokumen yang hilang, pada saat orangnya sedang menatap layar.
+
+#### Yang ditolak CI
+
+| Perbuatan | Akibatnya pada kode lama |
+|---|---|
+| `DROP COLUMN`, `DROP TABLE` | Setiap kueri yang menyebutnya gagal seketika |
+| `RENAME COLUMN`, `RENAME TO` | Nama lama hilang; kode lama tidak menemukannya |
+| `ALTER COLUMN … TYPE` | Nilai dipotong atau ditolak; kode lama menulis bentuk lama |
+| `ALTER COLUMN … SET NOT NULL` | `INSERT` yang tidak mengisi kolom itu gagal |
+| `ADD COLUMN … NOT NULL` tanpa `DEFAULT` | Baris lama tanpa nilai, dan `INSERT` kode lama gagal |
+| `ADD CONSTRAINT` tanpa `NOT VALID` | Migrasi gagal bila satu baris lama saja melanggarnya |
+
+Ditegakkan `tools/db/aturan-migrasi.js`, diuji terhadap satu berkas migrasi yang sengaja melanggar per aturan di `tests/fixtures/migrasi/`. Penjaga yang hanya diuji terhadap teks yang dikarang di dalam test akan lolos meski polanya salah — karena teksnya dikarang agar cocok dengan polanya.
+
+**Migrasi 0001–0025 tidak diperiksa.** Seluruhnya sudah diterapkan di produksi, dan penjaga checksum melarang mengubahnya. Menuntutnya patuh berarti menuntut sejarah ditulis ulang.
+
+#### Contoh utuh: menyimpan NPWP dalam bentuk normal
+
+Andaikan `customers.npwp` menyimpan teks berformat (`01.234.567.8-901.000`) dan pencarian menuntut bentuk normal berisi angka saja. Satu migrasi yang mengubah artinya akan merusak setiap layar yang sedang terbuka.
+
+**Rilis 1 — tambah, tulis ke keduanya, baca dari yang lama**
+
+```sql
+-- 0026_npwp_normal.sql
+ALTER TABLE customers ADD COLUMN npwp_normal text;
+CREATE INDEX idx_customers_npwp_normal ON customers (tenant_id, npwp_normal);
+```
+
+Kolomnya nullable — kode lama yang tidak mengenalnya tetap dapat `INSERT`. Aplikasi mengisi **keduanya** pada setiap penulisan; pembacaan masih dari `npwp`. Rilis ini dapat digulung balik kapan saja: kolom baru diabaikan kode lama.
+
+**Rilis 2 — isi baris lama, pindahkan pembacaan**
+
+Pengisiannya *bukan* migrasi biasa. `UPDATE` atas seluruh tabel mengunci baris yang disentuhnya selama migrasi berjalan, jadi ia ditandai dan dijalankan di luar deploy:
+
+```sql
+-- 0027_isi_npwp_normal.sql
+-- paadu:jalankan-manual Mengisi npwp_normal untuk seluruh customer yang sudah
+-- ada; berjalan bertahap di luar jam sibuk, tidak menahan deploy.
+UPDATE customers SET npwp_normal = regexp_replace(npwp, '[^0-9]', '', 'g')
+ WHERE npwp_normal IS NULL;
+```
+
+```
+npm run migrate:manual -- 0027_isi_npwp_normal
+```
+
+Sesudah terisi, rilis berikutnya memindahkan **pembacaan** ke `npwp_normal`. Penulisan masih ke keduanya. Ini titik yang paling mudah tergoda dilewati, dan yang paling mahal bila dilewati: selama masih menulis ke keduanya, penggulungan balik hanya menuntut pembacaan kembali ke `npwp`.
+
+**Rilis 3 — berhenti menulis yang lama, lalu hapus**
+
+Berhenti menulis `npwp` dirilis lebih dulu, sendirian. Baru rilis **berikutnya** menghapus kolomnya:
+
+```sql
+-- 0029_hapus_npwp_lama.sql
+-- paadu:allow-breaking Kolom npwp tidak lagi dibaca sejak 0028 dan tidak lagi
+-- ditulis sejak rilis berikutnya; seluruh pembacaan memakai npwp_normal.
+ALTER TABLE customers DROP COLUMN npwp;
+```
+
+Tiga rilis, bukan tiga migrasi dalam satu rilis. Yang membuatnya aman adalah jarak waktunya: setiap tahap harus sudah berjalan di produksi sebelum tahap berikutnya berangkat.
+
+#### Dua penanda, dan bedanya
+
+| Penanda | Artinya | Akibatnya |
+|---|---|---|
+| `-- paadu:allow-breaking <alasan>` | "Saya tahu ini merusak, dan berikut sebabnya boleh" | CI meloloskan pernyataan itu |
+| `-- paadu:jalankan-manual <alasan>` | "Ini mengunci tabel; jangan jalankan sebaris deploy" | Penjalan migrasi menolaknya, dan menyebut perintah penggantinya |
+
+**Alasannya wajib, minimal dua puluh karakter, dan boleh berlanjut ke baris komentar berikutnya.** Dua puluh karakter tidak menjamin alasan yang baik dan tidak bermaksud begitu — yang dicegah adalah `-- paadu:allow-breaking ok`, penanda yang ditempel agar CI diam tanpa satu pun kalimat yang dapat dibaca peninjau. Penanda tanpa alasan yang memadai ditolak sebagai pelanggaran tersendiri, bukan diperlakukan seolah ia tidak ada.
+
+### D-162 · Cadangan diambil tepat sebelum migrasi, bukan sebelum deploy
+**Status:** Berlaku
+
+`npm run deploy` menjalankan `pg_dump -Fc --no-owner` ke `/home/paadu/cadangan/pramigrasi-<cap-waktu>.dump` **tepat sebelum langkah migrasi**, dan mencetak jalur beserta ukurannya.
+
+Bukan cadangan harian, dan bukan cadangan di awal deploy. Migrasi adalah satu-satunya langkah deploy yang mengubah data, dan satu-satunya yang tidak dapat dibatalkan dengan menyalakan kembali versi lama. Titik pulihnya karena itu berumur detik.
+
+**Cadangan yang gagal menghentikan deploy sebelum migrasi berjalan.** Melanjutkan tanpa titik pulih membuang seluruh gunanya langkah ini — dan yang paling mungkin membuat `pg_dump` gagal, disk penuh atau kredensial salah, juga akan membuat migrasinya bermasalah.
+
+Disimpan **di luar** direktori aplikasi: langkah `git reset --hard` tidak boleh dapat menyentuhnya. Cadangan lebih tua dari empat belas hari dibuang oleh deploy itu sendiri, bukan oleh cron terpisah — cron adalah satu hal lagi yang dapat mati tanpa ada yang menyadarinya.
+
+Format custom (`-Fc`), bukan SQL polos: `pg_restore` dapat memulihkan satu tabel saja darinya. Cadangan SQL polos memaksa memulihkan semuanya atau tidak sama sekali.
+
+### D-163 · Migrasi yang mengunci tabel tidak berjalan sebaris dengan deploy
+**Status:** Berlaku
+
+`npm run migrate` membungkus seluruh migrasi dalam satu transaksi (`singleTransaction: true`). Itu benar untuk migrasi kecil — bila salah satu gagal, tidak ada yang setengah diterapkan.
+
+Tetapi transaksi itu memegang kunci sampai commit. `CREATE INDEX` atas tabel berisi jutaan baris menahan seluruh penulisan ke tabel itu selama indeks dibangun, dan deploy menunggu bersamanya. Lebih dari itu: **`CREATE INDEX CONCURRENTLY` — obatnya — tidak dapat berjalan di dalam transaksi sama sekali.** PostgreSQL menolaknya. Jadi jalan keluarnya bukan menulis migrasi yang lebih baik; jalan keluarnya adalah menjalankannya di luar deploy.
+
+Yang terdeteksi: `CREATE INDEX` tanpa `CONCURRENTLY` (kecuali atas tabel yang dibuat di migrasi yang sama, yang masih kosong), `ALTER COLUMN … TYPE`, `ADD CONSTRAINT` tanpa `NOT VALID`, `UPDATE`/`DELETE` atas tabel yang sudah ada, `VACUUM FULL`/`CLUSTER`/`REINDEX`, dan `ADD COLUMN` berbawaan volatile — PostgreSQL 11+ menambah kolom berbawaan tetap tanpa menyentuh data, tetapi `gen_random_uuid()` memaksa seluruh tabel ditulis ulang.
+
+Penolakannya terjadi di **dua** tempat, dan keduanya perlu: CI memeriksa berkas di repo, sedangkan `migrate()` memeriksa apa yang benar-benar akan dijalankan pada basis data itu. Berkas yang ditulis langsung di server tidak pernah melewati CI — dan justru itulah yang terjadi saat seseorang sedang memadamkan kebakaran.
+
+`npm run migrate:manual -- <nama>` menjalankan satu migrasi bertanda, pernyataan demi pernyataan, tanpa transaksi pembungkus. Harganya disebutkan terus terang oleh perintah itu sendiri: bila pernyataan kelima gagal, empat yang pertama tetap diterapkan dan tidak digulung balik. Karena itu ia mencetak pernyataan mana yang sudah berhasil sebelum berhenti, dan hanya mencatat migrasinya sebagai diterapkan bila seluruhnya berhasil.
 ---
 
 ## Sengaja Ditunda

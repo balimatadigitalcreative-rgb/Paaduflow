@@ -11,6 +11,8 @@ import { fileURLToPath } from 'node:url'
 import { runner } from 'node-pg-migrate'
 import pg from 'pg'
 
+import { jelaskanTertahan, pisahkan } from './migrasi-lambat.js'
+
 const MIGRATIONS_DIR = fileURLToPath(new URL('../../migrations', import.meta.url))
 
 /**
@@ -85,9 +87,50 @@ async function assertOwner(databaseUrl) {
   }
 }
 
+/** Migrasi yang belum tercatat di basis data ini. */
+async function tertunda(databaseUrl) {
+  const { readdirSync } = await import('node:fs')
+  const berkas = readdirSync(MIGRATIONS_DIR)
+    .filter((nama) => /^\d{4}_.*\.sql$/.test(nama))
+    .map((nama) => nama.replace(/\.sql$/, ''))
+    .sort()
+
+  const client = new pg.Client({ connectionString: databaseUrl })
+  await client.connect()
+  try {
+    const { rows: adaTabel } = await client.query(
+      `SELECT to_regclass('public.paadu_migrations') IS NOT NULL AS ada`,
+    )
+    if (adaTabel[0].ada !== true) return berkas
+
+    const { rows } = await client.query('SELECT name FROM paadu_migrations')
+    const diterapkan = new Set(rows.map((baris) => baris.name))
+    return berkas.filter((nama) => !diterapkan.has(nama))
+  } finally {
+    await client.end()
+  }
+}
+
 export async function migrate(databaseUrl, options = {}) {
   await assertUtf8(databaseUrl)
   await assertOwner(databaseUrl)
+
+  /*
+   * Migrasi yang mengunci tabel lama DITOLAK di sini, bukan hanya di CI.
+   *
+   * CI memeriksa berkas di repo; jalur ini memeriksa apa yang benar-benar akan
+   * dijalankan pada basis data ini. Keduanya perlu: berkas yang ditulis
+   * langsung di server tidak pernah melewati CI, dan justru itulah yang terjadi
+   * saat seseorang sedang memadamkan kebakaran.
+   *
+   * Penolakan terjadi SEBELUM satu pernyataan pun berjalan.
+   */
+  const { ditahan } = pisahkan(await tertunda(databaseUrl))
+  if (ditahan.length > 0) {
+    throw new Error(
+      `Migrasi tertahan — tidak dijalankan sebaris dengan deploy.\n${jelaskanTertahan(ditahan)}`,
+    )
+  }
 
   const applied = await runner({
     databaseUrl,

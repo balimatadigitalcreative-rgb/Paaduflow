@@ -12,6 +12,7 @@
     "prepare": "node tools/git-hooks/install.js",
     "tokens:build": "node tools/style-dictionary/build.js",
     "migrate": "node tools/db/migrate.js",
+    "migrate:manual": "node tools/db/migrate-manual.js",
     "check:migrations": "node tools/db/check-migrations.js",
     "check:append-only": "node tools/db/check-append-only.js",
     "seed:tax-dev": "node tools/seed/pajak-pengembangan.js",
