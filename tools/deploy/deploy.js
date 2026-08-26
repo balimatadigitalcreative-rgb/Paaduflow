@@ -279,9 +279,22 @@ const sidikSebelum = diSini ? sidikSkrip() : null
 const shaKeluar = (await diServer(`cd ${APP_DIR} && git rev-parse --short HEAD`)).keluaran.trim()
 
 langkah(1, 'git pull')
-const tarik = await diServer(`cd ${APP_DIR} && git fetch origin ${BRANCH} && git reset --hard origin/${BRANCH}`, {
-  tampilkan: true,
-})
+/*
+ * `checkout` sebelum `reset`, dan itu bukan kelebihan langkah.
+ *
+ * Sesudah rollback, HEAD di server TERLEPAS. `git reset --hard` pada HEAD
+ * terlepas memindahkan HEAD itu sendiri dan membiarkannya tetap terlepas —
+ * commit-nya benar, tetapi server tidak pernah kembali ke branch.
+ *
+ * Ini terlihat hanya saat diperiksa sesudah rollback sungguhan; deploy
+ * melaporkan sha yang benar dan tampak sepenuhnya berhasil.
+ */
+const tarik = await diServer(
+  `cd ${APP_DIR} && git fetch origin ${BRANCH} && git checkout ${BRANCH} && git reset --hard origin/${BRANCH}`,
+  {
+    tampilkan: true,
+  },
+)
 if (tarik.kode !== 0) berhenti('git pull di server', tarik)
 
 if (diSini && sidikSkrip() !== sidikSebelum) {
