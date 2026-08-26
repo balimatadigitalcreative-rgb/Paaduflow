@@ -1366,6 +1366,32 @@ Penolakannya terjadi di **dua** tempat, dan keduanya perlu: CI memeriksa berkas 
 `npm run migrate:manual -- <nama>` menjalankan satu migrasi bertanda, pernyataan demi pernyataan, tanpa transaksi pembungkus. Harganya disebutkan terus terang oleh perintah itu sendiri: bila pernyataan kelima gagal, empat yang pertama tetap diterapkan dan tidak digulung balik. Karena itu ia mencetak pernyataan mana yang sudah berhasil sebelum berhenti, dan hanya mencatat migrasinya sebagai diterapkan bila seluruhnya berhasil.
 ---
 
+### D-164 · Satu perintah deploy, dua tempat menjalankan
+**Status:** Berlaku
+`npm run deploy` dan `npm run rollback` menentukan sendiri di mana mereka berjalan. Yang berubah hanya pengangkutnya — SSH dari laptop, shell setempat di server. Urutan langkahnya satu rangkaian, bukan dua: dua rangkaian akan lambat laun berbeda, dan yang berbeda selalu ketahuan di lingkungan yang paling mahal.
+
+**Sinyal deteksinya satu, dan sulit keliru:** apakah salah satu alamat IP mesin ini sama dengan alamat server tujuan. Mesin tidak dapat memiliki alamat itu tanpa menjadi mesin itu. Nama host, nama pengguna, dan adanya direktori aplikasi sengaja tidak dipakai — ketiganya wajar dimiliki laptop yang meniru tata letak server.
+
+**Ambigu berarti berhenti, bukan menebak.** Dua keadaan memicunya: nama tujuan yang tidak dapat diurai, dan mesin yang terlihat seperti server (direktori dan pengguna cocok) tetapi alamatnya berbeda — yang terjadi di belakang NAT. `DEPLOY_MODE=lokal|jarak-jauh` memaksa jawabannya.
+
+**Satu perilaku khusus di server:** bila `git reset --hard` di langkah 1 ikut memperbarui skrip deploy, prosesnya berhenti dan meminta dijalankan ulang. Node sudah memuat skrip lama ke memori; melanjutkan berarti menjalankan urutan langkah lama atas kode baru tanpa satu pun tanda di layar.
+
+### D-165 · Rollback mengembalikan kode, tidak pernah migrasi
+**Status:** Berlaku
+`npm run rollback` menukar hasil build ke rilis sebelumnya dan menyegarkan proses. Basis data tidak disentuh sama sekali.
+
+**Itu bukan keterbatasan yang belum sempat diselesaikan.** Menggulung balik migrasi berarti membuang kolom yang mungkin sudah berisi data yang ditulis sejak migrasi berjalan — faktur yang diposting sepuluh menit lalu, nomor seri pajak yang sudah terpakai. Perintah yang melakukannya diam-diam sebagai bagian dari "kembalikan seperti semula" adalah perintah yang akan menghapus data seseorang tepat pada saat semua orang sedang panik.
+
+Sebelum bertanya, rollback membaca `paadu_migrations` dan menyebutkan migrasi mana saja yang berjalan sejak rilis tujuan di-deploy. Peringatan yang menyebut nama lebih berguna daripada peringatan umum, dan yang tidak menyebut apa-apa saat memang tidak ada migrasi lebih dipercaya saat ia benar-benar menyebut sesuatu.
+
+Aturan migrasi aditif (D-161) yang membuat rollback aman dalam keadaan biasa: kolom baru diabaikan kode lama, dan tidak ada kolom yang hilang.
+
+**Hasil build diarsipkan, bukan dibangun ulang.** Membangun ulang commit lama menuntut toolchain yang cocok dan dapat gagal justru saat semuanya sedang salah; arsip berisi hasil build yang PERNAH melayani. Sidik `package-lock.json` ikut dicatat — rollback melewati commit yang mengubah dependensi menjalankan `npm ci` ulang, karena bundel server memakai `node_modules` alih-alih menyalinnya ke dalam bundel.
+
+**Lima rilis disimpan.** Yang membatasi bukan disk — satu rilis 1,1 MB. Yang membatasi adalah skema: rollback hanya aman sejauh kode lama masih dapat melayani skema hari ini. Menyimpan dua puluh akan menyiratkan mundur dua puluh langkah itu mungkin, dan itu menawarkan kenyamanan palsu tepat ketika orang paling percaya pada angka.
+
+**HEAD dibiarkan terlepas setelah rollback.** `main` tetap menunjuk rilis baru, sehingga deploy berikutnya menariknya kembali ke depan. Memindahkan branch akan membuat perbaikan yang sudah di-push tampak sudah terpasang padahal belum.
+
 ## Sengaja Ditunda
 
 Bukan kelalaian. Setiap butir punya syarat kapan ia layak diputuskan.

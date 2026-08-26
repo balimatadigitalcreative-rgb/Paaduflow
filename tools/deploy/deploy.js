@@ -20,110 +20,54 @@
  *    hanya berkata "gagal" memaksa SSH manual justru saat sedang panik.
  */
 
-import { spawn } from 'node:child_process'
-import { createInterface } from 'node:readline/promises'
+import { createHash } from 'node:crypto'
+import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 
-const SERVER = process.env.DEPLOY_SSH ?? 'paadu@72.61.124.95'
-const APP_DIR = process.env.DEPLOY_DIR ?? '/home/paadu/app'
-const BRANCH = process.env.DEPLOY_BRANCH ?? 'main'
-const PM2_NAME = process.env.DEPLOY_PM2 ?? 'paadu-api'
-/**
- * Kesiapan, bukan sekadar hidup.
- *
- * `/healthz` hanya menyatakan event loop berjalan; ia menjawab 200 pada proses
- * yang belum pernah berhasil menyentuh basis data. Deploy yang memeriksanya
- * akan dinyatakan berhasil tepat ketika ia gagal — kekeliruan yang sama dengan
- * yang dicatat D-145, hanya bentuknya berbeda.
- */
-const HEALTH = process.env.DEPLOY_HEALTH ?? 'http://127.0.0.1:3000/readyz'
+import {
+  APP_DIR,
+  HEALTH,
+  BACKUP_DIR,
+  BACKUP_SIMPAN_HARI,
+  BRANCH,
+  MIGRATION_ENV,
+  PM2_NAME,
+  RILIS_DIR,
+  RILIS_DISIMPAN,
+  SERVER,
+  berhenti,
+  buatPenjalan,
+  cetakLogPm2,
+  deteksiLokasi,
+  git,
+  hijau,
+  langkah,
+  merah,
+  redup,
+  tanyakan,
+  verifikasiKesiapan,
+} from './lingkungan.js'
 
-/**
- * Berkas berisi MIGRATION_DATABASE_URL, di LUAR direktori aplikasi.
- *
- * Sengaja bukan `app/.env`: berkas itu dimuat proses runtime, dan kredensial
- * pemilik basis data tidak boleh berada di lingkungan proses yang melayani
- * permintaan (D-141).
- */
-const MIGRATION_ENV = process.env.DEPLOY_MIGRATION_ENV ?? '/home/paadu/.env.deploy'
+// ── Di mana perintah ini berjalan ──────────────────────────────────────────
+//
+// Ditentukan lebih dulu, sebelum apa pun. Seluruh langkah sesudahnya memakai
+// `diServer()` dan tidak perlu tahu jawabannya.
 
-/**
- * Tempat cadangan pra-migrasi.
- *
- * Di LUAR direktori aplikasi, sengaja: `git reset --hard` di langkah 1 tidak
- * boleh dapat menyentuhnya, dan cadangan yang ikut terhapus saat deploy
- * berikutnya bukan cadangan.
- */
-const BACKUP_DIR = process.env.DEPLOY_BACKUP_DIR ?? '/home/paadu/cadangan'
-
-/** Cadangan yang lebih tua dari ini dibuang. */
-const BACKUP_SIMPAN_HARI = Number(process.env.DEPLOY_BACKUP_HARI ?? 14)
-
-const WARNA = process.stdout.isTTY === true
-const merah = (teks) => (WARNA ? `[31m${teks}[0m` : teks)
-const hijau = (teks) => (WARNA ? `[32m${teks}[0m` : teks)
-const redup = (teks) => (WARNA ? `[2m${teks}[0m` : teks)
-
-/** Menjalankan perintah dan mengumpulkan keluarannya. Tidak pernah melempar. */
-function jalankan(perintah, argumen, opsi = {}) {
-  return new Promise((resolve) => {
-    const anak = spawn(perintah, argumen, { ...opsi, shell: false })
-    let keluaran = ''
-    let galat = ''
-    anak.stdout?.on('data', (potongan) => {
-      keluaran += potongan
-      if (opsi.tampilkan === true) process.stdout.write(redup(String(potongan)))
-    })
-    anak.stderr?.on('data', (potongan) => {
-      galat += potongan
-      if (opsi.tampilkan === true) process.stdout.write(redup(String(potongan)))
-    })
-    anak.on('error', (kesalahan) => resolve({ kode: 127, keluaran, galat: kesalahan.message }))
-    anak.on('close', (kode) => resolve({ kode: kode ?? 1, keluaran, galat }))
-  })
-}
-
-const ssh = (perintah, opsi = {}) =>
-  jalankan('ssh', ['-o', 'BatchMode=yes', SERVER, perintah], opsi)
-
-const lokal = (argumen) => jalankan('git', argumen)
-
-/**
- * Bertanya, dan menyerah bila masukannya berakhir.
- *
- * `question()` tidak pernah selesai bila stdin tertutup lebih dulu — prosesnya
- * lalu mati dengan "unsettled top-level await" tanpa satu pun pesan yang
- * berguna. Itu terjadi setiap kali perintah ini dijalankan tanpa terminal:
- * dari skrip, dari CI, atau dari pipa.
- *
- * Masukan yang berakhir diperlakukan sebagai penolakan, bukan persetujuan.
- */
-async function tanyakan(antarmuka, prompt) {
-  const jawaban = await Promise.race([
-    antarmuka.question(prompt),
-    new Promise((selesai) => antarmuka.once('close', () => selesai(null))),
-  ])
-  return jawaban === null ? null : jawaban.trim()
-}
-
-
-/** Berhenti dengan pesan utuh. Kegagalan yang dipotong adalah kegagalan yang diulang. */
-function berhenti(langkah, hasil, saran) {
+let lokasi
+try {
+  lokasi = await deteksiLokasi()
+} catch (kesalahan) {
   console.error('')
-  console.error(merah(`  ✕ Gagal pada: ${langkah}`))
+  console.error(merah('  x Tidak dapat menentukan tempat perintah ini berjalan.'))
   console.error('')
-  const isi = [hasil?.galat, hasil?.keluaran].filter((bagian) => bagian && bagian.trim() !== '')
-  for (const bagian of isi) {
-    for (const baris of String(bagian).trimEnd().split('\n')) console.error(`      ${baris}`)
-  }
-  if (saran !== undefined) {
-    console.error('')
-    console.error(`  ${saran}`)
-  }
+  for (const baris of String(kesalahan.message).split('\n')) console.error(`  ${baris}`)
   console.error('')
   process.exit(1)
 }
 
-const langkah = (nomor, judul) => console.log(`\n  ${nomor}. ${judul}`)
+const diServer = buatPenjalan(lokasi.mode)
+const diSini = lokasi.mode === 'lokal'
+
 
 // ── Pemeriksaan lokal ──────────────────────────────────────────────────────
 //
@@ -131,10 +75,31 @@ const langkah = (nomor, judul) => console.log(`\n  ${nomor}. ${judul}`)
 // berjalan lebih buruk daripada deploy yang tidak pernah dimulai.
 
 console.log(`\n  Deploy ke ${SERVER}:${APP_DIR} (branch ${BRANCH})`)
+console.log(
+  redup(`  Dijalankan ${diSini ? 'DI SERVER' : 'dari komputer ini lewat SSH'} - ${lokasi.alasan}`),
+)
+
+/*
+ * Pemeriksaan kode lokal hanya bermakna dari komputer pengembang.
+ *
+ * Di sana ada DUA salinan repo - milik pengembang dan milik server - dan
+ * langkah ini menjawab satu pertanyaan: apakah yang akan di-deploy sudah
+ * di-push. Dijalankan DI server, kedua salinan itu satu dan sama, dan langkah 1
+ * akan menimpanya dengan origin beberapa detik kemudian. Memeriksanya di sana
+ * hanya menanyakan hal yang sudah pasti.
+ *
+ * Yang tetap diperiksa di KEDUA mode: apakah ada suntingan yang belum
+ * di-commit di direktori aplikasi server. Itu bagian dari gerbang prasyarat,
+ * karena `git reset --hard` akan membuangnya tanpa bertanya.
+ */
+if (diSini) {
+  langkah(0, 'Memeriksa kode lokal')
+  console.log(redup('     dilewati - di server, repo ini SENDIRI yang akan ditimpa origin'))
+} else {
 
 langkah(0, 'Memeriksa kode lokal')
 
-const kotor = await lokal(['status', '--porcelain'])
+const kotor = await git(['status', '--porcelain'])
 if (kotor.kode !== 0) berhenti('git status', kotor)
 if (kotor.keluaran.trim() !== '') {
   berhenti(
@@ -144,7 +109,7 @@ if (kotor.keluaran.trim() !== '') {
   )
 }
 
-const cabang = (await lokal(['branch', '--show-current'])).keluaran.trim()
+const cabang = (await git(['branch', '--show-current'])).keluaran.trim()
 if (cabang !== BRANCH) {
   berhenti(
     'pemeriksaan kode lokal',
@@ -153,11 +118,11 @@ if (cabang !== BRANCH) {
   )
 }
 
-const ambil = await lokal(['fetch', 'origin', BRANCH])
+const ambil = await git(['fetch', 'origin', BRANCH])
 if (ambil.kode !== 0) berhenti('git fetch', ambil)
 
-const tertinggal = (await lokal(['rev-list', '--count', `${BRANCH}..origin/${BRANCH}`])).keluaran.trim()
-const mendahului = (await lokal(['rev-list', '--count', `origin/${BRANCH}..${BRANCH}`])).keluaran.trim()
+const tertinggal = (await git(['rev-list', '--count', `${BRANCH}..origin/${BRANCH}`])).keluaran.trim()
+const mendahului = (await git(['rev-list', '--count', `origin/${BRANCH}..${BRANCH}`])).keluaran.trim()
 
 if (tertinggal !== '0') {
   berhenti(
@@ -174,8 +139,10 @@ if (mendahului !== '0') {
   )
 }
 
-const komit = (await lokal(['rev-parse', '--short', BRANCH])).keluaran.trim()
+const komit = (await git(['rev-parse', '--short', BRANCH])).keluaran.trim()
 console.log(hijau(`     bersih, sejajar dengan origin/${BRANCH} pada ${komit}`))
+
+}
 
 // ── Prasyarat di server ────────────────────────────────────────────────────
 //
@@ -186,7 +153,7 @@ console.log(hijau(`     bersih, sejajar dengan origin/${BRANCH} pada ${komit}`))
 
 langkah('0b', 'Memeriksa prasyarat server')
 
-const laporan = await ssh(
+const laporan = await diServer(
   [
     `test -d ${APP_DIR}/.git && echo dir:ok || echo dir:kurang`,
     `test -f ${APP_DIR}/.env && echo env:ok || echo env:kurang`,
@@ -281,14 +248,84 @@ console.log(hijau('     berkas .env, kredensial migrasi, pm2, dan proses siap'))
 
 // ── Di server ──────────────────────────────────────────────────────────────
 
+/**
+ * Sidik jari skrip deploy itu sendiri.
+ *
+ * Hanya berarti di mode lokal, dan di sana ia menutup jebakan yang halus:
+ * langkah 1 menimpa direktori aplikasi dengan origin — TERMASUK berkas skrip
+ * yang sedang berjalan ini. Node sudah memuatnya ke memori, jadi ia melanjutkan
+ * dengan versi LAMA sementara repo sudah berisi versi baru.
+ *
+ * Akibatnya deploy berjalan dengan urutan langkah versi lama atas kode versi
+ * baru, dan tidak ada satu pun tanda di layar bahwa itu terjadi.
+ */
+function sidikSkrip() {
+  const berkas = ['deploy.js', 'lingkungan.js'].map((nama) =>
+    fileURLToPath(new URL(nama, import.meta.url)),
+  )
+  const isi = berkas.map((satu) => readFileSync(satu, 'utf8')).join('\n')
+  return createHash('sha256').update(isi).digest('hex').slice(0, 12)
+}
+
+const sidikSebelum = diSini ? sidikSkrip() : null
+
+/*
+ * Sha yang sedang melayani, dibaca SEBELUM tarikan menimpanya.
+ *
+ * Dipakai mengarsipkan rilis yang sedang KELUAR. Tanpa langkah itu, rollback
+ * baru tersedia setelah deploy KEDUA — dan deploy pertama justru salah satu
+ * saat yang paling mungkin memerlukannya.
+ */
+const shaKeluar = (await diServer(`cd ${APP_DIR} && git rev-parse --short HEAD`)).keluaran.trim()
+
 langkah(1, 'git pull')
-const tarik = await ssh(`cd ${APP_DIR} && git fetch origin ${BRANCH} && git reset --hard origin/${BRANCH}`, {
+const tarik = await diServer(`cd ${APP_DIR} && git fetch origin ${BRANCH} && git reset --hard origin/${BRANCH}`, {
   tampilkan: true,
 })
 if (tarik.kode !== 0) berhenti('git pull di server', tarik)
 
+if (diSini && sidikSkrip() !== sidikSebelum) {
+  console.error('')
+  console.error(merah('  ! Skrip deploy ikut berubah pada tarikan barusan.'))
+  console.error('')
+  console.error('  Proses ini masih menjalankan versi LAMA dari memori. Melanjutkan berarti')
+  console.error('  menjalankan urutan langkah lama atas kode baru, tanpa satu pun tanda di')
+  console.error('  layar bahwa itu terjadi.')
+  console.error('')
+  console.error('  Kode sumber sudah diperbarui; belum ada yang dibangun atau disegarkan,')
+  console.error('  dan proses lama masih melayani. Jalankan ulang perintah yang sama:')
+  console.error('')
+  console.error('      npm run deploy')
+  console.error('')
+  process.exit(1)
+}
+
+/*
+ * Hasil build yang sedang melayani diarsipkan SEBELUM ditimpa.
+ *
+ * Sumbernya sudah berpindah ke commit baru pada langkah 1, tetapi `dist/` di
+ * disk masih hasil build lama — itulah yang disalin. Dilewati bila sudah
+ * terarsip pada deploy sebelumnya.
+ */
+if (shaKeluar !== '') {
+  const arsipKeluar = await diServer(
+    [
+      `test ! -d ${RILIS_DIR}/${shaKeluar}/dist`,
+      `test -d ${APP_DIR}/dist`,
+      `mkdir -p ${RILIS_DIR}/${shaKeluar}`,
+      `cp -a ${APP_DIR}/dist ${RILIS_DIR}/${shaKeluar}/dist`,
+      `sha256sum ${APP_DIR}/package-lock.json | cut -c1-16 > ${RILIS_DIR}/${shaKeluar}/lock.txt`,
+      `date -u +%Y-%m-%dT%H:%M:%SZ > ${RILIS_DIR}/${shaKeluar}/waktu.txt`,
+      `echo "${shaKeluar} $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> ${RILIS_DIR}/riwayat.txt`,
+    ].join(' && '),
+  )
+  if (arsipKeluar.kode === 0) {
+    console.log(redup(`     rilis yang sedang melayani (${shaKeluar}) ikut diarsipkan`))
+  }
+}
+
 langkah(2, 'npm ci --include=dev')
-const pasang = await ssh(`cd ${APP_DIR} && npm ci --include=dev`, { tampilkan: true })
+const pasang = await diServer(`cd ${APP_DIR} && npm ci --include=dev`, { tampilkan: true })
 if (pasang.kode !== 0) berhenti('npm ci', pasang)
 
 /*
@@ -325,7 +362,7 @@ langkah(3, 'Build (web ke samping, lalu ditukar)')
  * bundelnya ke memori, jadi menulis ulang berkasnya tidak mempengaruhi apa yang
  * sedang berjalan.
  */
-const bangun = await ssh(
+const bangun = await diServer(
   [
     `cd ${APP_DIR}`,
     `rm -rf dist/web-baru dist/web-lama`,
@@ -339,8 +376,71 @@ const bangun = await ssh(
 )
 if (bangun.kode !== 0) berhenti('build', bangun)
 
+/*
+ * ═════════════════════════════════════════════════════════════════════════
+ *   HASIL BUILD DIARSIPKAN, BUKAN DITIMPA
+ *
+ *   Tanpa ini, rollback berarti membangun ulang commit lama — yang menuntut
+ *   node_modules yang cocok, memakan waktu build penuh, dan dapat gagal
+ *   justru pada saat semuanya sedang salah.
+ *
+ *   Dengan arsip, rollback hanya menukar direktori dan menyegarkan proses.
+ *   Satu rilis 1,1 MB; lima rilis tidak terasa di disk mana pun.
+ *
+ *   Sidik `package-lock.json` ikut dicatat. Rollback melewati commit yang
+ *   mengubah dependensi menuntut `npm ci` ulang — tanpa catatan ini, tidak
+ *   ada cara mengetahuinya selain menjalankan `npm ci` setiap kali.
+ * ═════════════════════════════════════════════════════════════════════════
+ */
+langkah('3b', 'Mengarsipkan rilis')
+
+const shaBaru = (await diServer(`cd ${APP_DIR} && git rev-parse --short HEAD`)).keluaran.trim()
+
+const arsip = await diServer(
+  [
+    `mkdir -p ${RILIS_DIR}/${shaBaru}`,
+    `rm -rf ${RILIS_DIR}/${shaBaru}/dist`,
+    `cp -a ${APP_DIR}/dist ${RILIS_DIR}/${shaBaru}/dist`,
+    `sha256sum ${APP_DIR}/package-lock.json | cut -c1-16 > ${RILIS_DIR}/${shaBaru}/lock.txt`,
+    `date -u +%Y-%m-%dT%H:%M:%SZ > ${RILIS_DIR}/${shaBaru}/waktu.txt`,
+    // Riwayat ditambah di AKHIR: yang paling bawah adalah yang paling baru.
+    `echo "${shaBaru} $(date -u +%Y-%m-%dT%H:%M:%SZ)" >> ${RILIS_DIR}/riwayat.txt`,
+    `du -sh ${RILIS_DIR}/${shaBaru} | cut -f1`,
+  ].join(' && '),
+)
+
+if (arsip.kode !== 0) {
+  /*
+   * Arsip gagal TIDAK menghentikan deploy.
+   *
+   * Yang hilang hanya kemampuan rollback cepat ke rilis ini — bukan
+   * kemampuan melayani. Menghentikan deploy karena arsipnya gagal berarti
+   * menahan perbaikan yang mungkin justru sedang mendesak.
+   */
+  console.log(merah('     gagal mengarsipkan; rollback ke rilis ini tidak akan tersedia'))
+  for (const baris of `${arsip.galat}${arsip.keluaran}`.trimEnd().split('\n')) {
+    console.log(redup(`     ${baris}`))
+  }
+} else {
+  const ukuranArsip = arsip.keluaran.trim().split('\n').pop()
+  console.log(hijau(`     ${RILIS_DIR}/${shaBaru}  (${ukuranArsip})`))
+
+  // Rilis lama dibuang di sini, bukan lewat cron: yang membuatnya adalah
+  // deploy, jadi yang membersihkannya juga deploy.
+  const pangkas = await diServer(
+    [
+      `cd ${RILIS_DIR}`,
+      `ls -1dt */ 2>/dev/null | tail -n +${RILIS_DISIMPAN + 1} | xargs -r rm -rf`,
+      `tail -n ${RILIS_DISIMPAN * 2} riwayat.txt > riwayat.tmp && mv riwayat.tmp riwayat.txt`,
+    ].join(' && '),
+  )
+  if (pangkas.kode === 0) {
+    console.log(redup(`     ${RILIS_DISIMPAN} rilis terakhir disimpan`))
+  }
+}
+
 langkah(4, 'Memeriksa migrasi tertunda')
-const tertunda = await ssh(
+const tertunda = await diServer(
   `cd ${APP_DIR} && set -a && . ${MIGRATION_ENV} && set +a && node tools/db/pending-migrations.js`,
 )
 if (tertunda.kode !== 0) {
@@ -361,9 +461,7 @@ if (daftar.length === 0) {
   for (const nama of daftar) console.log(`         ${nama}`)
   console.log('')
 
-  const tanya = createInterface({ input: process.stdin, output: process.stdout })
-  const jawab = await tanyakan(tanya, '     Jalankan migrasi ini? (ketik "ya") ')
-  tanya.close()
+  const jawab = await tanyakan('     Jalankan migrasi ini? (ketik "ya") ')
 
   if (jawab !== 'ya') {
     console.error('')
@@ -393,7 +491,7 @@ if (daftar.length === 0) {
   const cap = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
   const berkasCadangan = `${BACKUP_DIR}/pramigrasi-${cap}.dump`
 
-  const cadangan = await ssh(
+  const cadangan = await diServer(
     [
       `mkdir -p ${BACKUP_DIR}`,
       `set -a && . ${MIGRATION_ENV} && set +a`,
@@ -434,13 +532,13 @@ if (daftar.length === 0) {
   // Cadangan lama dibuang di sini, bukan lewat cron: yang membuatnya adalah
   // deploy, jadi yang membersihkannya juga deploy. Cron terpisah adalah hal
   // lain yang dapat mati tanpa ada yang menyadarinya.
-  await ssh(
+  await diServer(
     `find ${BACKUP_DIR} -name 'pramigrasi-*.dump' -mtime +${BACKUP_SIMPAN_HARI} -delete 2>/dev/null || true`,
   )
 
   langkah('4c', 'Menjalankan migrasi')
 
-  const migrasi = await ssh(
+  const migrasi = await diServer(
     `cd ${APP_DIR} && set -a && . ${MIGRATION_ENV} && set +a && npm run migrate`,
     { tampilkan: true },
   )
@@ -469,7 +567,7 @@ langkah(5, 'Menyegarkan proses')
  * `delete` lalu `start`, dan itu SATU-SATUNYA penyegaran yang memutus layanan
  * sesaat. Disebut keras di layar supaya tidak mengejutkan siapa pun.
  */
-const rupa = await ssh(
+const rupa = await diServer(
   `pm2 jlist 2>/dev/null | node -e "` +
     `let d='';process.stdin.on('data',c=>d+=c).on('end',()=>{` +
     `try{const a=JSON.parse(d).find(x=>x.name==='${PM2_NAME}');` +
@@ -479,7 +577,7 @@ const modeSekarang = rupa.keluaran.trim()
 
 if (modeSekarang === 'cluster_mode') {
   console.log(redup(`     mode cluster terdeteksi — pm2 reload (satu per satu)`))
-  const reload = await ssh(`pm2 reload ${PM2_NAME} --update-env`, { tampilkan: true })
+  const reload = await diServer(`pm2 reload ${PM2_NAME} --update-env`, { tampilkan: true })
   if (reload.kode !== 0) berhenti('pm2 reload', reload)
 } else {
   console.log('')
@@ -491,7 +589,7 @@ if (modeSekarang === 'cluster_mode') {
   console.log('     memakai reload dan tidak memutus apa pun.')
   console.log('')
 
-  const pindah = await ssh(
+  const pindah = await diServer(
     `cd ${APP_DIR} && pm2 delete ${PM2_NAME} 2>/dev/null; ` +
       `PAADU_DIR=${APP_DIR} pm2 start ecosystem.config.cjs && pm2 save`,
     { tampilkan: true },
@@ -501,38 +599,22 @@ if (modeSekarang === 'cluster_mode') {
 
 langkah(6, 'Verifikasi kesiapan')
 
-/** Beberapa kali, karena proses butuh sesaat untuk mendengarkan. */
-let sehat = null
-for (let percobaan = 1; percobaan <= 10; percobaan += 1) {
-  const cek = await ssh(`curl -sS -o /dev/null -w '%{http_code}' --max-time 5 ${HEALTH}`)
-  const kode = cek.keluaran.trim()
-  if (kode === '200') {
-    sehat = kode
-    break
-  }
-  process.stdout.write(redup(`     percobaan ${percobaan}: ${kode === '' ? 'tidak menjawab' : kode}\n`))
-  await new Promise((selesai) => setTimeout(selesai, 2000))
-}
-
-if (sehat === null) {
+if (!(await verifikasiKesiapan(diServer))) {
   console.error('')
-  console.error(merah('  ✕ Gagal pada: verifikasi kesiapan'))
+  console.error(merah('  x Gagal pada: verifikasi kesiapan'))
   console.error(`      ${HEALTH} tidak menjawab 200 setelah 10 percobaan.`)
   console.error('')
   console.error('  30 baris terakhir log PM2:')
   console.error('')
-
-  const log = await ssh(`pm2 logs ${PM2_NAME} --lines 30 --nostream`)
-  const isi = `${log.keluaran}${log.galat}`.trimEnd()
-  for (const baris of isi.split('\n')) console.error(`      ${baris}`)
-
+  await cetakLogPm2(diServer)
   console.error('')
   console.error('  Proses mungkin masih melayani versi lama. Periksa log di atas sebelum mengulang.')
+  console.error(`  Untuk kembali ke rilis sebelumnya: npm run rollback`)
   console.error('')
   process.exit(1)
 }
 
-const terpasang = (await ssh(`cd ${APP_DIR} && git rev-parse --short HEAD`)).keluaran.trim()
+const terpasang = (await diServer(`cd ${APP_DIR} && git rev-parse --short HEAD`)).keluaran.trim()
 
 console.log('')
 console.log(hijau(`  ✓ Deploy selesai — ${terpasang} melayani di ${SERVER}`))

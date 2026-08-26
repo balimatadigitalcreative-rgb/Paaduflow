@@ -112,6 +112,7 @@ pm2 save
 |---|---|---|
 | `npm run ship` | commit → push → deploy | Ada perubahan yang belum di-commit |
 | `npm run deploy` | deploy saja | Kode sudah ter-push, atau mengulang deploy yang gagal |
+| `npm run rollback` | kembali ke rilis sebelumnya | Rilis baru bermasalah dan perlu dibalik cepat |
 
 `npm run ship` adalah pembungkus tipis. Seluruh logika server tetap milik `deploy`, dipanggil apa adanya — gerbang prasyarat, konfirmasi migrasi, verifikasi kesehatan, dan berhenti di kegagalan pertama semuanya tetap berlaku. Yang ditambahkan `ship` hanya dua langkah di depannya.
 
@@ -132,35 +133,108 @@ Pesan itu menyebutkan **apa** yang berubah, tidak pernah mengarang **kenapa** �
 
 `ship` berhenti bila hook pre-commit menolak, dan berhenti bila push gagal — dalam kedua keadaan itu server belum tersentuh sama sekali.
 
-### Setiap deploy — satu perintah
-
-Dari komputer pengembang, bukan dari server:
+### Setiap deploy — satu perintah, dari mana saja
 
 ```bash
 npm run deploy
 ```
 
-Ia menjalankan seluruh urutannya lewat SSH dan **berhenti di kegagalan pertama**, menampilkan pesan galat utuh:
+Perintahnya sama persis dari kedua tempat. Skrip menentukan sendiri di mana ia
+berjalan, dan yang berubah hanya **pengangkutnya**:
+
+| Dijalankan dari | Yang terjadi |
+|---|---|
+| Laptop | Seluruh langkah dikirim ke server lewat SSH |
+| Server | Seluruh langkah dijalankan setempat, tanpa SSH sama sekali |
+
+Deteksinya satu sinyal yang sulit keliru: apakah salah satu alamat IP mesin ini
+sama dengan alamat server tujuan. Mesin tidak dapat memiliki alamat itu tanpa
+menjadi mesin itu. Nama host, nama pengguna, dan adanya direktori aplikasi
+sengaja **tidak** dipakai — ketiganya wajar dimiliki laptop yang meniru tata
+letak server.
+
+Bila hasilnya ambigu — nama tujuan tidak dapat diurai, atau mesin ini terlihat
+seperti server tetapi alamatnya berbeda karena NAT — skrip **berhenti dan
+mengatakannya**, alih-alih memilih salah satu:
+
+```bash
+DEPLOY_MODE=lokal      npm run deploy   # paksa: dijalankan DI server
+DEPLOY_MODE=jarak-jauh npm run deploy   # paksa: dijalankan lewat SSH
+```
+
+Urutan langkahnya satu rangkaian, bukan dua. **Berhenti di kegagalan pertama**,
+menampilkan pesan galat utuh:
 
 | Langkah | Yang terjadi |
 |---|---|
-| 0 | Memeriksa kode lokal — menolak bila ada perubahan belum di-commit, belum di-push, atau tertinggal dari origin |
-| 1 | `git fetch` + `reset --hard origin/main` di server |
+| 0 | Memeriksa kode lokal — hanya dari laptop; di server, repo itu sendiri yang akan ditimpa origin |
+| 0b | Gerbang prasyarat server, seluruhnya sekaligus |
+| 1 | `git fetch` + `reset --hard origin/main` |
 | 2 | `npm ci --include=dev` |
-| 3 | `npm run build:web` |
+| 3 | Build antarmuka **ke samping**, lalu ditukar — proses lama tidak pernah menyajikan direktori yang sedang dikosongkan |
+| 3b | Mengarsipkan hasil build ke `/home/paadu/rilis/<sha>/` |
 | 4 | Menampilkan migrasi tertunda dan **menunggu Anda mengetik `ya`** |
-| 5 | `pm2 restart` |
-| 6 | Memanggil `/healthz` sampai menjawab 200 |
+| 4b | **Cadangan `pg_dump`** — hanya bila ada migrasi, tepat sebelum ia berjalan |
+| 4c | Menjalankan migrasi |
+| 5 | `pm2 reload` — instance diganti satu per satu |
+| 6 | Memanggil `/readyz` sampai menjawab 200 |
 
-Bila langkah 6 gagal, ia menampilkan **30 baris terakhir log PM2** — tidak perlu SSH manual untuk tahu sebabnya.
+Bila langkah 6 gagal, ia menampilkan **30 baris terakhir log PM2** — tidak perlu
+SSH manual untuk tahu sebabnya.
 
-Migrasi tidak pernah berjalan diam-diam. Bila tidak ada yang tertunda, langkah 4 dilewati tanpa bertanya. Bila ada, namanya disebutkan satu per satu lebih dulu. Membatalkan di titik itu **tidak** merestart server, sehingga kode lama tetap melayani.
+Migrasi tidak pernah berjalan diam-diam. Bila tidak ada yang tertunda, langkah 4
+dilewati tanpa bertanya. Membatalkan di titik itu **tidak** menyegarkan proses,
+sehingga kode lama tetap melayani.
+
+Dijalankan **di server**, ada satu perilaku tambahan: bila langkah 1 ikut
+memperbarui skrip deploy itu sendiri, prosesnya berhenti dan meminta Anda
+menjalankannya ulang. Node sudah memuat skrip lama ke memori, dan melanjutkan
+berarti menjalankan urutan langkah lama atas kode baru tanpa satu pun tanda di
+layar.
 
 Alamat, direktori, dan nama proses dapat diganti tanpa menyunting skrip:
 
 ```bash
 DEPLOY_SSH=paadu@72.61.124.95 DEPLOY_DIR=/home/paadu/app DEPLOY_PM2=paadu-api npm run deploy
 ```
+
+### Kembali ke rilis sebelumnya
+
+```bash
+npm run rollback                # kembali satu rilis
+npm run rollback -- --daftar    # lihat rilis yang tersimpan
+npm run rollback -- <sha>       # ke rilis tertentu
+```
+
+Berjalan dari laptop maupun dari server, dengan deteksi yang sama.
+
+> **Rollback mengembalikan KODE. Ia tidak menggulung balik satu pun migrasi.**
+>
+> Itu bukan keterbatasan yang belum sempat diselesaikan. Membuang kolom berarti
+> membuang data yang ditulis sejak migrasi itu berjalan — faktur yang diposting
+> sepuluh menit lalu, nomor seri pajak yang sudah terpakai. Perintah yang
+> melakukannya diam-diam sebagai bagian dari "kembalikan seperti semula" akan
+> menghapus data seseorang tepat pada saat semua orang sedang panik.
+>
+> Membatalkan migrasi adalah keputusan tersendiri yang diambil orang.
+
+Sebelum bertanya, rollback **menyebutkan migrasi mana saja** yang berjalan sejak
+rilis tujuan di-deploy — dibaca dari `paadu_migrations`, bukan dari berkas di
+repo. Bila tidak ada, ia mengatakannya juga.
+
+Aturan migrasi aditif (D-161) yang membuat rollback aman dalam keadaan biasa:
+kolom baru diabaikan kode lama, dan tidak ada kolom yang hilang. Bila salah satu
+migrasi memakai pintu darurat `paadu:allow-breaking`, periksa alasannya dulu.
+
+Hasil build setiap deploy diarsipkan, jadi rollback hanya menukar direktori dan
+menyegarkan proses — tidak membangun ulang commit lama, yang menuntut toolchain
+cocok dan dapat gagal justru saat semuanya sedang salah. **Lima rilis** disimpan;
+yang membatasi bukan disk (satu rilis 1,1 MB) melainkan skema — menyimpan dua
+puluh akan menyiratkan mundur dua puluh langkah itu mungkin, dan itu tidak benar.
+
+Setelah rollback, HEAD di server terlepas dari branch. Itu disengaja: `main`
+tetap menunjuk rilis baru, sehingga deploy berikutnya menariknya kembali ke depan
+dan perbaikan yang sudah di-push tidak tampak sudah terpasang padahal belum.
 
 #### Prasyarat deploy pertama
 
