@@ -109,7 +109,22 @@ const tersimpan = new Set(
     .filter((satu) => satu !== '' && satu !== 'riwayat.txt'),
 )
 
-const rilis = baris.filter((satu) => tersimpan.has(satu.sha)).reverse()
+/*
+ * Sha yang sama dapat tercatat lebih dari sekali — men-deploy commit yang sama
+ * dua kali menambah dua baris riwayat, dan itu wajar (mengulang deploy yang
+ * gagal, atau men-deploy dari server setelah dari laptop).
+ *
+ * Tanpa penyaringan ini, "rilis sebelumnya" dapat menunjuk sha yang sama
+ * dengan yang sedang melayani, dan rollback berkata "tidak ada yang
+ * dikerjakan" — diam, dan salah.
+ */
+const rilis = []
+const terlihat = new Set()
+for (const satu of baris.filter((b) => tersimpan.has(b.sha)).reverse()) {
+  if (terlihat.has(satu.sha)) continue
+  terlihat.add(satu.sha)
+  rilis.push(satu)
+}
 
 if (rilis.length === 0) {
   berhenti(
