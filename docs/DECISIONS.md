@@ -1515,6 +1515,12 @@ Keduanya lahir dari satu nilai di satu build: `PAADU_SHA` disuntikkan `tools/dep
 
 Di pengembangan dan di uji keduanya `dev`, sehingga pemberitahuan tidak pernah berbunyi di mesin siapa pun.
 
+**`PAADU_SHA` bukan satu-satunya sumber, dan itu menutup kegagalan yang paling sunyi dari fitur ini.** Bila hanya lingkungan yang mengisinya, build yang dijalankan dengan tangan — `npm run build:web` di server, yang README dokumentasikan sebagai bagian penyiapan — akan memanggang `dev` ke dalam bundel MAUPUN ke `versi.json`. Keduanya lalu cocok selamanya: pemberitahuan tidak pernah berbunyi lagi, dan tidak ada satu pun tanda di mana pun bahwa ia sudah mati. Fitur yang mati diam-diam tidak dapat dibedakan dari fitur yang bekerja sampai hari ia dibutuhkan.
+
+Karena itu urutannya `PAADU_SHA` → `git rev-parse` → `dev`, dan `dev` disisakan untuk dua keadaan saja: server pengembangan, dan pohon sumber yang benar-benar tidak punya commit untuk disebut. Keputusan itu tinggal di hook `config` plugin Vite, karena hanya di sana `command` diketahui.
+
+**Deploy ikut memeriksanya.** Langkah terakhir membandingkan `/versi` dengan sha yang baru saja ditarik. Verifikasi kesiapan hanya membuktikan ADA yang menjawab; repo ini sudah dua kali menemukan deploy hijau yang menyajikan hasil build lama — `dist/server` yang tidak ikut dibangun, dan `tokens.css` yang tidak ikut dibangkitkan. Ketidakcocokan dicetak merah dan tidak menghentikan deploy: prosesnya melayani, yang hilang hanya kepastian bundelnya.
+
 ### D-174 · Banner, bukan toast — komponennya sendiri yang melarangnya
 **Status:** Berlaku
 
