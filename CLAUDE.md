@@ -27,12 +27,17 @@ Keputusan arsitektur dan penyimpangan dari dokumen dicatat di `docs/DECISIONS.md
 
 - "ship" berarti `npm run ship` (commit → push → deploy). "deploy" berarti
   `npm run deploy` (deploy saja). Jalankan perintahnya apa adanya.
+- "rollback" berarti `npm run rollback`. Ia meminta konfirmasi `ya`, dan ia
+  TIDAK menggulung balik migrasi. Sampaikan peringatan itu utuh — jangan
+  diringkas sampai hilang.
 - Jangan pernah menyusun sendiri rangkaian `git add`/`commit`/`push` atau
   perintah deploy manual. Seluruh gerbang sudah tertanam di script itu.
 - Laporkan hasilnya ringkas, termasuk sha bundel yang melayani. Baris terakhir
   `deploy` mencetaknya sebagai `versi disajikan <sha>`.
 - Bila sha itu sama dengan deploy sebelumnya, katakan perubahannya kemungkinan
   belum tayang.
+- `rollback` tidak mencetak baris itu — ia hanya menyebut `git rev-parse` di
+  server. Periksa `/versi` sendiri sesudahnya sebelum menyebut sha yang melayani.
 - Bila gerbang menolak, tampilkan pelanggarannya dan berhenti. Jangan mencari
   jalan lain melewatinya.
 
