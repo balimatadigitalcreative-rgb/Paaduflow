@@ -214,6 +214,18 @@ function klausaAlter(sql) {
   return hasil
 }
 
+/**
+ * Nama tabel yang disasar sebuah `ALTER TABLE`, atau null.
+ *
+ * Dipakai membedakan mengubah tabel LAMA dari melengkapi tabel yang baru saja
+ * dibuat di migrasi yang sama. Keduanya ditulis dengan sintaks yang persis
+ * sama, dan hanya yang pertama berbahaya.
+ */
+function tabelAlter(sql) {
+  const cocok = /\bALTER\s+TABLE\s+(?:IF\s+EXISTS\s+)?(?:ONLY\s+)?([\w."]+)/i.exec(sql)
+  return cocok === null ? null : cocok[1].replace(/"/g, '').toLowerCase()
+}
+
 /** Nama tabel yang DIBUAT di migrasi yang sama. */
 function tabelBaru(daftarPernyataan) {
   const nama = new Set()
@@ -296,8 +308,20 @@ export const ATURAN_MERUSAK = [
   {
     kode: 'batasan-melanggar-baris-lama',
     nama: 'ADD CONSTRAINT yang belum tentu dipenuhi baris lama',
-    uji: (p) =>
-      klausaAlter(p.sql).some((klausa) => {
+    uji: (p, konteks) => {
+      /*
+       * Tabel yang DIBUAT di migrasi yang sama tidak punya baris lama.
+       *
+       * Melengkapi tabel baru dengan FK dan UNIQUE lewat `ALTER TABLE` adalah
+       * pola baku di repo ini — kontrak tabel transaksional menambah kolomnya
+       * lebih dulu, sehingga batasannya harus menyusul. Mengeluhkannya akan
+       * memaksa setiap modul baru memakai pintu darurat, dan pintu darurat yang
+       * dipakai setiap kali berhenti berarti apa-apa.
+       */
+      const sasaran = tabelAlter(p.sql)
+      if (sasaran !== null && konteks.tabelBaru.has(sasaran)) return false
+
+      return klausaAlter(p.sql).some((klausa) => {
         if (!/^ADD\s+(CONSTRAINT\s+[\w."]+\s+)?/i.test(klausa)) return false
 
         // UNIQUE lewat indeks yang sudah dibangun terpisah adalah jalur AMAN,
@@ -309,7 +333,8 @@ export const ATURAN_MERUSAK = [
 
         // UNIQUE, PRIMARY KEY, dan EXCLUDE tidak mengenal NOT VALID sama sekali.
         return /\b(UNIQUE|PRIMARY\s+KEY|EXCLUDE)\b/i.test(klausa)
-      }),
+      })
+    },
     akibat:
       'Migrasi gagal bila satu baris lama saja melanggarnya — di tengah deploy, ' +
       'setelah sebagian langkah lain sudah berjalan.',
@@ -363,13 +388,18 @@ export const ATURAN_LAMBAT = [
   {
     kode: 'batasan-memindai',
     nama: 'ADD CONSTRAINT tanpa NOT VALID',
-    uji: (p) =>
-      klausaAlter(p.sql).some(
+    uji: (p, konteks) => {
+      // Tabel yang baru dibuat masih kosong; tidak ada yang dipindai.
+      const sasaran = tabelAlter(p.sql)
+      if (sasaran !== null && konteks.tabelBaru.has(sasaran)) return false
+
+      return klausaAlter(p.sql).some(
         (klausa) =>
           /^ADD\s+(CONSTRAINT\s+[\w."]+\s+)?/i.test(klausa) &&
           /\b(CHECK|FOREIGN\s+KEY|REFERENCES)\b/i.test(klausa) &&
           !/\bNOT\s+VALID\b/i.test(klausa),
-      ),
+      )
+    },
     akibat: 'Memindai seluruh tabel dengan kunci ACCESS EXCLUSIVE.',
     saran: 'Tambahkan NOT VALID, lalu VALIDATE CONSTRAINT di luar deploy.',
   },

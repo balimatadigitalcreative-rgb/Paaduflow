@@ -1430,6 +1430,49 @@ Templat kini diperiksa di berkas `.ts` **juga**. Kalimat yang terlihat pengguna 
 
 Sapuan ini menemukan **22 kebocoran nyata** di sebelas berkas, termasuk seluruh pesan toast modul Penjualan, Pembelian, dan Pajak.
 
+### D-169 · Posting membekukan ISI dokumen, bukan sumbu statusnya
+**Status:** Berlaku · Memperjelas D-008
+
+`paadu.reject_posted_edit` menolak SETIAP perubahan pada dokumen terposting kecuali `lifecycle_status`. Itu membuat pelunasan mustahil: faktur menjadi `paid` justru **setelah** ia diposting, dan `settlement_status` adalah kolom di dokumen yang sama.
+
+Terbukti, bukan disimpulkan: melepas pelonggaran ini dan menjalankan `tests/invariants/alokasi-pembayaran.test.ts` menghasilkan `Dokumen berstatus posted tidak dapat diedit (D-008)` pada `UPDATE settlement_status`.
+
+**Ini bukan celah di D-008 melainkan penjaganya yang terlalu lebar.** D-008 melarang mengubah ISI dokumen terposting — nilai, baris, tanggal, pelanggan — karena itulah yang membuat audit trail bermakna. Ia tidak pernah bermaksud membekukan sumbu status yang lain.
+
+Justru sebaliknya: CLAUDE.md menuntut tiga kolom status **terpisah**, dan seluruh gunanya pemisahan itu adalah agar ketiganya bergerak sendiri-sendiri. `lifecycle_status` membeku di `posted`; `settlement_status` dan `fulfillment_status` baru mulai bergerak di sana.
+
+Penjaganya kini melewatkan ketiga sumbu status dan tetap menolak perubahan isi. Dua invarian menjaga keduanya: `settlement_status` boleh berubah pada faktur terposting, `total` tidak.
+
+**Yang tidak dilakukan:** menulis pelunasan lewat fungsi `SECURITY DEFINER`, atau mematikan trigger sementara. Keduanya membuat jalan memutar yang, sekali ada, akan dipakai untuk hal lain.
+
+Perubahannya hanya melonggarkan, sehingga aman selama reload bergulir maupun rollback: tidak ada kode lama yang menulis sumbu status pada dokumen terposting.
+
+### D-170 · Penerimaan pembayaran: alokasi wajib, batasnya dijaga basis data
+**Status:** Berlaku · **Lingkup trial 5 September**
+
+`payment_receipts` dan `payment_allocations` mengikuti Module 04 apa adanya. Tabel alokasi tersendiri, bukan kolom di penerimaan: satu penerimaan dapat melunasi banyak faktur, dan satu transfer yang membayar tiga paket tur adalah kejadian biasa bagi klien perjalanan, bukan kasus tepi.
+
+**Alokasi WAJIB — uang muka di luar lingkup.** Uang yang diterima sebelum fakturnya ada tidak punya tempat. Itu keputusan sadar untuk trial, dan konsekuensinya harus dikatakan ke klien: agen perjalanan lazim menerima DP sebelum keberangkatan. Bila kelak uang muka masuk lingkup, ia menuntut alokasi boleh kosong, akun "Uang Muka Pelanggan", dan jurnal berbeda — seluruhnya dapat ditambahkan **secara aditif** di atas bentuk ini.
+
+`customer_credits` ikut di luar lingkup, karena kelebihan bayar tidak dapat terjadi: batasnya ditegakkan basis data.
+
+**Dua batas dijaga trigger, bukan hanya layanan.** Jumlah alokasi tidak boleh melampaui uang yang diterima, dan pelunasan tidak boleh melampaui nilai faktur. Keduanya penjumlahan lintas baris sehingga tidak dapat ditulis sebagai `CHECK`; trigger constraint yang `DEFERRABLE` memeriksa setelah seluruh baris masuk, bukan di tengah.
+
+Layanan tetap akan menolak lebih dulu dengan pesan yang menyebut sisa per faktur. Trigger adalah jaring terakhir — pola yang sama dengan `lines_not_over_invoiced` di 0015. Modul ini akan disalin belasan kali, dan yang ikut tersalin adalah bentuk skemanya; jaminannya harus melekat di sana.
+
+**Alokasi dari penerimaan yang dibatalkan tidak dihitung.** Tanpa pengecualian itu, satu penerimaan yang salah dan sudah dibatalkan mengunci fakturnya selamanya — dan yang menemukannya akan menyelesaikannya dengan menghapus baris langsung di basis data.
+
+**Akun kas tidak disebut di modul ini.** Ia datang dari lapisan penentuan (`sales.receipt.cash`), seperti seluruh modul lain. Untuk trial, "kas" berarti Buku Besar yang sudah ada disaring ke akun itu — tanpa buku kas tersendiri dan tanpa rekonsiliasi bank.
+
+### D-171 · Penjaga migrasi membedakan tabel baru dari tabel lama
+**Status:** Berlaku · Memperbaiki D-161
+
+Aturan `batasan-melanggar-baris-lama` dan `batasan-memindai` menyala atas migrasi 0026 — dan itu positif palsu: `ALTER TABLE` di sana menyasar tabel yang dibuat di migrasi yang **sama**, jadi tidak ada baris lama yang dapat melanggar dan tidak ada tabel yang dipindai.
+
+Pola itu baku di repo ini: `apply_transactional_contract` menambah `company_id` lewat `ALTER`, sehingga batasan yang menyebutnya harus menyusul dengan `ALTER` pula. Sintaksnya identik dengan mengubah tabel lama, dan hanya yang terakhir berbahaya.
+
+Diskriminasi ini sudah ada untuk `CREATE INDEX` sejak awal; kini berlaku pula untuk batasan. **Menempelkan `paadu:allow-breaking` di migrasi 0026 akan menjadi jawaban yang salah** — ia melatih setiap modul berikutnya melakukan hal yang sama, dan pintu darurat yang dipakai setiap kali berhenti berarti apa-apa.
+
 ## Sengaja Ditunda
 
 Bukan kelalaian. Setiap butir punya syarat kapan ia layak diputuskan.

@@ -27,3 +27,4 @@
 0023_rls_peran_bawaan.sql 0c0d61118a4a9089
 0024_rls_bootstrap_daftar_company.sql 89f1f6cc7a3b7939
 0025_preferensi_bahasa.sql d1ddf63b465cf9b6
+0026_penerimaan_pembayaran.sql ac07d35cb3048c73

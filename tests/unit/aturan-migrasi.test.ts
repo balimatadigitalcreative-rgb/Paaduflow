@@ -128,6 +128,25 @@ describe('pintu darurat', () => {
 // ── Yang TIDAK boleh dikeluhkan ─────────────────────────────────────────────
 
 describe('migrasi yang aman lolos tanpa keluhan', () => {
+  test('ALTER TABLE atas tabel yang dibuat di migrasi yang sama lolos', () => {
+    /*
+     * Kontrak tabel transaksional menambah `company_id` lewat `ALTER`, sehingga
+     * batasan yang menyebutnya HARUS menyusul dengan `ALTER` pula. Sintaksnya
+     * identik dengan mengubah tabel lama, dan hanya yang terakhir berbahaya.
+     *
+     * Ditemukan saat menulis migrasi penerimaan pembayaran: penjaga menyala
+     * atas migrasinya sendiri, dan menempelkan pintu darurat di sana akan
+     * melatih setiap modul berikutnya melakukan hal yang sama.
+     */
+    const { masalah, lambat } = periksa('0026_batasan_tabel_baru.sql')
+
+    expect(
+      masalah,
+      `keluhan palsu: ${masalah.map((s: { pesan: string }) => s.pesan).join(' | ')}`,
+    ).toEqual([])
+    expect(lambat).toEqual([])
+  })
+
   test('CREATE TABLE berisi CHECK dan NOT NULL, indeks atas tabel baru, NOT VALID', () => {
     const { masalah, lambat } = periksa('0026_aman.sql')
 
