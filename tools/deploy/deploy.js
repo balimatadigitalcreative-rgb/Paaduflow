@@ -667,7 +667,40 @@ if (!(await verifikasiKesiapan(diServer))) {
 
 const terpasang = (await diServer(`cd ${APP_DIR} && git rev-parse --short HEAD`)).keluaran.trim()
 
+/*
+ * ═══════════════════════════════════════════════════════════════════════════
+ *   YANG MELAYANI ADALAH COMMIT INI — DIBUKTIKAN, BUKAN DIANGGAP
+ *
+ *   Verifikasi kesiapan membuktikan ADA yang menjawab. Ia tidak membuktikan
+ *   bahwa yang menjawab dibangun dari commit yang baru saja ditarik — dan
+ *   repo ini sudah dua kali menemukan deploy yang berakhir hijau sambil
+ *   menyajikan hasil build lama: `dist/server` yang tidak ikut dibangun, dan
+ *   `tokens.css` yang tidak ikut dibangkitkan.
+ *
+ *   `/versi` menutup kelas kesalahan itu dengan satu perbandingan. Ia membaca
+ *   `versi.json` di direktori yang benar-benar disajikan, jadi ia menjawab
+ *   tentang berkas, bukan tentang niat.
+ * ═══════════════════════════════════════════════════════════════════════════
+ */
+const versiDisajikan = (
+  await diServer(`curl -sS --max-time 5 ${HEALTH.replace(/\/readyz$/, '/versi')}`)
+).keluaran.trim()
+
+let catatanVersi = ''
+try {
+  const sha = JSON.parse(versiDisajikan).sha
+  catatanVersi =
+    sha === terpasang
+      ? `versi disajikan ${sha} — cocok`
+      : merah(`versi disajikan ${sha}, TIDAK cocok dengan ${terpasang}`)
+} catch {
+  // Tidak menghentikan deploy. Prosesnya melayani dan kesehatannya 200; yang
+  // hilang hanya kepastian bundel mana — dan itu dikatakan, bukan didiamkan.
+  catatanVersi = merah('versi tidak dapat dibaca dari /versi')
+}
+
 console.log('')
 console.log(hijau(`  ✓ Deploy selesai — ${terpasang} melayani di ${SERVER}`))
 console.log(redup(`     kesehatan 200, ${daftar.length} migrasi dijalankan`))
+console.log(redup(`     ${catatanVersi}`))
 console.log('')
