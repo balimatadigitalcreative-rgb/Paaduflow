@@ -18,6 +18,7 @@
 import { Buffer } from 'node:buffer'
 import { existsSync } from 'node:fs'
 import { mkdir } from 'node:fs/promises'
+import { createConnection } from 'node:net'
 import { fileURLToPath } from 'node:url'
 
 import EmbeddedPostgres from 'embedded-postgres'
@@ -41,6 +42,90 @@ const KUNCI_MFA_PENGEMBANGAN = Buffer.alloc(32, 7).toString('base64')
 
 let hentikanPostgres = null
 
+/**
+ * Galat yang pesannya sudah lengkap dan tidak perlu jejak tumpukan.
+ *
+ * Jejak tumpukan berguna untuk bug; ia hanya kebisingan untuk kalimat seperti
+ * "porta 55432 sudah dipakai". Penanda ini yang membedakan keduanya di
+ * penangan galat paling bawah.
+ */
+function galatJelas(pesan) {
+  const galat = new Error(pesan)
+  galat.jelas = true
+  return galat
+}
+
+/** Apakah sudah ada yang mendengarkan di porta ini. */
+function portaTerpakai(porta) {
+  return new Promise((selesai) => {
+    const soket = createConnection({ host: '127.0.0.1', port: porta })
+    const jawab = (nilai) => {
+      soket.destroy()
+      selesai(nilai)
+    }
+    soket.setTimeout(1000)
+    soket.once('connect', () => jawab(true))
+    soket.once('timeout', () => jawab(false))
+    soket.once('error', () => jawab(false))
+  })
+}
+
+/**
+ * Menolak lebih dulu bila lingkungannya sudah berjalan.
+ *
+ * Tanpa langkah ini, PostgreSQL kedua gagal mengikat porta lalu mati seketika,
+ * dan `embedded-postgres` menolak janjinya dengan `reject()` TANPA argumen —
+ * sehingga yang sampai ke layar hanya kata `undefined`. Kegagalannya wajar;
+ * yang tidak wajar adalah tidak ada satu pun cara mengetahuinya.
+ *
+ * Porta Vite sengaja tidak diperiksa: ia berpindah sendiri ke porta berikutnya
+ * bila yang default terpakai, jadi menolak karenanya akan salah.
+ */
+async function periksaPortaBebas({ perluDb }) {
+  const bentrok = []
+
+  if (perluDb && (await portaTerpakai(PORT_DB))) {
+    bentrok.push(`${PORT_DB} — PostgreSQL pengembangan`)
+  }
+
+  const portaApi = Number(process.env.PORT ?? 3000)
+  if (await portaTerpakai(portaApi)) bentrok.push(`${portaApi} — API`)
+
+  if (bentrok.length === 0) return
+
+  throw galatJelas(
+    [
+      'Lingkungan pengembangan sepertinya sudah berjalan.',
+      '',
+      '  Porta yang sudah dipakai:',
+      ...bentrok.map((baris) => `      ${baris}`),
+      '',
+      '  Hentikan `npm run dev` yang sedang berjalan (Ctrl+C di terminalnya),',
+      '  lalu ulangi. Untuk dua lingkungan sekaligus, pasang PORT dan',
+      '  DATABASE_URL yang berbeda.',
+    ].join('\n'),
+  )
+}
+
+/**
+ * Beberapa baris terakhir dari PostgreSQL, disimpan untuk saat ia gagal.
+ *
+ * Sebelumnya `onLog` dan `onError` keduanya fungsi kosong. Itu membuang
+ * satu-satunya jalan keluar pesan dari PostgreSQL — termasuk kalimat yang
+ * menyebut persis mengapa ia menolak menyala.
+ */
+const catatanPostgres = []
+const BATAS_CATATAN = 20
+
+function catatPostgres(pesan) {
+  for (const baris of String(pesan).trimEnd().split('\n')) {
+    if (baris.trim() !== '') catatanPostgres.push(baris.trimEnd())
+  }
+  if (catatanPostgres.length > BATAS_CATATAN) {
+    catatanPostgres.splice(0, catatanPostgres.length - BATAS_CATATAN)
+  }
+}
+
 async function nyalakanPostgresSementara() {
   const sudahAda = existsSync(DIREKTORI_DATA)
   await mkdir(DIREKTORI_DATA, { recursive: true })
@@ -51,15 +136,35 @@ async function nyalakanPostgresSementara() {
     password: 'postgres',
     port: PORT_DB,
     persistent: true,
-    onLog: () => {},
-    onError: () => {},
+    onLog: catatPostgres,
+    onError: catatPostgres,
   })
 
   if (!sudahAda) {
     console.log('  Menyiapkan PostgreSQL sementara (sekali saja, mohon tunggu)…')
     await postgres.initialise()
   }
-  await postgres.start()
+
+  try {
+    await postgres.start()
+  } catch {
+    /*
+     * Sengaja tidak memakai nilai yang dilempar: `embedded-postgres` memanggil
+     * `reject()` tanpa argumen saat prosesnya mati lebih awal, jadi yang
+     * ditangkap di sini selalu `undefined`. Yang berisi keterangan justru
+     * catatan di atas.
+     */
+    throw galatJelas(
+      [
+        `PostgreSQL sementara gagal menyala di porta ${PORT_DB}.`,
+        '',
+        ...(catatanPostgres.length === 0
+          ? ['  Ia berhenti tanpa mencetak satu baris pun.']
+          : ['  Baris terakhir dari PostgreSQL:', ...catatanPostgres.map((b) => `      ${b}`)]),
+      ].join('\n'),
+    )
+  }
+
   hentikanPostgres = async () => postgres.stop()
 
   const admin = new pg.Client({
@@ -107,8 +212,13 @@ async function main() {
   console.log('\n  Paadu Flow — lingkungan pengembangan\n')
 
   const dariLuar = process.env.DATABASE_URL
-  const databaseUrl =
-    dariLuar !== undefined && dariLuar !== '' ? dariLuar : await nyalakanPostgresSementara()
+  const pakaiDbSendiri = dariLuar === undefined || dariLuar === ''
+
+  // Sebelum menyentuh apa pun. Menolak di sini jauh lebih murah daripada gagal
+  // setelah migrasi berjalan setengah jalan.
+  await periksaPortaBebas({ perluDb: pakaiDbSendiri })
+
+  const databaseUrl = pakaiDbSendiri ? await nyalakanPostgresSementara() : dariLuar
 
   if (dariLuar !== undefined && dariLuar !== '') {
     console.log('  Memakai DATABASE_URL yang sudah dipasang.')
@@ -178,7 +288,26 @@ for (const sinyal of ['SIGINT', 'SIGTERM']) {
 }
 
 await main().catch(async (error) => {
-  console.error(error)
+  /*
+   * Nilai yang dilempar TIDAK selalu berupa Error.
+   *
+   * `embedded-postgres` memanggil `reject()` tanpa argumen saat prosesnya mati
+   * lebih awal, dan `console.error(undefined)` mencetak persis satu kata:
+   * `undefined`. Pesannya jujur dan sama sekali tidak berguna — tidak ada nama
+   * galat, tidak ada langkah, tidak ada sebab.
+   */
+  console.error('')
+  if (error instanceof Error) {
+    console.error(`  ${error.message}`)
+    // Jejak tumpukan hanya untuk yang tidak terduga. Galat yang pesannya sudah
+    // menjelaskan dirinya tidak dibuat lebih jelas oleh tumpukan pemanggilan.
+    if (error.jelas !== true && error.stack !== undefined) console.error(`\n${error.stack}`)
+  } else {
+    console.error('  Lingkungan pengembangan gagal menyala, dan sebabnya tidak disebutkan.')
+    console.error(`  Nilai yang dilempar: ${String(error)}`)
+  }
+  console.error('')
+
   if (hentikanPostgres !== null) await hentikanPostgres().catch(() => undefined)
   process.exit(1)
 })
