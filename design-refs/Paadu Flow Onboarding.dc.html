@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  body { margin:0; background:#EDEFF1; font-family:Inter,system-ui,sans-serif; font-size:14px; line-height:20px; -webkit-font-smoothing:antialiased; font-variant-numeric:tabular-nums; }
+  a { color:#3A34B5; text-decoration:none; } a:hover { color:#2F2A94; }
+</style>
+</helmet>
+
+<div style="padding:32px;min-width:1344px;box-sizing:border-box;display:flex;flex-direction:column;gap:32px">
+
+  <div>
+    <div style="display:flex;align-items:baseline;gap:16px;margin-bottom:8px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.12em;color:#3A34B5">LANGKAH 2 — ORGANISASI (TENANT)</span>
+      <span style="font-size:13px;color:#5B6672">Slug menentukan URL tenant dan tidak dapat diubah setelah dibuat</span>
+    </div>
+    <div style="display:grid;grid-template-columns:420px minmax(0,1fr);grid-template-rows:minmax(0,1fr);min-width:1280px;height:860px;background:#FFFFFF;border:1px solid #E3E6E9;border-radius:12px;overflow:hidden;box-shadow:0 1px 2px rgba(11,15,20,.06)">
+
+      <div style="display:flex;flex-direction:column;justify-content:space-between;padding:32px;background:#0B0F14;color:#F7F8F9">
+        <div style="display:flex;align-items:center;gap:10px">
+          <svg width="28" height="28" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M2.35 9.14H20.9A3.78 3.78 0 0 1 24.68 12.92V21.18" stroke="#A5A0F0" stroke-width="2.15" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.32 3.4V7.74" stroke="#A5A0F0" stroke-width="2.15" stroke-linecap="round" stroke-linejoin="round"/><path d="M29.65 22.86H11.1A3.78 3.78 0 0 0 7.32 19.08V10.82" stroke="#A5A0F0" stroke-width="2.15" stroke-linecap="round" stroke-linejoin="round"/><path d="M24.68 28.6V24.26" stroke="#A5A0F0" stroke-width="2.15" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span style="font-size:16px;letter-spacing:-0.01em"><span style="font-weight:600">Paadu</span><span style="font-weight:400;color:#A9B2BB">Flow</span></span>
+        </div>
+        <div style="display:grid;place-items:center;padding:24px 0">
+          <svg width="300" height="300" viewBox="0 0 200 200" fill="none" aria-hidden="true">
+            <circle cx="100" cy="100" r="84" stroke="#1F272F" stroke-width="1"/>
+            <circle cx="100" cy="100" r="60" stroke="#1F272F" stroke-width="1"/>
+            <path d="M40 84H150A22 22 0 0 1 172 106V152" stroke="#6E66D2" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M69 51V77" stroke="#6E66D2" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M160 116H50A22 22 0 0 0 28 94V48" stroke="#F7F8F9" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M131 149V123" stroke="#F7F8F9" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div>
+          <div style="font-size:20px;line-height:28px;font-weight:600;margin-bottom:8px">Satu organisasi, banyak perusahaan</div>
+          <p style="margin:0;font-size:13px;line-height:19px;color:#A9B2BB;text-wrap:pretty">Organisasi adalah wadah tertinggi — tempat pengguna, peran, dan tagihan hidup. Setiap PT di dalamnya punya buku besar sendiri yang terpisah rapi.</p>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;min-width:0">
+        <div style="display:flex;align-items:center;gap:0;padding:20px 40px;border-bottom:1px solid #E3E6E9;flex-wrap:nowrap">
+          <div style="display:flex;align-items:center;gap:10px;flex:0 0 auto">
+            <span style="display:grid;place-items:center;width:24px;height:24px;flex-shrink:0;border-radius:999px;background:#3A34B5;color:#FFFFFF"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2.5 6.3 4.7 8.5 9.5 3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+            <span style="font-size:13px;font-weight:500;white-space:nowrap">Akun</span>
+          </div>
+          <span aria-hidden="true" style="flex:1 1 auto;min-width:12px;height:1px;background:#3A34B5;margin:0 12px"></span>
+          <div style="display:flex;align-items:center;gap:10px;flex:0 0 auto">
+            <span style="display:grid;place-items:center;width:24px;height:24px;flex-shrink:0;border-radius:999px;border:2px solid #3A34B5;background:#FFFFFF;color:#3A34B5;font-size:12px;font-weight:600">2</span>
+            <span style="font-size:13px;font-weight:600;color:#3A34B5;white-space:nowrap">Organisasi</span>
+          </div>
+          <span aria-hidden="true" style="flex:1 1 auto;min-width:12px;height:1px;background:#E3E6E9;margin:0 12px"></span>
+          <div style="display:flex;align-items:center;gap:10px;flex:0 0 auto">
+            <span style="display:grid;place-items:center;width:24px;height:24px;flex-shrink:0;border-radius:999px;border:1px solid #C9CFD5;background:#FFFFFF;color:#7C8794;font-size:12px;font-weight:600">3</span>
+            <span style="font-size:13px;color:#5B6672;white-space:nowrap">Perusahaan</span>
+          </div>
+          <span aria-hidden="true" style="flex:1 1 auto;min-width:12px;height:1px;background:#E3E6E9;margin:0 12px"></span>
+          <div style="display:flex;align-items:center;gap:10px;flex:0 0 auto">
+            <span style="display:grid;place-items:center;width:24px;height:24px;flex-shrink:0;border-radius:999px;border:1px solid #C9CFD5;background:#FFFFFF;color:#7C8794;font-size:12px;font-weight:600">4</span>
+            <span style="font-size:13px;color:#5B6672;white-space:nowrap">Undang Tim</span>
+          </div>
+        </div>
+
+        <div style="flex:1;min-height:0;overflow-y:auto;padding:32px 40px">
+          <h1 style="margin:0 0 6px;font-size:24px;line-height:32px;font-weight:600;letter-spacing:-0.01em">Buat organisasi Anda</h1>
+          <p style="margin:0 0 28px;font-size:13px;line-height:19px;color:#5B6672;max-width:520px;text-wrap:pretty">Nama ini muncul di kop dokumen dan pengalih perusahaan. Anda dapat mengubahnya nanti — kecuali slug.</p>
+
+          <div style="display:flex;flex-direction:column;gap:24px;max-width:560px">
+            <div style="display:flex;flex-direction:column;gap:5px">
+              <label style="font-size:13px;font-weight:500">Nama Organisasi <span style="color:#912018">*</span></label>
+              <div style="display:flex;align-items:center;min-height:36px;padding:0 12px;background:#FFFFFF;border:1px solid #C9CFD5;border-radius:6px;font-size:14px">Nusantara Group</div>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:5px">
+              <label style="font-size:13px;font-weight:500">Slug <span style="color:#912018">*</span></label>
+              <div style="display:flex;align-items:center;min-height:36px;padding:0 12px;background:#FFFFFF;border:1px solid #3A34B5;border-radius:6px;box-shadow:0 0 0 2px #ECEBFA">
+                <span style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#7C8794">paadu.app/</span>
+                <span style="flex:1;font-family:'JetBrains Mono',monospace;font-size:14px;color:#0B0F14">nusantara-group</span>
+                <span style="display:inline-flex;align-items:center;gap:5px;flex-shrink:0;font-size:12px;font-weight:500;color:#0E6A4C"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.4"/><path d="M4.4 7.2 6.2 9 9.6 5.2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>Tersedia</span>
+              </div>
+              <span style="font-size:12px;line-height:16px;color:#5B6672">Huruf kecil, angka, dan tanda hubung. <strong style="font-weight:600;color:#0B0F14">Tidak dapat diubah</strong> setelah organisasi dibuat.</span>
+              <div style="display:flex;align-items:center;gap:8px;margin-top:4px;padding:8px 12px;background:#FDECEA;border:1px solid #F1B4AE;border-radius:6px;font-size:12px;line-height:17px;color:#912018">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true" style="flex-shrink:0"><circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.4"/><path d="M5 5l4 4M9 5l-4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+                <span>Contoh slug yang sudah dipakai: <code style="font-family:'JetBrains Mono',monospace">nusantara</code> — coba tambahkan pembeda seperti nama kota atau bidang usaha.</span>
+              </div>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <span style="font-size:13px;font-weight:500">Region penyimpanan data <span style="color:#912018">*</span></span>
+              <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+                <label style="display:flex;align-items:flex-start;gap:10px;padding:12px;border:1px solid #3A34B5;border-radius:8px;background:#ECEBFA;cursor:pointer">
+                  <span style="display:grid;place-items:center;width:16px;height:16px;flex-shrink:0;margin-top:1px;border:1px solid #3A34B5;border-radius:999px;background:#FFFFFF"><span style="width:8px;height:8px;border-radius:999px;background:#3A34B5"></span></span>
+                  <span><span style="display:block;font-size:13px;font-weight:600;color:#3A34B5">Indonesia</span><span style="display:block;font-size:12px;line-height:16px;color:#5B6672">Jakarta · patuh PP 71/2019</span></span>
+                </label>
+                <label style="display:flex;align-items:flex-start;gap:10px;padding:12px;border:1px solid #E3E6E9;border-radius:8px;background:#FFFFFF;cursor:pointer">
+                  <span style="display:block;width:16px;height:16px;flex-shrink:0;margin-top:1px;border:1px solid #C9CFD5;border-radius:999px;background:#FFFFFF"></span>
+                  <span><span style="display:block;font-size:13px;font-weight:500">Singapura</span><span style="display:block;font-size:12px;line-height:16px;color:#5B6672">Latensi rendah se-ASEAN</span></span>
+                </label>
+                <label style="display:flex;align-items:flex-start;gap:10px;padding:12px;border:1px solid #E3E6E9;border-radius:8px;background:#FFFFFF;cursor:pointer">
+                  <span style="display:block;width:16px;height:16px;flex-shrink:0;margin-top:1px;border:1px solid #C9CFD5;border-radius:999px;background:#FFFFFF"></span>
+                  <span><span style="display:block;font-size:13px;font-weight:500">Global</span><span style="display:block;font-size:12px;line-height:16px;color:#5B6672">Multi-region, replikasi</span></span>
+                </label>
+              </div>
+              <span style="font-size:12px;line-height:16px;color:#5B6672">Region tidak dapat dipindah setelah data pertama masuk.</span>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <span style="font-size:13px;font-weight:500">Plan</span>
+              <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
+                <label style="display:flex;flex-direction:column;gap:6px;padding:14px 12px;border:1px solid #3A34B5;border-radius:8px;background:#ECEBFA;cursor:pointer">
+                  <span style="display:flex;align-items:center;gap:8px"><span style="display:grid;place-items:center;width:16px;height:16px;flex-shrink:0;border:1px solid #3A34B5;border-radius:999px;background:#FFFFFF"><span style="width:8px;height:8px;border-radius:999px;background:#3A34B5"></span></span><span style="font-size:13px;font-weight:600;color:#3A34B5">Trial</span></span>
+                  <span style="font-size:20px;line-height:28px;font-weight:600;color:#3A34B5">14 hari</span>
+                  <span style="font-size:12px;line-height:16px;color:#5B6672">Semua fitur Business. Tanpa kartu kredit.</span>
+                </label>
+                <label style="display:flex;flex-direction:column;gap:6px;padding:14px 12px;border:1px solid #E3E6E9;border-radius:8px;background:#FFFFFF;cursor:pointer">
+                  <span style="display:flex;align-items:center;gap:8px"><span style="display:block;width:16px;height:16px;flex-shrink:0;border:1px solid #C9CFD5;border-radius:999px"></span><span style="font-size:13px;font-weight:500">Starter</span></span>
+                  <span style="font-size:20px;line-height:28px;font-weight:600;white-space:nowrap">Rp 199 rb</span>
+                  <span style="font-size:12px;line-height:16px;color:#5B6672">1 company · 3 pengguna</span>
+                </label>
+                <label style="display:flex;flex-direction:column;gap:6px;padding:14px 12px;border:1px solid #E3E6E9;border-radius:8px;background:#FFFFFF;cursor:pointer">
+                  <span style="display:flex;align-items:center;gap:8px"><span style="display:block;width:16px;height:16px;flex-shrink:0;border:1px solid #C9CFD5;border-radius:999px"></span><span style="font-size:13px;font-weight:500">Business</span></span>
+                  <span style="font-size:20px;line-height:28px;font-weight:600;white-space:nowrap">Rp 749 rb</span>
+                  <span style="font-size:12px;line-height:16px;color:#5B6672">5 company · 20 pengguna</span>
+                </label>
+                <label style="display:flex;flex-direction:column;gap:6px;padding:14px 12px;border:1px solid #E3E6E9;border-radius:8px;background:#FFFFFF;cursor:pointer">
+                  <span style="display:flex;align-items:center;gap:8px"><span style="display:block;width:16px;height:16px;flex-shrink:0;border:1px solid #C9CFD5;border-radius:999px"></span><span style="font-size:13px;font-weight:500">Enterprise</span></span>
+                  <span style="font-size:20px;line-height:28px;font-weight:600">Hubungi</span>
+                  <span style="font-size:12px;line-height:16px;color:#5B6672">Tanpa batas · SSO · SLA</span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:12px;padding:16px 40px;border-top:1px solid #E3E6E9;background:#F7F8F9">
+          <button type="button" style="min-height:36px;padding:0 16px;border:1px solid #C9CFD5;border-radius:6px;background:#FFFFFF;color:#0B0F14;font:inherit;font-size:14px;font-weight:500;cursor:pointer">Kembali</button>
+          <span style="font-size:12px;color:#5B6672">Langkah 2 dari 4</span>
+          <button type="button" style="margin-left:auto;display:inline-flex;align-items:center;gap:8px;min-height:36px;padding:0 18px;border:1px solid transparent;border-radius:6px;background:#3A34B5;color:#FFFFFF;font:inherit;font-size:14px;font-weight:500;cursor:pointer" style-hover="background:#2F2A94">Lanjut ke Perusahaan<svg width="14" height="14" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M4.5 2.5 8 6l-3.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div style="display:flex;align-items:baseline;gap:16px;margin-bottom:8px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.12em;color:#3A34B5">LANGKAH 3 — PERUSAHAAN (COMPANY)</span>
+      <span style="font-size:13px;color:#5B6672">NPWP bermask · bulan awal tahun fiskal menentukan seluruh laporan</span>
+    </div>
+    <div style="display:grid;grid-template-columns:420px minmax(0,1fr);grid-template-rows:minmax(0,1fr);min-width:1280px;height:860px;background:#FFFFFF;border:1px solid #E3E6E9;border-radius:12px;overflow:hidden;box-shadow:0 1px 2px rgba(11,15,20,.06)">
+      <div style="display:flex;flex-direction:column;justify-content:space-between;padding:32px;background:#0B0F14;color:#F7F8F9">
+        <div style="display:flex;align-items:center;gap:10px">
+          <svg width="28" height="28" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M2.35 9.14H20.9A3.78 3.78 0 0 1 24.68 12.92V21.18" stroke="#A5A0F0" stroke-width="2.15" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.32 3.4V7.74" stroke="#A5A0F0" stroke-width="2.15" stroke-linecap="round" stroke-linejoin="round"/><path d="M29.65 22.86H11.1A3.78 3.78 0 0 0 7.32 19.08V10.82" stroke="#A5A0F0" stroke-width="2.15" stroke-linecap="round" stroke-linejoin="round"/><path d="M24.68 28.6V24.26" stroke="#A5A0F0" stroke-width="2.15" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span style="font-size:16px;letter-spacing:-0.01em"><span style="font-weight:600">Paadu</span><span style="font-weight:400;color:#A9B2BB">Flow</span></span>
+        </div>
+        <div style="display:grid;place-items:center;padding:24px 0">
+          <svg width="300" height="300" viewBox="0 0 200 200" fill="none" aria-hidden="true">
+            <circle cx="100" cy="100" r="84" stroke="#1F272F" stroke-width="1"/>
+            <rect x="52" y="52" width="96" height="96" rx="12" stroke="#1F272F" stroke-width="1"/>
+            <path d="M40 84H150A22 22 0 0 1 172 106V152" stroke="#6E66D2" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M69 51V77" stroke="#6E66D2" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M160 116H50A22 22 0 0 0 28 94V48" stroke="#F7F8F9" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M131 149V123" stroke="#F7F8F9" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+            <rect x="140" y="140" width="34" height="34" rx="8" stroke="#E8A33D" stroke-width="5"/>
+          </svg>
+        </div>
+        <div>
+          <div style="font-size:20px;line-height:28px;font-weight:600;margin-bottom:8px">Perusahaan pertama Anda</div>
+          <p style="margin:0;font-size:13px;line-height:19px;color:#A9B2BB;text-wrap:pretty">Setiap perusahaan punya NPWP, mata uang, dan tahun fiskalnya sendiri. Tambahkan perusahaan lain kapan pun tanpa memindahkan data.</p>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;min-width:0">
+        <div style="display:flex;align-items:center;gap:0;padding:20px 40px;border-bottom:1px solid #E3E6E9;flex-wrap:nowrap">
+          <div style="display:flex;align-items:center;gap:10px;flex:0 0 auto"><span style="display:grid;place-items:center;width:24px;height:24px;flex-shrink:0;border-radius:999px;background:#3A34B5;color:#FFFFFF"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2.5 6.3 4.7 8.5 9.5 3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span style="font-size:13px;font-weight:500;white-space:nowrap">Akun</span></div>
+          <span aria-hidden="true" style="flex:1 1 auto;min-width:12px;height:1px;background:#3A34B5;margin:0 12px"></span>
+          <div style="display:flex;align-items:center;gap:10px;flex:0 0 auto"><span style="display:grid;place-items:center;width:24px;height:24px;flex-shrink:0;border-radius:999px;background:#3A34B5;color:#FFFFFF"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2.5 6.3 4.7 8.5 9.5 3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span style="font-size:13px;font-weight:500;white-space:nowrap">Organisasi</span></div>
+          <span aria-hidden="true" style="flex:1 1 auto;min-width:12px;height:1px;background:#3A34B5;margin:0 12px"></span>
+          <div style="display:flex;align-items:center;gap:10px;flex:0 0 auto"><span style="display:grid;place-items:center;width:24px;height:24px;flex-shrink:0;border-radius:999px;border:2px solid #3A34B5;background:#FFFFFF;color:#3A34B5;font-size:12px;font-weight:600">3</span><span style="font-size:13px;font-weight:600;color:#3A34B5;white-space:nowrap">Perusahaan</span></div>
+          <span aria-hidden="true" style="flex:1 1 auto;min-width:12px;height:1px;background:#E3E6E9;margin:0 12px"></span>
+          <div style="display:flex;align-items:center;gap:10px;flex:0 0 auto"><span style="display:grid;place-items:center;width:24px;height:24px;flex-shrink:0;border-radius:999px;border:1px solid #C9CFD5;background:#FFFFFF;color:#7C8794;font-size:12px;font-weight:600">4</span><span style="font-size:13px;color:#5B6672;white-space:nowrap">Undang Tim</span></div>
+        </div>
+
+        <div style="flex:1;min-height:0;overflow-y:auto;padding:32px 40px">
+          <h1 style="margin:0 0 6px;font-size:24px;line-height:32px;font-weight:600;letter-spacing:-0.01em">Data perusahaan</h1>
+          <p style="margin:0 0 28px;font-size:13px;line-height:19px;color:#5B6672;max-width:520px;text-wrap:pretty">Data ini dipakai di faktur, dokumen pajak, dan seluruh laporan keuangan perusahaan ini.</p>
+          <div style="display:flex;gap:32px;align-items:flex-start">
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:20px;max-width:520px">
+              <div style="display:flex;flex-direction:column;gap:5px">
+                <label style="font-size:13px;font-weight:500">Nama Legal <span style="color:#912018">*</span></label>
+                <div style="display:flex;align-items:center;min-height:36px;padding:0 12px;background:#FFFFFF;border:1px solid #C9CFD5;border-radius:6px;font-size:14px;">PT Nusantara Jaya Abadi</div>
+                <span style="font-size:12px;line-height:16px;color:#5B6672">Tulis sesuai akta — termasuk bentuk badan usaha (PT, CV, UD).</span>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:5px">
+                <label style="font-size:13px;font-weight:500">NPWP <span style="color:#912018">*</span></label>
+                <div style="display:flex;align-items:center;min-height:36px;padding:0 12px;background:#FFFFFF;border:1px solid #3A34B5;border-radius:6px;box-shadow:0 0 0 2px #ECEBFA">
+                  <span style="flex:1;font-family:'JetBrains Mono',monospace;font-size:14px;letter-spacing:.02em">01.234.567.8-901.000</span>
+                  <span style="display:inline-flex;align-items:center;gap:5px;flex-shrink:0;font-size:12px;font-weight:500;color:#0E6A4C"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.4"/><path d="M4.4 7.2 6.2 9 9.6 5.2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>15 digit · valid</span>
+                </div>
+                <span style="font-size:12px;line-height:16px;color:#5B6672">Format <code style="font-family:'JetBrains Mono',monospace">00.000.000.0-000.000</code> terisi otomatis. Menerima 15 digit (lama) dan 16 digit NIK badan.</span>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+                <div style="display:flex;flex-direction:column;gap:5px">
+                  <label style="font-size:13px;font-weight:500">Mata Uang Default</label>
+                  <div style="display:flex;align-items:center;min-height:36px;padding:0 12px;background:#FFFFFF;border:1px solid #C9CFD5;border-radius:6px;font-size:14px;">IDR — Rupiah<svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true" style="margin-left:auto;color:#7C8794"><path d="M3 4.5 6 8l3-3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+                  <span style="font-size:12px;line-height:16px;color:#5B6672">Mata uang buku besar. Tidak dapat diubah nanti.</span>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:5px">
+                  <label style="font-size:13px;font-weight:500">Bulan Awal Tahun Fiskal</label>
+                  <div style="display:flex;align-items:center;min-height:36px;padding:0 12px;background:#FFFFFF;border:1px solid #C9CFD5;border-radius:6px;font-size:14px;">Januari <span style="color:#7C8794;margin-left:6px">(1)</span><svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true" style="margin-left:auto;color:#7C8794"><path d="M3 4.5 6 8l3-3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+                  <span style="font-size:12px;line-height:16px;color:#5B6672">FY 2026 · Jan – Des 2026</span>
+                </div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:5px">
+                <label style="font-size:13px;font-weight:500">Alamat</label>
+                <div style="min-height:76px;padding:9px 12px;background:#FFFFFF;border:1px solid #C9CFD5;border-radius:6px;font-size:14px;line-height:20px">Jl. Raya Bypass Ngurah Rai No. 142<br>Denpasar Selatan, Bali 80228</div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:5px">
+                <label style="font-size:13px;font-weight:500">Status PKP</label>
+                <label style="display:inline-flex;align-items:center;gap:10px;font-size:13px;cursor:pointer">
+                  <span style="position:relative;display:inline-flex;width:32px;height:20px;flex-shrink:0;border-radius:999px;background:#3A34B5"><span style="position:absolute;top:2px;left:14px;width:16px;height:16px;border-radius:999px;background:#FFFFFF;box-shadow:0 1px 2px rgba(11,15,20,.2)"></span></span>
+                  Perusahaan ini Pengusaha Kena Pajak
+                </label>
+                <span style="font-size:12px;line-height:16px;color:#5B6672">Mengaktifkan PPN 11%, e-Faktur, dan akun PPN Keluaran/Masukan.</span>
+              </div>
+            </div>
+          <aside style="width:300px;flex-shrink:0;padding:20px;background:#F7F8F9;border:1px solid #E3E6E9;border-radius:10px;align-self:flex-start">
+            <div style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#5B6672;margin-bottom:14px">Kenapa ini penting</div>
+            <div style="display:flex;flex-direction:column;gap:16px">
+              <div><div style="font-size:13px;font-weight:600;margin-bottom:4px">NPWP tidak bisa diperbaiki belakangan</div><p style="margin:0;font-size:12px;line-height:17px;color:#5B6672;text-wrap:pretty">Nomor ini tercetak di setiap faktur pajak. Mengoreksinya setelah ada e-Faktur terbit berarti membatalkan dan menerbitkan ulang dokumen.</p></div>
+              <div><div style="font-size:13px;font-weight:600;margin-bottom:4px">Bulan fiskal mengunci seluruh laporan</div><p style="margin:0;font-size:12px;line-height:17px;color:#5B6672;text-wrap:pretty">Neraca, laba rugi, dan penutupan periode dihitung dari bulan ini. Mengubahnya setelah ada transaksi akan menggeser semua komparasi tahun sebelumnya.</p></div>
+              <div><div style="font-size:13px;font-weight:600;margin-bottom:4px">Mata uang buku besar bersifat final</div><p style="margin:0;font-size:12px;line-height:17px;color:#5B6672;text-wrap:pretty">Transaksi valuta asing tetap bisa dicatat dengan kurs, tapi buku besar selalu dilaporkan dalam mata uang ini.</p></div>
+              <div><div style="font-size:13px;font-weight:600;margin-bottom:4px">Satu PT = satu company</div><p style="margin:0;font-size:12px;line-height:17px;color:#5B6672;text-wrap:pretty">Jangan gabungkan dua badan usaha dalam satu company hanya karena pemiliknya sama — pemeriksaan pajak menuntut buku yang terpisah.</p></div>
+            </div>
+          </aside>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;padding:16px 40px;border-top:1px solid #E3E6E9;background:#F7F8F9">
+          <button type="button" style="min-height:36px;padding:0 16px;border:1px solid #C9CFD5;border-radius:6px;background:#FFFFFF;color:#0B0F14;font:inherit;font-size:14px;font-weight:500;cursor:pointer">Kembali</button>
+          <span style="font-size:12px;color:#5B6672">Langkah 3 dari 4</span>
+          <button type="button" style="margin-left:auto;display:inline-flex;align-items:center;gap:8px;min-height:36px;padding:0 18px;border:1px solid transparent;border-radius:6px;background:#3A34B5;color:#FFFFFF;font:inherit;font-size:14px;font-weight:500;cursor:pointer" style-hover="background:#2F2A94">Lanjut ke Undang Tim<svg width="14" height="14" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M4.5 2.5 8 6l-3.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div style="display:flex;align-items:baseline;gap:16px;margin-bottom:8px">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.12em;color:#3A34B5">LANGKAH 4 — UNDANG TIM</span>
+      <span style="font-size:13px;color:#5B6672">Peran dipilih per undangan · tautan undangan bisa disalin</span>
+    </div>
+    <div style="display:grid;grid-template-columns:420px minmax(0,1fr);grid-template-rows:minmax(0,1fr);min-width:1280px;height:860px;background:#FFFFFF;border:1px solid #E3E6E9;border-radius:12px;overflow:hidden;box-shadow:0 1px 2px rgba(11,15,20,.06)">
+      <div style="display:flex;flex-direction:column;justify-content:space-between;padding:32px;background:#0B0F14;color:#F7F8F9">
+        <div style="display:flex;align-items:center;gap:10px">
+          <svg width="28" height="28" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M2.35 9.14H20.9A3.78 3.78 0 0 1 24.68 12.92V21.18" stroke="#A5A0F0" stroke-width="2.15" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.32 3.4V7.74" stroke="#A5A0F0" stroke-width="2.15" stroke-linecap="round" stroke-linejoin="round"/><path d="M29.65 22.86H11.1A3.78 3.78 0 0 0 7.32 19.08V10.82" stroke="#A5A0F0" stroke-width="2.15" stroke-linecap="round" stroke-linejoin="round"/><path d="M24.68 28.6V24.26" stroke="#A5A0F0" stroke-width="2.15" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span style="font-size:16px;letter-spacing:-0.01em"><span style="font-weight:600">Paadu</span><span style="font-weight:400;color:#A9B2BB">Flow</span></span>
+        </div>
+        <div style="display:grid;place-items:center;padding:24px 0">
+          <svg width="300" height="300" viewBox="0 0 200 200" fill="none" aria-hidden="true">
+            <circle cx="100" cy="100" r="84" stroke="#1F272F" stroke-width="1"/>
+            <rect x="52" y="52" width="96" height="96" rx="12" stroke="#1F272F" stroke-width="1"/>
+            <path d="M40 84H150A22 22 0 0 1 172 106V152" stroke="#6E66D2" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M69 51V77" stroke="#6E66D2" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M160 116H50A22 22 0 0 0 28 94V48" stroke="#F7F8F9" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M131 149V123" stroke="#F7F8F9" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+            <rect x="140" y="140" width="34" height="34" rx="8" stroke="#E8A33D" stroke-width="5"/>
+            <circle cx="34" cy="152" r="11" stroke="#E8A33D" stroke-width="5"/>
+            <circle cx="66" cy="172" r="11" stroke="#E8A33D" stroke-width="5"/>
+            <circle cx="166" cy="40" r="11" stroke="#E8A33D" stroke-width="5"/>
+            <path d="M45 145 60 132M156 50 141 63" stroke="#45525F" stroke-width="3" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div>
+          <div style="font-size:20px;line-height:28px;font-weight:600;margin-bottom:8px">Kerja bersama sejak hari pertama</div>
+          <p style="margin:0;font-size:13px;line-height:19px;color:#A9B2BB;text-wrap:pretty">Peran menentukan apa yang dapat dilihat dan diubah. Tenant Admin mengelola organisasi; Company Admin hanya perusahaan yang ditugaskan.</p>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;min-width:0">
+        <div style="display:flex;align-items:center;gap:0;padding:20px 40px;border-bottom:1px solid #E3E6E9;flex-wrap:nowrap">
+          <div style="display:flex;align-items:center;gap:10px;flex:0 0 auto"><span style="display:grid;place-items:center;width:24px;height:24px;flex-shrink:0;border-radius:999px;background:#3A34B5;color:#FFFFFF"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2.5 6.3 4.7 8.5 9.5 3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span style="font-size:13px;font-weight:500;white-space:nowrap">Akun</span></div>
+          <span aria-hidden="true" style="flex:1 1 auto;min-width:12px;height:1px;background:#3A34B5;margin:0 12px"></span>
+          <div style="display:flex;align-items:center;gap:10px;flex:0 0 auto"><span style="display:grid;place-items:center;width:24px;height:24px;flex-shrink:0;border-radius:999px;background:#3A34B5;color:#FFFFFF"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2.5 6.3 4.7 8.5 9.5 3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span style="font-size:13px;font-weight:500;white-space:nowrap">Organisasi</span></div>
+          <span aria-hidden="true" style="flex:1 1 auto;min-width:12px;height:1px;background:#3A34B5;margin:0 12px"></span>
+          <div style="display:flex;align-items:center;gap:10px;flex:0 0 auto"><span style="display:grid;place-items:center;width:24px;height:24px;flex-shrink:0;border-radius:999px;background:#3A34B5;color:#FFFFFF"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2.5 6.3 4.7 8.5 9.5 3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span style="font-size:13px;font-weight:500;white-space:nowrap">Perusahaan</span></div>
+          <span aria-hidden="true" style="flex:1 1 auto;min-width:12px;height:1px;background:#3A34B5;margin:0 12px"></span>
+          <div style="display:flex;align-items:center;gap:10px;flex:0 0 auto"><span style="display:grid;place-items:center;width:24px;height:24px;flex-shrink:0;border-radius:999px;border:2px solid #3A34B5;background:#FFFFFF;color:#3A34B5;font-size:12px;font-weight:600">4</span><span style="font-size:13px;font-weight:600;color:#3A34B5;white-space:nowrap">Undang Tim</span></div>
+        </div>
+
+        <div style="flex:1;min-height:0;overflow-y:auto;padding:32px 40px">
+          <h1 style="margin:0 0 6px;font-size:24px;line-height:32px;font-weight:600;letter-spacing:-0.01em">Undang tim Anda</h1>
+          <p style="margin:0 0 28px;font-size:13px;line-height:19px;color:#5B6672;max-width:520px;text-wrap:pretty">Lewati langkah ini jika ingin bekerja sendiri dulu — anggota tim dapat diundang kapan pun dari Pengaturan.</p>
+          <div style="display:flex;gap:32px;align-items:flex-start">
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:20px;max-width:560px">
+              <div style="display:flex;flex-direction:column;gap:10px">
+                <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px">
+                  <span style="font-size:13px;font-weight:500">Undangan</span>
+                  <span style="font-size:12px;color:#5B6672">3 dari 20 kursi terpakai</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px">
+                  <div style="flex:1;min-width:0;display:flex;align-items:center;min-height:36px;padding:0 12px;background:#FFFFFF;border:1px solid #E3E6E9;border-radius:6px;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">rani.kusuma@nusantarajaya.co.id</div>
+                  <div style="flex-shrink:0;display:flex;align-items:center;gap:8px;min-height:36px;padding:0 12px;background:#FFFFFF;border:1px solid #E3E6E9;border-radius:6px;font-size:13px;color:#3A34B5;font-weight:500;white-space:nowrap">Tenant Admin<svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true" style="color:#7C8794"><path d="M3 4.5 6 8l3-3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+                  <button type="button" aria-label="Hapus undangan rani.kusuma@nusantarajaya.co.id" style="flex-shrink:0;display:grid;place-items:center;width:32px;height:32px;border:0;border-radius:6px;background:transparent;color:#7C8794;cursor:pointer" style-hover="background:#FDECEA;color:#912018"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M3.5 3.5l7 7M10.5 3.5l-7 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+                </div>
+                <div style="margin:-4px 0 0 12px;font-size:12px;line-height:16px;color:#5B6672">Dapat membuat company baru dan mengubah pengaturan organisasi.</div>
+                <div style="display:flex;align-items:center;gap:10px">
+                  <div style="flex:1;min-width:0;display:flex;align-items:center;min-height:36px;padding:0 12px;background:#FFFFFF;border:1px solid #E3E6E9;border-radius:6px;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">budi.santoso@nusantarajaya.co.id</div>
+                  <div style="flex-shrink:0;display:flex;align-items:center;gap:8px;min-height:36px;padding:0 12px;background:#FFFFFF;border:1px solid #E3E6E9;border-radius:6px;font-size:13px;color:#0B0F14;font-weight:500;white-space:nowrap">Company Admin<svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true" style="color:#7C8794"><path d="M3 4.5 6 8l3-3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+                  <button type="button" aria-label="Hapus undangan budi.santoso@nusantarajaya.co.id" style="flex-shrink:0;display:grid;place-items:center;width:32px;height:32px;border:0;border-radius:6px;background:transparent;color:#7C8794;cursor:pointer" style-hover="background:#FDECEA;color:#912018"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M3.5 3.5l7 7M10.5 3.5l-7 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+                </div>
+                <div style="margin:-4px 0 0 12px;font-size:12px;line-height:16px;color:#5B6672">Terbatas pada PT Nusantara Jaya Abadi.</div>
+                <div style="display:flex;align-items:center;gap:10px">
+                  <div style="flex:1;min-width:0;display:flex;align-items:center;min-height:36px;padding:0 12px;background:#FFFFFF;border:1px solid #E3E6E9;border-radius:6px;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">dewi.saraswati@nusantarajaya.co.id</div>
+                  <div style="flex-shrink:0;display:flex;align-items:center;gap:8px;min-height:36px;padding:0 12px;background:#FFFFFF;border:1px solid #E3E6E9;border-radius:6px;font-size:13px;color:#0B0F14;font-weight:500;white-space:nowrap">Member<svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true" style="color:#7C8794"><path d="M3 4.5 6 8l3-3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+                  <button type="button" aria-label="Hapus undangan dewi.saraswati@nusantarajaya.co.id" style="flex-shrink:0;display:grid;place-items:center;width:32px;height:32px;border:0;border-radius:6px;background:transparent;color:#7C8794;cursor:pointer" style-hover="background:#FDECEA;color:#912018"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M3.5 3.5l7 7M10.5 3.5l-7 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px">
+                  <div style="flex:1;min-width:0;display:flex;align-items:center;min-height:36px;padding:0 12px;background:#FFFFFF;border:1px dashed #C9CFD5;border-radius:6px;font-size:14px;color:#7C8794">nama@perusahaan.co.id</div>
+                  <div style="flex-shrink:0;display:flex;align-items:center;gap:8px;min-height:36px;padding:0 12px;background:#F7F8F9;border:1px solid #E3E6E9;border-radius:6px;font-size:13px;color:#7C8794;white-space:nowrap">Member<svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M3 4.5 6 8l3-3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+                  <span style="flex-shrink:0;width:32px"></span>
+                </div>
+                <button type="button" style="align-self:flex-start;display:inline-flex;align-items:center;gap:6px;border:0;background:transparent;color:#3A34B5;font:inherit;font-size:13px;font-weight:500;cursor:pointer"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M6 2.5v7M2.5 6h7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>Tambah undangan</button>
+                <div style="font-size:12px;line-height:17px;color:#5B6672">Tempel beberapa email sekaligus — dipisah koma, spasi, atau baris baru.</div>
+              </div>
+
+              <div style="padding:14px 16px;background:#F7F8F9;border:1px solid #E3E6E9;border-radius:8px">
+                <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px">
+                  <span style="font-size:13px;font-weight:600">Atau bagikan tautan undangan</span>
+                  <button type="button" style="margin-left:auto;display:inline-flex;align-items:center;gap:6px;min-height:28px;padding:0 12px;border:1px solid #C9CFD5;border-radius:6px;background:#FFFFFF;color:#0B0F14;font:inherit;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><rect x="2" y="2" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M5 11.5h5.5a1 1 0 0 0 1-1V5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>Salin tautan</button>
+                </div>
+                <div style="display:flex;align-items:center;min-height:32px;padding:0 10px;background:#FFFFFF;border:1px solid #E3E6E9;border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:12px;color:#5B6672;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">paadu.app/join/nusantara-group?t=8f3c1a92</div>
+                <div style="margin-top:8px;font-size:12px;line-height:17px;color:#5B6672">Berlaku 7 hari · setiap pendaftar masuk sebagai <strong style="font-weight:600;color:#0B0F14">Member</strong> dan menunggu persetujuan Anda.</div>
+              </div>
+            </div>
+          <aside style="width:300px;flex-shrink:0;padding:20px;background:#F7F8F9;border:1px solid #E3E6E9;border-radius:10px;align-self:flex-start">
+            <div style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#5B6672;margin-bottom:14px">Peran yang tersedia</div>
+            <div style="display:flex;flex-direction:column;gap:16px">
+              <div><div style="font-size:13px;font-weight:600;margin-bottom:4px">Tenant Admin</div><p style="margin:0;font-size:12px;line-height:17px;color:#5B6672;text-wrap:pretty">Mengelola organisasi: membuat dan menghapus company, mengatur tagihan, dan mengelola semua pengguna.</p></div>
+              <div><div style="font-size:13px;font-weight:600;margin-bottom:4px">Company Admin</div><p style="margin:0;font-size:12px;line-height:17px;color:#5B6672;text-wrap:pretty">Penuh di company yang ditugaskan — termasuk menyetujui faktur dan menutup periode — tanpa akses ke company lain.</p></div>
+              <div><div style="font-size:13px;font-weight:600;margin-bottom:4px">Member</div><p style="margin:0;font-size:12px;line-height:17px;color:#5B6672;text-wrap:pretty">Membuat dan mengedit dokumen sesuai izin modul. Tidak dapat mengubah pengaturan atau menyetujui.</p></div>
+              <div><div style="font-size:13px;font-weight:600;margin-bottom:4px">Peran kustom</div><p style="margin:0;font-size:12px;line-height:17px;color:#5B6672;text-wrap:pretty">Butuh kombinasi lain? Buat peran sendiri di Pengaturan → Pengguna &amp; Peran setelah onboarding.</p></div>
+            </div>
+          </aside>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;padding:16px 40px;border-top:1px solid #E3E6E9;background:#F7F8F9">
+          <button type="button" style="min-height:36px;padding:0 16px;border:1px solid #C9CFD5;border-radius:6px;background:#FFFFFF;color:#0B0F14;font:inherit;font-size:14px;font-weight:500;cursor:pointer">Kembali</button>
+          <button type="button" style="min-height:36px;padding:0 12px;border:0;background:transparent;color:#5B6672;font:inherit;font-size:14px;font-weight:500;cursor:pointer">Lewati</button>
+          <span style="font-size:12px;color:#5B6672">Langkah 4 dari 4</span>
+          <button type="button" style="margin-left:auto;display:inline-flex;align-items:center;gap:8px;min-height:36px;padding:0 18px;border:1px solid transparent;border-radius:6px;background:#3A34B5;color:#FFFFFF;font:inherit;font-size:14px;font-weight:500;cursor:pointer" style-hover="background:#2F2A94">Kirim 3 undangan &amp; selesai<svg width="14" height="14" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2.5 6.3 4.7 8.5 9.5 3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{}"></script>
+</body>
+</html>

@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  body { margin:0; background:#0B0F14; font-family:Inter,system-ui,sans-serif; }
+  a { color:#3A34B5; } a:hover { color:#2F2A94; }
+</style>
+</helmet>
+
+<x-import component-from-global-scope="deck-stage" from="./deck-stage.js" width="1920" height="1080" hint-size="100%,100%">
+
+  <section data-label="Cover" data-screen-label="01 Cover" data-speaker-notes="Adaptasi brand guidelines v0.9 — dirapikan, dikunci ke identitas biru." style="position:relative;background:#0B0F14;color:#F7F8F9;font-family:Inter,system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;box-sizing:border-box;padding:96px 120px">
+    <svg width="150" height="150" viewBox="0 0 32 32" fill="none" aria-hidden="true" style="margin-bottom:48px"><path d="M2.35 9.14H20.9A3.78 3.78 0 0 1 24.68 12.92V21.18" stroke="#A5A0F0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.32 3.4V7.74" stroke="#A5A0F0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M29.65 22.86H11.1A3.78 3.78 0 0 0 7.32 19.08V10.82" stroke="#A5A0F0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M24.68 28.6V24.26" stroke="#A5A0F0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <div style="font-size:96px;line-height:1.1;letter-spacing:-0.02em;margin-bottom:24px"><span style="font-weight:600">Paadu</span><span style="font-weight:400;color:#A9B2BB">Flow</span></div>
+    <div style="font-size:34px;line-height:1.4;color:#7C8794;margin-bottom:8px">Brand Guidelines</div>
+    <div style="font-size:26px;line-height:1.4;color:#5B6672">One Platform. Every Business.</div>
+    <div style="position:absolute;left:120px;right:120px;bottom:64px;display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:24px;color:#45525F"><span>VERSI 1.0 · FASE 2</span><span>DOKUMEN INTERNAL</span></div>
+  </section>
+
+  <section data-label="Daftar isi" data-screen-label="02 Daftar isi" data-speaker-notes="Dua belas bagian, empat kelompok: fondasi, identitas visual, sistem, perilaku." style="position:relative;background:#FFFFFF;color:#0B0F14;font-family:Inter,system-ui,sans-serif;display:flex;flex-direction:column;box-sizing:border-box;padding:96px 120px">
+    <div style="font-family:'JetBrains Mono',monospace;font-size:24px;letter-spacing:.12em;color:#3A34B5;margin-bottom:16px">ISI</div>
+    <h2 style="margin:0 0 64px;font-size:64px;line-height:1.15;font-weight:600;letter-spacing:-0.02em">Daftar isi</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:24px 64px;align-content:start">
+      <div style="display:flex;gap:20px;padding:20px 0;border-top:1px solid #E3E6E9"><span style="font-family:'JetBrains Mono',monospace;font-size:24px;color:#3A34B5">01</span><div><div style="font-size:28px;font-weight:600;line-height:1.3">Brand story</div><div style="font-size:24px;line-height:1.4;color:#5B6672">Filosofi nama &amp; makna mark</div></div></div>
+      <div style="display:flex;gap:20px;padding:20px 0;border-top:1px solid #E3E6E9"><span style="font-family:'JetBrains Mono',monospace;font-size:24px;color:#3A34B5">02</span><div><div style="font-size:28px;font-weight:600;line-height:1.3">Positioning</div><div style="font-size:24px;line-height:1.4;color:#5B6672">Pernyataan posisi, pilar, kepribadian</div></div></div>
+      <div style="display:flex;gap:20px;padding:20px 0;border-top:1px solid #E3E6E9"><span style="font-family:'JetBrains Mono',monospace;font-size:24px;color:#3A34B5">03</span><div><div style="font-size:28px;font-weight:600;line-height:1.3">Logo</div><div style="font-size:24px;line-height:1.4;color:#5B6672">Varian, clear space, penempatan</div></div></div>
+      <div style="display:flex;gap:20px;padding:20px 0;border-top:1px solid #E3E6E9"><span style="font-family:'JetBrains Mono',monospace;font-size:24px;color:#3A34B5">04</span><div><div style="font-size:28px;font-weight:600;line-height:1.3">Misuse</div><div style="font-size:24px;line-height:1.4;color:#5B6672">Sembilan larangan</div></div></div>
+      <div style="display:flex;gap:20px;padding:20px 0;border-top:1px solid #E3E6E9"><span style="font-family:'JetBrains Mono',monospace;font-size:24px;color:#3A34B5">05</span><div><div style="font-size:28px;font-weight:600;line-height:1.3">Warna</div><div style="font-size:24px;line-height:1.4;color:#5B6672">Ramp brand, netral, semantik, aturan</div></div></div>
+      <div style="display:flex;gap:20px;padding:20px 0;border-top:1px solid #E3E6E9"><span style="font-family:'JetBrains Mono',monospace;font-size:24px;color:#3A34B5">06</span><div><div style="font-size:28px;font-weight:600;line-height:1.3">Tipografi</div><div style="font-size:24px;line-height:1.4;color:#5B6672">Font stack, skala, perlakuan angka</div></div></div>
+      <div style="display:flex;gap:20px;padding:20px 0;border-top:1px solid #E3E6E9"><span style="font-family:'JetBrains Mono',monospace;font-size:24px;color:#3A34B5">07</span><div><div style="font-size:28px;font-weight:600;line-height:1.3">Ikonografi</div><div style="font-size:24px;line-height:1.4;color:#5B6672">Set ikon dan aturan pemakaian</div></div></div>
+      <div style="display:flex;gap:20px;padding:20px 0;border-top:1px solid #E3E6E9"><span style="font-family:'JetBrains Mono',monospace;font-size:24px;color:#3A34B5">08</span><div><div style="font-size:28px;font-weight:600;line-height:1.3">Fotografi &amp; ilustrasi</div><div style="font-size:24px;line-height:1.4;color:#5B6672">Arah gaya</div></div></div>
+      <div style="display:flex;gap:20px;padding:20px 0;border-top:1px solid #E3E6E9"><span style="font-family:'JetBrains Mono',monospace;font-size:24px;color:#3A34B5">09</span><div><div style="font-size:28px;font-weight:600;line-height:1.3">Motion</div><div style="font-size:24px;line-height:1.4;color:#5B6672">Durasi, easing, prinsip</div></div></div>
+      <div style="display:flex;gap:20px;padding:20px 0;border-top:1px solid #E3E6E9"><span style="font-family:'JetBrains Mono',monospace;font-size:24px;color:#3A34B5">10</span><div><div style="font-size:28px;font-weight:600;line-height:1.3">Voice &amp; tone</div><div style="font-size:24px;line-height:1.4;color:#5B6672">Prinsip dan contoh</div></div></div>
+      <div style="display:flex;gap:20px;padding:20px 0;border-top:1px solid #E3E6E9"><span style="font-family:'JetBrains Mono',monospace;font-size:24px;color:#3A34B5">11</span><div><div style="font-size:28px;font-weight:600;line-height:1.3">Penerapan</div><div style="font-size:24px;line-height:1.4;color:#5B6672">Aset yang perlu diproduksi</div></div></div>
+      <div style="display:flex;gap:20px;padding:20px 0;border-top:1px solid #E3E6E9"><span style="font-family:'JetBrains Mono',monospace;font-size:24px;color:#3A34B5">12</span><div><div style="font-size:28px;font-weight:600;line-height:1.3">Tata kelola</div><div style="font-size:24px;line-height:1.4;color:#5B6672">Kepemilikan &amp; sumber kebenaran</div></div></div>
+    </div>
+    <div style="position:absolute;left:120px;right:120px;bottom:56px;display:flex;align-items:center;gap:16px;font-family:'JetBrains Mono',monospace;font-size:24px;color:#A9B2BB"><svg width="24" height="24" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M2.35 9.14H20.9A3.78 3.78 0 0 1 24.68 12.92V21.18" stroke="#3A34B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.32 3.4V7.74" stroke="#3A34B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M29.65 22.86H11.1A3.78 3.78 0 0 0 7.32 19.08V10.82" stroke="#3A34B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M24.68 28.6V24.26" stroke="#3A34B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>PAADU FLOW · BRAND GUIDELINES</span><span style="margin-left:auto">02</span></div>
+  </section>
+
+  <section data-label="Brand story" data-screen-label="03 Brand story" data-speaker-notes="Nama dari 'padu' — bukan pilihan estetis. Ia menyatakan apa yang produk lakukan." style="position:relative;background:#FFFFFF;color:#0B0F14;font-family:Inter,system-ui,sans-serif;display:flex;flex-direction:column;box-sizing:border-box;padding:96px 120px">
+    <div style="font-family:'JetBrains Mono',monospace;font-size:24px;letter-spacing:.12em;color:#3A34B5;margin-bottom:16px">01 · BRAND STORY</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:96px;flex:1;align-items:center">
+      <div>
+        <div style="font-size:120px;line-height:1.05;font-weight:600;letter-spacing:-0.03em;margin-bottom:24px">Padu<span style="color:#3A34B5">.</span></div>
+        <div style="font-size:32px;line-height:1.4;color:#5B6672;margin-bottom:40px">Bersatu. Kohesif. Terintegrasi.</div>
+        <p style="margin:0;font-size:27px;line-height:1.55;max-width:640px;text-wrap:pretty">Paadu Flow berakar dari kata Bahasa Indonesia <strong style="font-weight:600">"padu"</strong> — akar yang sama melahirkan "terpadu". Nama ini menyatakan apa yang produk lakukan: menyatukan seluruh proses bisnis ke satu sumber data tunggal, sehingga tidak ada yang perlu disinkronkan karena tidak pernah terpisah. <strong style="font-weight:600">"Flow"</strong> menyatakan hasilnya — proses yang berjalan tanpa terputus antar bagian.</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:32px">
+        <div style="display:flex;align-items:center;justify-content:center;padding:72px;background:#F7F8F9;border:1px solid #E3E6E9;border-radius:16px">
+          <svg width="220" height="220" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M2.35 9.14H20.9A3.78 3.78 0 0 1 24.68 12.92V21.18" stroke="#3A34B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.32 3.4V7.74" stroke="#3A34B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M29.65 22.86H11.1A3.78 3.78 0 0 0 7.32 19.08V10.82" stroke="#3A34B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M24.68 28.6V24.26" stroke="#3A34B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <p style="margin:0;font-size:24px;line-height:1.5;color:#5B6672;text-wrap:pretty">Sebagian besar produk enterprise dinamai dari akar Latin atau Yunani. Paadu Flow tidak — nama yang berakar dari bahasa tempat produk ini lahir adalah pernyataan tentang siapa yang dipahaminya.</p>
+      </div>
+    </div>
+    <div style="position:absolute;left:120px;right:120px;bottom:56px;display:flex;align-items:center;gap:16px;font-family:'JetBrains Mono',monospace;font-size:24px;color:#A9B2BB"><svg width="24" height="24" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M2.35 9.14H20.9A3.78 3.78 0 0 1 24.68 12.92V21.18" stroke="#3A34B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.32 3.4V7.74" stroke="#3A34B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M29.65 22.86H11.1A3.78 3.78 0 0 0 7.32 19.08V10.82" stroke="#3A34B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M24.68 28.6V24.26" stroke="#3A34B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>PAADU FLOW · BRAND GUIDELINES</span><span style="margin-left:auto">03</span></div>
+  </section>
+
+  <section data-label="Geometri mark" data-screen-label="04 Geometri mark" data-speaker-notes="Anyaman Alur: lima keputusan geometri, masing-masing membawa satu makna. Fungsinya memberi tim alasan konsisten 20 tahun." style="position:relative;background:#FFFFFF;color:#0B0F14;font-family:Inter,system-ui,sans-serif;display:flex;flex-direction:column;box-sizing:border-box;padding:96px 120px">
+    <div style="font-family:'JetBrains Mono',monospace;font-size:24px;letter-spacing:.12em;color:#3A34B5;margin-bottom:16px">01 · BRAND STORY</div>
+    <h2 style="margin:0 0 12px;font-size:64px;line-height:1.15;font-weight:600;letter-spacing:-0.02em">Anyaman Alur — yang dinyatakan geometrinya</h2>
+    <p style="margin:0 0 56px;font-size:26px;line-height:1.5;color:#5B6672">Dua untaian identik, diputar 180°, saling mengunci membentuk satu anyaman.</p>
+    <div style="display:grid;grid-template-columns:560px 1fr;gap:96px;align-items:center;flex:1">
+      <div style="position:relative;display:flex;align-items:center;justify-content:center;padding:64px;background:#0B0F14;border-radius:16px">
+        <svg width="360" height="360" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M2.35 9.14H20.9A3.78 3.78 0 0 1 24.68 12.92V21.18" stroke="#A5A0F0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.32 3.4V7.74" stroke="#A5A0F0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M29.65 22.86H11.1A3.78 3.78 0 0 0 7.32 19.08V10.82" stroke="#A5A0F0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M24.68 28.6V24.26" stroke="#A5A0F0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div style="display:flex;flex-direction:column">
+        <div style="display:flex;gap:24px;padding:22px 0;border-top:1px solid #E3E6E9"><span style="font-family:'JetBrains Mono',monospace;font-size:24px;color:#3A34B5;flex-shrink:0">A</span><div style="font-size:26px;line-height:1.45"><strong style="font-weight:600">Dua untaian, bukan satu bentuk.</strong> <span style="color:#5B6672">Modul Business OS berdiri sendiri sebelum bertemu.</span></div></div>
+        <div style="display:flex;gap:24px;padding:22px 0;border-top:1px solid #E3E6E9"><span style="font-family:'JetBrains Mono',monospace;font-size:24px;color:#3A34B5;flex-shrink:0">B</span><div style="font-size:26px;line-height:1.45"><strong style="font-weight:600">Saling mengunci di tengah.</strong> <span style="color:#5B6672">Yang dibagi adalah data, bukan identitas modulnya.</span></div></div>
+        <div style="display:flex;gap:24px;padding:22px 0;border-top:1px solid #E3E6E9"><span style="font-family:'JetBrains Mono',monospace;font-size:24px;color:#3A34B5;flex-shrink:0">C</span><div style="font-size:26px;line-height:1.45"><strong style="font-weight:600">Bobot stroke identik.</strong> <span style="color:#5B6672">Tidak ada modul kelas satu dan modul pelengkap.</span></div></div>
+        <div style="display:flex;gap:24px;padding:22px 0;border-top:1px solid #E3E6E9"><span style="font-family:'JetBrains Mono',monospace;font-size:24px;color:#3A34B5;flex-shrink:0">D</span><div style="font-size:26px;line-height:1.45"><strong style="font-weight:600">Sudut siku, alur menerus.</strong> <span style="color:#5B6672">Struktur tegas yang tetap mengalir — inilah kata Flow.</span></div></div>
+        <div style="display:flex;gap:24px;padding:22px 0;border-top:1px solid #E3E6E9;border-bottom:1px solid #E3E6E9"><span style="font-family:'JetBrains Mono',monospace;font-size:24px;color:#3A34B5;flex-shrink:0">E</span><div style="font-size:26px;line-height:1.45"><strong style="font-weight:600">Ujung terbuka, membulat.</strong> <span style="color:#5B6672">Sistem yang dapat diperluas; enterprise tanpa dingin. Dasar larangan misuse no. 7.</span></div></div>
+      </div>
+    </div>
+    <div style="position:absolute;left:120px;right:120px;bottom:56px;display:flex;align-items:center;gap:16px;font-family:'JetBrains Mono',monospace;font-size:24px;color:#A9B2BB"><svg width="24" height="24" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M2.35 9.14H20.9A3.78 3.78 0 0 1 24.68 12.92V21.18" stroke="#3A34B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.32 3.4V7.74" stroke="#3A34B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M29.65 22.86H11.1A3.78 3.78 0 0 0 7.32 19.08V10.82" stroke="#3A34B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M24.68 28.6V24.26" stroke="#3A34B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>PAADU FLOW · BRAND GUIDELINES</span><span style="margin-left:auto">04</span></div>
+  </section>
+
+  <section data-label="Positioning" data-screen-label="05 Positioning" data-speaker-notes="Satu kalimat posisi. Berbeda dari software UMKM yang ditinggalkan saat besar, dan ERP enterprise yang terlalu berat untuk mulai." style="position:relative;background:#0B0F14;color:#F7F8F9;font-family:Inter,system-ui,sans-serif;display:flex;flex-direction:column;justify-content:center;box-sizing:border-box;padding:96px 160px">
+    <div style="font-family:'JetBrains Mono',monospace;font-size:24px;letter-spacing:.12em;color:#A5A0F0;margin-bottom:40px">02 · POSITIONING</div>
+    <h2 style="margin:0 0 48px;font-size:76px;line-height:1.12;font-weight:600;letter-spacing:-0.02em;max-width:1400px;text-wrap:pretty">Sistem terakhir yang perlu Anda pindahi.</h2>
+    <p style="margin:0 0 56px;font-size:30px;line-height:1.55;color:#A9B2BB;max-width:1360px;text-wrap:pretty">Untuk organisasi yang sistemnya tidak sanggup mengikuti pertumbuhannya — dari individu, UMKM, hingga grup usaha dengan banyak entitas legal — Paadu Flow adalah business operating system yang menyatukan seluruh proses bisnis dalam satu sumber data, dan tumbuh bersama organisasi tanpa pernah perlu diganti.</p>
+    <div style="display:flex;align-items:center;gap:24px">
+      <span style="height:2px;width:64px;background:#E8A33D"></span>
+      <span style="font-size:30px;font-weight:600">One Platform. Every Business.</span>
+      <span style="font-size:26px;color:#7C8794">Satu platform. Semua bisnis.</span>
+    </div>
+    <div style="position:absolute;left:120px;right:120px;bottom:56px;display:flex;align-items:center;gap:16px;font-family:'JetBrains Mono',monospace;font-size:24px;color:#45525F"><svg width="24" height="24" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M2.35 9.14H20.9A3.78 3.78 0 0 1 24.68 12.92V21.18" stroke="#A5A0F0" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.32 3.4V7.74" stroke="#A5A0F0" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M29.65 22.86H11.1A3.78 3.78 0 0 0 7.32 19.08V10.82" stroke="#A5A0F0" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M24.68 28.6V24.26" stroke="#A5A0F0" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>PAADU FLOW · BRAND GUIDELINES</span><span style="margin-left:auto">05</span></div>
+  </section>
+
+  <section data-label="Lima pilar" data-screen-label="06 Lima pilar" data-speaker-notes="Kosakata internal — dilarang muncul sebagai nama fitur atau modul." style="position:relative;background:#FFFFFF;color:#0B0F14;font-family:Inter,system-ui,sans-serif;display:flex;flex-direction:column;box-sizing:border-box;padding:96px 120px">
+    <div style="font-family:'JetBrains Mono',monospace;font-size:24px;letter-spacing:.12em;color:#3A34B5;margin-bottom:16px">02 · POSITIONING</div>
+    <h2 style="margin:0 0 12px;font-size:64px;line-height:1.15;font-weight:600;letter-spacing:-0.02em">Lima pilar brand</h2>
+    <p style="margin:0 0 64px;font-size:26px;line-height:1.5;color:#5B6672">Kosakata internal untuk menilai setiap keputusan. Dilarang muncul sebagai nama fitur atau modul.</p>
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:24px;flex:1;align-content:start">
+      <div style="display:flex;flex-direction:column;gap:20px;padding:40px 32px;background:#F7F8F9;border:1px solid #E3E6E9;border-radius:16px"><span style="font-family:'JetBrains Mono',monospace;font-size:24px;color:#3A34B5">01</span><div style="font-size:36px;font-weight:600">Padu</div><p style="margin:0;font-size:24px;line-height:1.45;color:#5B6672;text-wrap:pretty">Satu data, satu kebenaran. Tidak ada yang perlu direkonsiliasi.</p></div>
+      <div style="display:flex;flex-direction:column;gap:20px;padding:40px 32px;background:#F7F8F9;border:1px solid #E3E6E9;border-radius:16px"><span style="font-family:'JetBrains Mono',monospace;font-size:24px;color:#3A34B5">02</span><div style="font-size:36px;font-weight:600">Tumbuh</div><p style="margin:0;font-size:24px;line-height:1.45;color:#5B6672;text-wrap:pretty">Platform yang sama melayani satu orang dan sepuluh entitas legal.</p></div>
+      <div style="display:flex;flex-direction:column;gap:20px;padding:40px 32px;background:#F7F8F9;border:1px solid #E3E6E9;border-radius:16px"><span style="font-family:'JetBrains Mono',monospace;font-size:24px;color:#3A34B5">03</span><div style="font-size:36px;font-weight:600">Terang</div><p style="margin:0;font-size:24px;line-height:1.45;color:#5B6672;text-wrap:pretty">Setiap angka dapat dipertanggungjawabkan. Setiap perubahan punya jejak.</p></div>
+      <div style="display:flex;flex-direction:column;gap:20px;padding:40px 32px;background:#F7F8F9;border:1px solid #E3E6E9;border-radius:16px"><span style="font-family:'JetBrains Mono',monospace;font-size:24px;color:#3A34B5">04</span><div style="font-size:36px;font-weight:600">Cekatan</div><p style="margin:0;font-size:24px;line-height:1.45;color:#5B6672;text-wrap:pretty">Pekerjaan harian selesai tanpa menunggu dan tanpa berpikir.</p></div>
+      <div style="display:flex;flex-direction:column;gap:20px;padding:40px 32px;background:#F7F8F9;border:1px solid #E3E6E9;border-radius:16px"><span style="font-family:'JetBrains Mono',monospace;font-size:24px;color:#3A34B5">05</span><div style="font-size:36px;font-weight:600">Tenang</div><p style="margin:0;font-size:24px;line-height:1.45;color:#5B6672;text-wrap:pretty">Sistem yang memegang uang orang tidak boleh mengejutkan siapa pun.</p></div>
+    </div>
+    <div style="position:absolute;left:120px;right:120px;bottom:56px;display:flex;align-items:center;gap:16px;font-family:'JetBrains Mono',monospace;font-size:24px;color:#A9B2BB"><svg width="24" height="24" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M2.35 9.14H20.9A3.78 3.78 0 0 1 24.68 12.92V21.18" stroke="#3A34B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.32 3.4V7.74" stroke="#3A34B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M29.65 22.86H11.1A3.78 3.78 0 0 0 7.32 19.08V10.82" stroke="#3A34B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M24.68 28.6V24.26" stroke="#3A34B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>PAADU FLOW · BRAND GUIDELINES</span><span style="margin-left:auto">06</span></div>
+  </section>
+
+  <section data-label="Kepribadian" data-screen-label="07 Kepribadian" data-speaker-notes="Format 'X bukan Y' mencegah setiap atribut meluncur jadi versi buruknya." style="position:relative;background:#FFFFFF;color:#0B0F14;font-family:Inter,system-ui,sans-serif;display:flex;flex-direction:column;box-sizing:border-box;padding:96px 120px">
+    <div style="font-family:'JetBrains Mono',monospace;font-size:24px;letter-spacing:.12em;color:#3A34B5;margin-bottom:16px">02 · POSITIONING</div>
+    <h2 style="margin:0 0 12px;font-size:64px;line-height:1.15;font-weight:600;letter-spacing:-0.02em">Kepribadian brand</h2>
+    <p style="margin:0 0 56px;font-size:26px;line-height:1.5;color:#5B6672">Format "kami X, bukan Y" ada untuk mencegah setiap atribut meluncur menjadi versi buruknya.</p>
+    <div style="display:flex;flex-direction:column;flex:1">
+      <div style="display:grid;grid-template-columns:520px 1fr;gap:64px;align-items:baseline;padding:28px 0;border-top:1px solid #E3E6E9"><div style="font-size:34px;font-weight:600">Tegas <span style="color:#7C8794;font-weight:400">bukan kaku</span></div><div style="font-size:26px;line-height:1.5;color:#5B6672">Menyatakan hal sulit dengan jelas: apa yang terjadi, apa yang hilang, berapa biayanya.</div></div>
+      <div style="display:grid;grid-template-columns:520px 1fr;gap:64px;align-items:baseline;padding:28px 0;border-top:1px solid #E3E6E9"><div style="font-size:34px;font-weight:600">Cerdas <span style="color:#7C8794;font-weight:400">bukan menggurui</span></div><div style="font-size:26px;line-height:1.5;color:#5B6672">Menampilkan yang relevan tanpa memamerkan kecanggihan atau memakai jargon.</div></div>
+      <div style="display:grid;grid-template-columns:520px 1fr;gap:64px;align-items:baseline;padding:28px 0;border-top:1px solid #E3E6E9"><div style="font-size:34px;font-weight:600">Hangat <span style="color:#7C8794;font-weight:400">bukan akrab berlebihan</span></div><div style="font-size:26px;line-height:1.5;color:#5B6672">Berpihak pada pengguna, tidak menyalahkan saat terjadi kesalahan.</div></div>
+      <div style="display:grid;grid-template-columns:520px 1fr;gap:64px;align-items:baseline;padding:28px 0;border-top:1px solid #E3E6E9"><div style="font-size:34px;font-weight:600">Tenang <span style="color:#7C8794;font-weight:400">bukan datar</span></div><div style="font-size:26px;line-height:1.5;color:#5B6672">Stabil di situasi buruk. Memberi informasi, bukan kepanikan.</div></div>
+      <div style="display:grid;grid-template-columns:520px 1fr;gap:64px;align-items:baseline;padding:28px 0;border-top:1px solid #E3E6E9;border-bottom:1px solid #E3E6E9"><div style="font-size:34px;font-weight:600">Presisi <span style="color:#7C8794;font-weight:400">bukan dingin</span></div><div style="font-size:26px;line-height:1.5;color:#5B6672">Angka spesifik, waktu spesifik. Tidak pernah "beberapa" saat bisa "tujuh".</div></div>
+    </div>
+    <div style="position:absolute;left:120px;right:120px;bottom:56px;display:flex;align-items:center;gap:16px;font-family:'JetBrains Mono',monospace;font-size:24px;color:#A9B2BB"><svg width="24" height="24" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M2.35 9.14H20.9A3.78 3.78 0 0 1 24.68 12.92V21.18" stroke="#3A34B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.32 3.4V7.74" stroke="#3A34B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M29.65 22.86H11.1A3.78 3.78 0 0 0 7.32 19.08V10.82" stroke="#3A34B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M24.68 28.6V24.26" stroke="#3A34B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>PAADU FLOW · BRAND GUIDELINES</span><span style="margin-left:auto">07</span></div>
+  </section>
+
+  <section data-label="Logo varian" data-screen-label="08 Logo varian" data-speaker-notes="Wordmark dua tone: Paadu = brand, Flow = deskriptor. Bila Flow dilepas, lockup tidak runtuh." style="position:relative;background:#FFFFFF;color:#0B0F14;font-family:Inter,system-ui,sans-serif;display:flex;flex-direction:column;box-sizing:border-box;padding:96px 120px">
+    <div style="font-family:'JetBrains Mono',monospace;font-size:24px;letter-spacing:.12em;color:#3A34B5;margin-bottom:16px">03 · LOGO</div>
+    <h2 style="margin:0 0 56px;font-size:64px;line-height:1.15;font-weight:600;letter-spacing:-0.02em">Varian dan lockup</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:24px;flex:1;align-content:start">
+      <div style="display:flex;flex-direction:column;border:1px solid #E3E6E9;border-radius:16px;overflow:hidden">
+        <div style="flex:1;display:flex;align-items:center;justify-content:center;gap:16px;padding:48px 32px;background:#F7F8F9;min-height:220px">
+          <svg width="64" height="64" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M2.35 9.14H20.9A3.78 3.78 0 0 1 24.68 12.92V21.18" stroke="#3A34B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.32 3.4V7.74" stroke="#3A34B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M29.65 22.86H11.1A3.78 3.78 0 0 0 7.32 19.08V10.82" stroke="#3A34B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M24.68 28.6V24.26" stroke="#3A34B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span style="font-size:44px;letter-spacing:-0.02em"><span style="font-weight:600">Paadu</span><span style="font-weight:400;color:#5B6672">Flow</span></span>
+        </div>
+        <div style="padding:28px 32px;border-top:1px solid #E3E6E9"><div style="font-size:28px;font-weight:600;margin-bottom:8px">Lockup horizontal</div><div style="font-size:24px;line-height:1.45;color:#5B6672">Default. Header aplikasi, web, tanda tangan email, kop surat.</div></div>
+      </div>
+      <div style="display:flex;flex-direction:column;border:1px solid #E3E6E9;border-radius:16px;overflow:hidden">
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;padding:48px 32px;background:#F7F8F9;min-height:220px">
+          <svg width="88" height="88" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M2.35 9.14H20.9A3.78 3.78 0 0 1 24.68 12.92V21.18" stroke="#3A34B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.32 3.4V7.74" stroke="#3A34B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M29.65 22.86H11.1A3.78 3.78 0 0 0 7.32 19.08V10.82" stroke="#3A34B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M24.68 28.6V24.26" stroke="#3A34B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span style="font-size:40px;letter-spacing:-0.02em"><span style="font-weight:600">Paadu</span><span style="font-weight:400;color:#5B6672">Flow</span></span>
+        </div>
+        <div style="padding:28px 32px;border-top:1px solid #E3E6E9"><div style="font-size:28px;font-weight:600;margin-bottom:8px">Lockup vertikal</div><div style="font-size:24px;line-height:1.45;color:#5B6672">Cover dokumen, slide pembuka, splash screen.</div></div>
+      </div>
+      <div style="display:flex;flex-direction:column;border:1px solid #E3E6E9;border-radius:16px;overflow:hidden">
+        <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:48px 32px;background:#F7F8F9;min-height:220px">
+          <svg width="112" height="112" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M2.35 9.14H20.9A3.78 3.78 0 0 1 24.68 12.92V21.18" stroke="#3A34B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.32 3.4V7.74" stroke="#3A34B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M29.65 22.86H11.1A3.78 3.78 0 0 0 7.32 19.08V10.82" stroke="#3A34B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M24.68 28.6V24.26" stroke="#3A34B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div style="padding:28px 32px;border-top:1px solid #E3E6E9"><div style="font-size:28px;font-weight:600;margin-bottom:8px">Mark sendiri</div><div style="font-size:24px;line-height:1.45;color:#5B6672">Hanya bila nama sudah jelas dari konteks: app icon, favicon, avatar.</div></div>
+      </div>
+    </div>
+    <p style="margin:32px 0 0;font-size:24px;line-height:1.5;color:#5B6672;max-width:1520px;text-wrap:pretty">Wordmark dua tone menyatakan hierarki: <strong style="font-weight:600;color:#0B0F14">Paadu</strong> adalah brand, <strong style="font-weight:600;color:#0B0F14">Flow</strong> adalah deskriptor — bila "Flow" suatu saat dilepas, lockup tidak runtuh. Varian satu bobot wajib tersedia untuk bordir, stempel, gravir, dan cetak satu warna. Wordmark selalu didistribusikan sebagai SVG, tidak pernah diketik ulang.</p>
+    <div style="position:absolute;left:120px;right:120px;bottom:56px;display:flex;align-items:center;gap:16px;font-family:'JetBrains Mono',monospace;font-size:24px;color:#A9B2BB"><svg width="24" height="24" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M2.35 9.14H20.9A3.78 3.78 0 0 1 24.68 12.92V21.18" stroke="#3A34B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.32 3.4V7.74" stroke="#3A34B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M29.65 22.86H11.1A3.78 3.78 0 0 0 7.32 19.08V10.82" stroke="#3A34B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M24.68 28.6V24.26" stroke="#3A34B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>PAADU FLOW · BRAND GUIDELINES</span><span style="margin-left:auto">08</span></div>
+  </section>
+
+  <section data-label="Clear space" data-screen-label="09 Clear space" data-speaker-notes="Dua aturan terpisah dan keduanya wajib: zona eksklusi 0,25× tinggi mark; jarak internal 1× lebar stroke." style="position:relative;background:#FFFFFF;color:#0B0F14;font-family:Inter,system-ui,sans-serif;display:flex;flex-direction:column;box-sizing:border-box;padding:96px 120px">
+    <div style="font-family:'JetBrains Mono',monospace;font-size:24px;letter-spacing:.12em;color:#3A34B5;margin-bottom:16px">03 · LOGO</div>
+    <h2 style="margin:0 0 56px;font-size:64px;line-height:1.15;font-weight:600;letter-spacing:-0.02em">Clear space dan ukuran minimum</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:64px;flex:1;align-content:start">
+      <div>
+        <div style="display:flex;align-items:center;justify-content:center;padding:80px;background:#F7F8F9;border:1px solid #E3E6E9;border-radius:16px;margin-bottom:32px">
+          <div style="position:relative;padding:32px;border:2px dashed #B9B5EC">
+            <div style="display:flex;align-items:center;gap:14px">
+              <svg width="56" height="56" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M2.35 9.14H20.9A3.78 3.78 0 0 1 24.68 12.92V21.18" stroke="#3A34B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.32 3.4V7.74" stroke="#3A34B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M29.65 22.86H11.1A3.78 3.78 0 0 0 7.32 19.08V10.82" stroke="#3A34B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M24.68 28.6V24.26" stroke="#3A34B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <span style="font-size:38px;letter-spacing:-0.02em"><span style="font-weight:600">Paadu</span><span style="font-weight:400;color:#5B6672">Flow</span></span>
+            </div>
+            <span style="position:absolute;top:-40px;left:50%;transform:translateX(-50%);font-family:'JetBrains Mono',monospace;font-size:24px;color:#3A34B5;white-space:nowrap">0,25 × H</span>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:20px;font-size:26px;line-height:1.5">
+          <div><strong style="font-weight:600">Zona eksklusi — 0,25 × tinggi mark</strong> di keempat sisi. <span style="color:#5B6672">Tidak ada teks, garis, gambar, atau tepi media yang boleh masuk.</span></div>
+          <div><strong style="font-weight:600">Jarak internal lockup — 1 × lebar stroke mark.</strong> <span style="color:#5B6672">Aturan terpisah dari zona eksklusi; keduanya wajib.</span></div>
+        </div>
+      </div>
+      <div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
+          <div style="padding:32px;border:1px solid #E3E6E9;border-radius:16px"><div style="font-family:'JetBrains Mono',monospace;font-size:26px;color:#3A34B5;margin-bottom:12px">20 px</div><div style="font-size:26px;font-weight:600;margin-bottom:8px">Lockup — layar</div><div style="font-size:24px;line-height:1.45;color:#5B6672">Tinggi mark minimum di antarmuka dan web.</div></div>
+          <div style="padding:32px;border:1px solid #E3E6E9;border-radius:16px"><div style="font-family:'JetBrains Mono',monospace;font-size:26px;color:#3A34B5;margin-bottom:12px">6 mm</div><div style="font-size:26px;font-weight:600;margin-bottom:8px">Lockup — cetak</div><div style="font-size:24px;line-height:1.45;color:#5B6672">Tinggi mark minimum di media cetak.</div></div>
+          <div style="padding:32px;border:1px solid #E3E6E9;border-radius:16px"><div style="font-family:'JetBrains Mono',monospace;font-size:26px;color:#3A34B5;margin-bottom:12px">&lt; 20 px</div><div style="font-size:26px;font-weight:600;margin-bottom:8px">Varian optis wajib</div><div style="font-size:24px;line-height:1.45;color:#5B6672">Celah anyam ditutup, stroke ditebalkan — celah adalah detail pertama yang hilang.</div></div>
+          <div style="padding:32px;border:1px solid #E3E6E9;border-radius:16px"><div style="font-family:'JetBrains Mono',monospace;font-size:26px;color:#3A34B5;margin-bottom:12px">16 px</div><div style="font-size:26px;font-weight:600;margin-bottom:8px">Favicon</div><div style="font-size:24px;line-height:1.45;color:#5B6672">Selalu varian optis. Uji di tab browser sungguhan, bukan simulasi.</div></div>
+        </div>
+      </div>
+    </div>
+    <div style="position:absolute;left:120px;right:120px;bottom:56px;display:flex;align-items:center;gap:16px;font-family:'JetBrains Mono',monospace;font-size:24px;color:#A9B2BB"><svg width="24" height="24" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M2.35 9.14H20.9A3.78 3.78 0 0 1 24.68 12.92V21.18" stroke="#3A34B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.32 3.4V7.74" stroke="#3A34B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M29.65 22.86H11.1A3.78 3.78 0 0 0 7.32 19.08V10.82" stroke="#3A34B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M24.68 28.6V24.26" stroke="#3A34B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>PAADU FLOW · BRAND GUIDELINES</span><span style="margin-left:auto">09</span></div>
+  </section>
+
+  <section data-label="Penempatan" data-screen-label="10 Penempatan" data-speaker-notes="Dua-warna hanya di latar putih/netral terang. Di latar berwarna dan gelap: monokrom. Minimal 3:1 terhadap latar." style="position:relative;background:#FFFFFF;color:#0B0F14;font-family:Inter,system-ui,sans-serif;display:flex;flex-direction:column;box-sizing:border-box;padding:96px 120px">
+    <div style="font-family:'JetBrains Mono',monospace;font-size:24px;letter-spacing:.12em;color:#3A34B5;margin-bottom:16px">03 · LOGO</div>
+    <h2 style="margin:0 0 56px;font-size:64px;line-height:1.15;font-weight:600;letter-spacing:-0.02em">Penempatan di latar</h2>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:24px;flex:1;align-content:start">
+      <div>
+        <div style="display:flex;align-items:center;justify-content:center;height:280px;background:#FFFFFF;border:1px solid #E3E6E9;border-radius:16px;margin-bottom:20px"><svg width="88" height="88" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M2.35 9.14H20.9A3.78 3.78 0 0 1 24.68 12.92V21.18" stroke="#3A34B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.32 3.4V7.74" stroke="#3A34B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M29.65 22.86H11.1A3.78 3.78 0 0 0 7.32 19.08V10.82" stroke="#3A34B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M24.68 28.6V24.26" stroke="#3A34B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div style="font-size:26px;font-weight:600;margin-bottom:6px">Putih / netral terang</div>
+        <div style="font-size:24px;line-height:1.45;color:#5B6672">Mark biru penuh. Tidak ada varian dua warna — mark selalu satu warna.</div>
+      </div>
+      <div>
+        <div style="display:flex;align-items:center;justify-content:center;height:280px;background:#3A34B5;border-radius:16px;margin-bottom:20px"><svg width="88" height="88" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M2.35 9.14H20.9A3.78 3.78 0 0 1 24.68 12.92V21.18" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.32 3.4V7.74" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M29.65 22.86H11.1A3.78 3.78 0 0 0 7.32 19.08V10.82" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M24.68 28.6V24.26" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div style="font-size:26px;font-weight:600;margin-bottom:6px">Warna brand</div>
+        <div style="font-size:24px;line-height:1.45;color:#5B6672">Mark putih. Kontras penuh, tanpa transparansi.</div>
+      </div>
+      <div>
+        <div style="display:flex;align-items:center;justify-content:center;height:280px;background:#0B0F14;border-radius:16px;margin-bottom:20px"><svg width="88" height="88" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M2.35 9.14H20.9A3.78 3.78 0 0 1 24.68 12.92V21.18" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.32 3.4V7.74" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M29.65 22.86H11.1A3.78 3.78 0 0 0 7.32 19.08V10.82" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M24.68 28.6V24.26" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div style="font-size:26px;font-weight:600;margin-bottom:6px">Netral gelap</div>
+        <div style="font-size:24px;line-height:1.45;color:#5B6672">Mark putih — atau blue-300 di antarmuka dark mode.</div>
+      </div>
+      <div>
+        <div style="position:relative;display:flex;align-items:center;justify-content:center;height:280px;background:#C9CFD5;border-radius:16px;margin-bottom:20px"><svg width="88" height="88" viewBox="0 0 32 32" fill="none" aria-hidden="true" style="opacity:.55"><path d="M2.35 9.14H20.9A3.78 3.78 0 0 1 24.68 12.92V21.18" stroke="#A9B2BB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.32 3.4V7.74" stroke="#A9B2BB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M29.65 22.86H11.1A3.78 3.78 0 0 0 7.32 19.08V10.82" stroke="#A9B2BB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M24.68 28.6V24.26" stroke="#A9B2BB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span style="position:absolute;top:16px;right:16px;padding:6px 16px;background:#B42318;color:#FFFFFF;border-radius:999px;font-size:24px;font-weight:600">✗</span></div>
+        <div style="font-size:26px;font-weight:600;margin-bottom:6px">Kontras rendah</div>
+        <div style="font-size:24px;line-height:1.45;color:#5B6672">Tidak diizinkan. Mark wajib mencapai minimal 3:1 terhadap latarnya.</div>
+      </div>
+    </div>
+    <p style="margin:40px 0 0;font-size:24px;line-height:1.5;color:#5B6672;max-width:1400px;text-wrap:pretty">Di atas foto: hanya pada area dengan kontras cukup, selalu mark putih. Bila tidak ada area seperti itu, jangan tempatkan logo di atas foto.</p>
+    <div style="position:absolute;left:120px;right:120px;bottom:56px;display:flex;align-items:center;gap:16px;font-family:'JetBrains Mono',monospace;font-size:24px;color:#A9B2BB"><svg width="24" height="24" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M2.35 9.14H20.9A3.78 3.78 0 0 1 24.68 12.92V21.18" stroke="#3A34B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.32 3.4V7.74" stroke="#3A34B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M29.65 22.86H11.1A3.78 3.78 0 0 0 7.32 19.08V10.82" stroke="#3A34B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M24.68 28.6V24.26" stroke="#3A34B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>PAADU FLOW · BRAND GUIDELINES</span><span style="margin-left:auto">10</span></div>
+  </section>
+
+  <section data-label="Misuse" data-screen-label="11 Misuse" data-speaker-notes="Sembilan larangan — wajib disertakan setiap kali dokumen dikirim keluar." style="position:relative;background:#FFFFFF;color:#0B0F14;font-family:Inter,system-ui,sans-serif;display:flex;flex-direction:column;box-sizing:border-box;padding:96px 120px">
+    <div style="font-family:'JetBrains Mono',monospace;font-size:24px;letter-spacing:.12em;color:#3A34B5;margin-bottom:16px">04 · MISUSE</div>
+    <h2 style="margin:0 0 12px;font-size:64px;line-height:1.15;font-weight:600;letter-spacing:-0.02em">Sembilan larangan</h2>
+    <p style="margin:0 0 40px;font-size:26px;line-height:1.5;color:#5B6672">Wajib disertakan setiap kali dokumen ini dikirim ke pihak luar.</p>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);gap:20px;flex:1;min-height:0">
+      <div style="display:flex;align-items:center;gap:24px;padding:20px 28px;background:#F7F8F9;border:1px solid #E3E6E9;border-radius:12px"><div style="display:flex;align-items:center;justify-content:center;width:120px;height:96px;background:#FFFFFF;border:1px solid #E3E6E9;border-radius:8px;flex-shrink:0"><svg width="64" height="64" viewBox="0 0 32 32" fill="none" aria-hidden="true" style="transform:scaleX(1.6)"><path d="M2.35 9.14H20.9A3.78 3.78 0 0 1 24.68 12.92V21.18" stroke="#3A34B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.32 3.4V7.74" stroke="#3A34B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M29.65 22.86H11.1A3.78 3.78 0 0 0 7.32 19.08V10.82" stroke="#3A34B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M24.68 28.6V24.26" stroke="#3A34B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div style="font-size:24px;line-height:1.4"><span style="color:#B42318;font-weight:600">✗</span> Jangan ubah proporsi</div></div>
+      <div style="display:flex;align-items:center;gap:24px;padding:20px 28px;background:#F7F8F9;border:1px solid #E3E6E9;border-radius:12px"><div style="display:flex;align-items:center;justify-content:center;width:120px;height:96px;background:#FFFFFF;border:1px solid #E3E6E9;border-radius:8px;flex-shrink:0"><svg width="64" height="64" viewBox="0 0 32 32" fill="none" aria-hidden="true" style="transform:rotate(-24deg)"><path d="M2.35 9.14H20.9A3.78 3.78 0 0 1 24.68 12.92V21.18" stroke="#3A34B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.32 3.4V7.74" stroke="#3A34B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M29.65 22.86H11.1A3.78 3.78 0 0 0 7.32 19.08V10.82" stroke="#3A34B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M24.68 28.6V24.26" stroke="#3A34B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div style="font-size:24px;line-height:1.4"><span style="color:#B42318;font-weight:600">✗</span> Jangan putar atau miringkan</div></div>
+      <div style="display:flex;align-items:center;gap:24px;padding:20px 28px;background:#F7F8F9;border:1px solid #E3E6E9;border-radius:12px"><div style="display:flex;align-items:center;justify-content:center;width:120px;height:96px;background:#FFFFFF;border:1px solid #E3E6E9;border-radius:8px;flex-shrink:0"><svg width="64" height="64" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M2.35 9.14H20.9A3.78 3.78 0 0 1 24.68 12.92V21.18" stroke="#D6409F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.32 3.4V7.74" stroke="#D6409F" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M29.65 22.86H11.1A3.78 3.78 0 0 0 7.32 19.08V10.82" stroke="#46A758" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M24.68 28.6V24.26" stroke="#46A758" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div style="font-size:24px;line-height:1.4"><span style="color:#B42318;font-weight:600">✗</span> Jangan warnai untaian berbeda-beda</div></div>
+      <div style="display:flex;align-items:center;gap:24px;padding:20px 28px;background:#F7F8F9;border:1px solid #E3E6E9;border-radius:12px"><div style="display:flex;align-items:center;justify-content:center;width:120px;height:96px;background:#FFFFFF;border:1px solid #E3E6E9;border-radius:8px;flex-shrink:0"><svg width="64" height="64" viewBox="0 0 32 32" fill="none" aria-hidden="true" style="filter:drop-shadow(3px 4px 2px rgba(11,15,20,.45))"><path d="M2.35 9.14H20.9A3.78 3.78 0 0 1 24.68 12.92V21.18" stroke="#3A34B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.32 3.4V7.74" stroke="#3A34B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M29.65 22.86H11.1A3.78 3.78 0 0 0 7.32 19.08V10.82" stroke="#3A34B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M24.68 28.6V24.26" stroke="#3A34B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div style="font-size:24px;line-height:1.4"><span style="color:#B42318;font-weight:600">✗</span> Jangan tambahkan bayangan atau efek</div></div>
+      <div style="display:flex;align-items:center;gap:24px;padding:20px 28px;background:#F7F8F9;border:1px solid #E3E6E9;border-radius:12px"><div style="display:flex;align-items:center;justify-content:center;width:120px;height:96px;background:#C9CFD5;border-radius:8px;flex-shrink:0"><svg width="64" height="64" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M2.35 9.14H20.9A3.78 3.78 0 0 1 24.68 12.92V21.18" stroke="#A9B2BB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.32 3.4V7.74" stroke="#A9B2BB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M29.65 22.86H11.1A3.78 3.78 0 0 0 7.32 19.08V10.82" stroke="#A9B2BB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M24.68 28.6V24.26" stroke="#A9B2BB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div style="font-size:24px;line-height:1.4"><span style="color:#B42318;font-weight:600">✗</span> Jangan pakai kontras rendah</div></div>
+      <div style="display:flex;align-items:center;gap:24px;padding:20px 28px;background:#F7F8F9;border:1px solid #E3E6E9;border-radius:12px"><div style="display:flex;align-items:center;justify-content:center;gap:2px;width:120px;height:96px;background:#FFFFFF;border:1px solid #E3E6E9;border-radius:8px;flex-shrink:0"><svg width="40" height="40" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M2.35 9.14H20.9A3.78 3.78 0 0 1 24.68 12.92V21.18" stroke="#3A34B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.32 3.4V7.74" stroke="#3A34B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M29.65 22.86H11.1A3.78 3.78 0 0 0 7.32 19.08V10.82" stroke="#3A34B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M24.68 28.6V24.26" stroke="#3A34B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span style="font-size:22px;font-weight:600;letter-spacing:-0.03em">PaaduFlow</span></div><div style="font-size:24px;line-height:1.4"><span style="color:#B42318;font-weight:600">✗</span> Jangan ubah jarak lockup</div></div>
+      <div style="display:flex;align-items:center;gap:24px;padding:20px 28px;background:#F7F8F9;border:1px solid #E3E6E9;border-radius:12px"><div style="display:flex;align-items:center;justify-content:center;width:120px;height:96px;background:#FFFFFF;border:1px solid #E3E6E9;border-radius:8px;flex-shrink:0"><span style="display:flex;align-items:center;justify-content:center;width:76px;height:76px;border:3px solid #3A34B5;border-radius:999px"><svg width="44" height="44" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M2.35 9.14H20.9A3.78 3.78 0 0 1 24.68 12.92V21.18" stroke="#3A34B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.32 3.4V7.74" stroke="#3A34B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M29.65 22.86H11.1A3.78 3.78 0 0 0 7.32 19.08V10.82" stroke="#3A34B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M24.68 28.6V24.26" stroke="#3A34B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div><div style="font-size:24px;line-height:1.4"><span style="color:#B42318;font-weight:600">✗</span> Jangan kurung dalam bentuk — ujungnya harus terbuka</div></div>
+      <div style="display:flex;align-items:center;gap:24px;padding:20px 28px;background:#F7F8F9;border:1px solid #E3E6E9;border-radius:12px"><div style="display:flex;align-items:center;justify-content:center;gap:8px;width:120px;height:96px;background:#FFFFFF;border:1px solid #E3E6E9;border-radius:8px;flex-shrink:0"><svg width="36" height="36" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M2.35 9.14H20.9A3.78 3.78 0 0 1 24.68 12.92V21.18" stroke="#3A34B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.32 3.4V7.74" stroke="#3A34B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M29.65 22.86H11.1A3.78 3.78 0 0 0 7.32 19.08V10.82" stroke="#3A34B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M24.68 28.6V24.26" stroke="#3A34B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span style="font-family:Georgia,serif;font-size:24px;font-style:italic">Paadu</span></div><div style="font-size:24px;line-height:1.4"><span style="color:#B42318;font-weight:600">✗</span> Jangan ganti typeface wordmark</div></div>
+      <div style="display:flex;align-items:center;gap:24px;padding:20px 28px;background:#F7F8F9;border:1px solid #E3E6E9;border-radius:12px"><div style="display:flex;align-items:center;justify-content:center;width:120px;height:96px;background:#FFFFFF;border:1px solid #E3E6E9;border-radius:8px;flex-shrink:0"><svg width="18" height="18" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M2.35 9.14H20.9A3.78 3.78 0 0 1 24.68 12.92V21.18" stroke="#3A34B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.32 3.4V7.74" stroke="#3A34B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M29.65 22.86H11.1A3.78 3.78 0 0 0 7.32 19.08V10.82" stroke="#3A34B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M24.68 28.6V24.26" stroke="#3A34B5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div style="font-size:24px;line-height:1.4"><span style="color:#B42318;font-weight:600">✗</span> Jangan perkecil di bawah 20px tanpa varian optis</div></div>
+    </div>
+    <div style="position:absolute;left:120px;right:120px;bottom:56px;display:flex;align-items:center;gap:16px;font-family:'JetBrains Mono',monospace;font-size:24px;color:#A9B2BB"><svg width="24" height="24" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M2.35 9.14H20.9A3.78 3.78 0 0 1 24.68 12.92V21.18" stroke="#3A34B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.32 3.4V7.74" stroke="#3A34B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M29.65 22.86H11.1A3.78 3.78 0 0 0 7.32 19.08V10.82" stroke="#3A34B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M24.68 28.6V24.26" stroke="#3A34B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>PAADU FLOW · BRAND GUIDELINES</span><span style="margin-left:auto">11</span></div>
+  </section>
+
+  <section data-label="Warna — brand" data-screen-label="12 Warna brand" data-speaker-notes="Paadu Blue 700 sebagai warna aksi; ramp 10 langkah; amber eksklusif AI & highlight." style="position:relative;background:#FFFFFF;color:#0B0F14;font-family:Inter,system-ui,sans-serif;display:flex;flex-direction:column;box-sizing:border-box;padding:96px 120px">
+    <div style="font-family:'JetBrains Mono',monospace;font-size:24px;letter-spacing:.12em;color:#3A34B5;margin-bottom:16px">05 · WARNA</div>
+    <h2 style="margin:0 0 56px;font-size:64px;line-height:1.15;font-weight:600;letter-spacing:-0.02em">Paadu Blue &amp; Flow Amber</h2>
+    <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:64px;flex:1;align-content:start">
+      <div>
+        <div style="display:flex;border-radius:16px;overflow:hidden;border:1px solid #E3E6E9;margin-bottom:16px">
+          <div style="flex:1;height:160px;background:#ECEBFA"></div>
+          <div style="flex:1;height:160px;background:#D8D5F5"></div>
+          <div style="flex:1;height:160px;background:#B9B5EC"></div>
+          <div style="flex:1;height:160px;background:#928CE0"></div>
+          <div style="flex:1;height:160px;background:#6E66D2"></div>
+          <div style="flex:1;height:160px;background:#4F48C4"></div>
+          <div style="flex:1.6;height:160px;background:#3A34B5;display:flex;align-items:center;justify-content:center"><span style="color:#fff;font-family:'JetBrains Mono',monospace;font-size:24px">700 · #3A34B5</span></div>
+          <div style="flex:1;height:160px;background:#2F2A94"></div>
+          <div style="flex:1;height:160px;background:#262277"></div>
+          <div style="flex:1;height:160px;background:#14114A"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:22px;color:#7C8794;margin-bottom:48px"><span>50</span><span>100</span><span>200</span><span>300</span><span>400</span><span>500</span><span>700 — aksi</span><span>800</span><span>900</span><span>950</span></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
+          <div style="padding:28px 32px;border:1px solid #E3E6E9;border-radius:12px"><div style="font-family:'JetBrains Mono',monospace;font-size:24px;color:#3A34B5;margin-bottom:8px">700 → 800 → 900</div><div style="font-size:24px;line-height:1.45;color:#5B6672">Default → hover → active. Selalu satu arah: menggelap.</div></div>
+          <div style="padding:28px 32px;border:1px solid #E3E6E9;border-radius:12px"><div style="font-family:'JetBrains Mono',monospace;font-size:24px;color:#3A34B5;margin-bottom:8px">50 · 200 · 400</div><div style="font-size:24px;line-height:1.45;color:#5B6672">Latar subtle, border aksen, teks brand di dark mode.</div></div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:24px">
+        <div style="border:1px solid #F0D3A0;border-radius:16px;overflow:hidden">
+          <div style="height:120px;background:#E8A33D;display:flex;align-items:center;justify-content:center"><span style="font-family:'JetBrains Mono',monospace;font-size:24px;color:#0B0F14">FLOW AMBER · #E8A33D</span></div>
+          <div style="padding:28px 32px;background:#FDF3E3">
+            <div style="font-size:26px;font-weight:600;margin-bottom:8px">Eksklusif untuk AI &amp; highlight</div>
+            <p style="margin:0;font-size:24px;line-height:1.5;color:#8A5A12;text-wrap:pretty">Permukaan AI Assistant dan sorotan hasil. Bukan warna aksi, bukan warna peringatan — warning memakai #B45309 yang berbeda dan lebih gelap.</p>
+          </div>
+        </div>
+        <div style="padding:28px 32px;background:#0B0F14;border-radius:16px">
+          <div style="font-size:26px;font-weight:600;color:#F7F8F9;margin-bottom:12px">Aturan yang paling sering dilanggar</div>
+          <p style="margin:0;font-size:24px;line-height:1.5;color:#A9B2BB;text-wrap:pretty">Biru tidak pernah mewarnai bidang besar — tidak ada hero biru, sidebar biru, header biru. Ia mewarnai tombol utama, tab aktif, dan aksen. Dasbor didominasi netral; justru karena itu biru terlihat saat ia muncul.</p>
+        </div>
+      </div>
+    </div>
+    <div style="position:absolute;left:120px;right:120px;bottom:56px;display:flex;align-items:center;gap:16px;font-family:'JetBrains Mono',monospace;font-size:24px;color:#A9B2BB"><svg width="24" height="24" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M2.35 9.14H20.9A3.78 3.78 0 0 1 24.68 12.92V21.18" stroke="#3A34B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.32 3.4V7.74" stroke="#3A34B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M29.65 22.86H11.1A3.78 3.78 0 0 0 7.32 19.08V10.82" stroke="#3A34B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M24.68 28.6V24.26" stroke="#3A34B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>PAADU FLOW · BRAND GUIDELINES</span><span style="margin-left:auto">12</span></div>
+  </section>
+
+  <section data-label="Warna — netral & semantik" data-screen-label="13 Netral semantik" data-speaker-notes="Netral membawa 90% piksel. Semantik 4 peran × 4 varian. Status tidak pernah warna saja." style="position:relative;background:#FFFFFF;color:#0B0F14;font-family:Inter,system-ui,sans-serif;display:flex;flex-direction:column;box-sizing:border-box;padding:96px 120px">
+    <div style="font-family:'JetBrains Mono',monospace;font-size:24px;letter-spacing:.12em;color:#3A34B5;margin-bottom:16px">05 · WARNA</div>
+    <h2 style="margin:0 0 56px;font-size:64px;line-height:1.15;font-weight:600;letter-spacing:-0.02em">Netral &amp; semantik</h2>
+    <div style="margin-bottom:20px;display:flex;border-radius:12px;overflow:hidden;border:1px solid #E3E6E9">
+      <div style="flex:1;height:104px;background:#0B0F14"></div><div style="flex:1;height:104px;background:#141A21"></div><div style="flex:1;height:104px;background:#1F272F"></div><div style="flex:1;height:104px;background:#2E3843"></div><div style="flex:1;height:104px;background:#45525F"></div><div style="flex:1;height:104px;background:#5B6672"></div><div style="flex:1;height:104px;background:#7C8794"></div><div style="flex:1;height:104px;background:#A9B2BB"></div><div style="flex:1;height:104px;background:#C9CFD5"></div><div style="flex:1;height:104px;background:#E3E6E9"></div><div style="flex:1;height:104px;background:#F7F8F9"></div><div style="flex:1;height:104px;background:#FFFFFF"></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:22px;color:#7C8794;margin-bottom:48px"><span>950 ink</span><span>900</span><span>800</span><span>700</span><span>600</span><span>500 text-2nd</span><span>400</span><span>300</span><span>200</span><span>100 border</span><span>50 subtle</span><span>0 surface</span></div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:24px;flex:1;align-content:start">
+      <div style="border:1px solid #A7D8C6;border-radius:12px;overflow:hidden"><div style="display:flex;align-items:center;gap:12px;padding:20px 28px;background:#E6F4EF"><span style="width:16px;height:16px;border-radius:999px;background:#12805C"></span><span style="font-size:28px;font-weight:600;color:#0E6A4C">Success</span><span style="margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:22px;color:#0E6A4C">#12805C</span></div><div style="padding:20px 28px;font-size:24px;line-height:1.5;color:#5B6672">Terposting, terbayar, rekonsiliasi seimbang.</div></div>
+      <div style="border:1px solid #F0CFA0;border-radius:12px;overflow:hidden"><div style="display:flex;align-items:center;gap:12px;padding:20px 28px;background:#FDF3E7"><span style="width:16px;height:16px;border-radius:999px;background:#B45309"></span><span style="font-size:28px;font-weight:600;color:#92400E">Warning</span><span style="margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:22px;color:#92400E">#B45309</span></div><div style="padding:20px 28px;font-size:24px;line-height:1.5;color:#5B6672">Mendekati jatuh tempo, stok menipis.</div></div>
+      <div style="border:1px solid #F1B4AE;border-radius:12px;overflow:hidden"><div style="display:flex;align-items:center;gap:12px;padding:20px 28px;background:#FDECEA"><span style="width:16px;height:16px;border-radius:999px;background:#B42318"></span><span style="font-size:28px;font-weight:600;color:#912018">Danger</span><span style="margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:22px;color:#912018">#B42318</span></div><div style="padding:20px 28px;font-size:24px;line-height:1.5;color:#5B6672">Jurnal tak berimbang, overdue, destruktif.</div></div>
+      <div style="border:1px solid #B3C8F0;border-radius:12px;overflow:hidden"><div style="display:flex;align-items:center;gap:12px;padding:20px 28px;background:#EAF0FC"><span style="width:16px;height:16px;border-radius:999px;background:#175CD3"></span><span style="font-size:28px;font-weight:600;color:#1449A6">Info</span><span style="margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:22px;color:#1449A6">#175CD3</span></div><div style="padding:20px 28px;font-size:24px;line-height:1.5;color:#5B6672">Netral informatif: pembayaran parsial, catatan sistem.</div></div>
+    </div>
+    <div style="display:flex;gap:48px;margin-top:40px;padding:28px 36px;background:#F7F8F9;border:1px solid #E3E6E9;border-radius:12px;font-size:24px;line-height:1.5;color:#5B6672">
+      <span><strong style="font-weight:600;color:#0B0F14">4 varian per peran:</strong> base · bg-subtle · border · text</span>
+      <span><strong style="font-weight:600;color:#0B0F14">Status tidak pernah warna saja</strong> — selalu ikon + label</span>
+      <span><strong style="font-weight:600;color:#0B0F14">Netral membawa ±90% piksel</strong> aplikasi</span>
+    </div>
+    <div style="position:absolute;left:120px;right:120px;bottom:56px;display:flex;align-items:center;gap:16px;font-family:'JetBrains Mono',monospace;font-size:24px;color:#A9B2BB"><svg width="24" height="24" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M2.35 9.14H20.9A3.78 3.78 0 0 1 24.68 12.92V21.18" stroke="#3A34B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.32 3.4V7.74" stroke="#3A34B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M29.65 22.86H11.1A3.78 3.78 0 0 0 7.32 19.08V10.82" stroke="#3A34B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M24.68 28.6V24.26" stroke="#3A34B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>PAADU FLOW · BRAND GUIDELINES</span><span style="margin-left:auto">13</span></div>
+  </section>
+
+  <section data-label="Tipografi" data-screen-label="14 Tipografi" data-speaker-notes="Inter untuk UI, JetBrains Mono untuk kode & nomor. Tiga bobot. Body 14px karena data-dense." style="position:relative;background:#FFFFFF;color:#0B0F14;font-family:Inter,system-ui,sans-serif;display:flex;flex-direction:column;box-sizing:border-box;padding:96px 120px">
+    <div style="font-family:'JetBrains Mono',monospace;font-size:24px;letter-spacing:.12em;color:#3A34B5;margin-bottom:16px">06 · TIPOGRAFI</div>
+    <h2 style="margin:0 0 56px;font-size:64px;line-height:1.15;font-weight:600;letter-spacing:-0.02em">Dua typeface, tiga bobot</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:64px;flex:1;align-content:start">
+      <div>
+        <div style="padding:40px;border:1px solid #E3E6E9;border-radius:16px;margin-bottom:24px">
+          <div style="font-size:88px;line-height:1.1;font-weight:600;letter-spacing:-0.02em;margin-bottom:12px">Inter</div>
+          <div style="font-size:26px;color:#5B6672;margin-bottom:24px">Seluruh antarmuka · fallback system-ui</div>
+          <div style="display:flex;gap:40px">
+            <span style="font-size:40px;font-weight:400">Aa <span style="font-size:22px;color:#7C8794;font-family:'JetBrains Mono',monospace">400</span></span>
+            <span style="font-size:40px;font-weight:500">Aa <span style="font-size:22px;color:#7C8794;font-family:'JetBrains Mono',monospace">500</span></span>
+            <span style="font-size:40px;font-weight:600">Aa <span style="font-size:22px;color:#7C8794;font-family:'JetBrains Mono',monospace">600</span></span>
+          </div>
+        </div>
+        <div style="padding:40px;border:1px solid #E3E6E9;border-radius:16px">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:64px;line-height:1.15;font-weight:500;margin-bottom:12px">JetBrains Mono</div>
+          <div style="font-size:26px;color:#5B6672;margin-bottom:20px">Nomor dokumen, kode akun, NPWP — dibaca karakter per karakter</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:30px;color:#3A34B5">INV/2026/09/00184</div>
+        </div>
+      </div>
+      <div>
+        <div style="display:flex;flex-direction:column;border:1px solid #E3E6E9;border-radius:16px;overflow:hidden;margin-bottom:24px">
+          <div style="display:grid;grid-template-columns:1fr 200px;gap:24px;align-items:baseline;padding:18px 32px;border-bottom:1px solid #EDEFF1"><span style="font-size:44px;font-weight:600;letter-spacing:-0.02em">Display</span><span style="font-family:'JetBrains Mono',monospace;font-size:22px;color:#7C8794;text-align:right">30 / 36 · 600</span></div>
+          <div style="display:grid;grid-template-columns:1fr 200px;gap:24px;align-items:baseline;padding:18px 32px;border-bottom:1px solid #EDEFF1"><span style="font-size:36px;font-weight:600;letter-spacing:-0.01em">Heading 1</span><span style="font-family:'JetBrains Mono',monospace;font-size:22px;color:#7C8794;text-align:right">24 / 32 · 600</span></div>
+          <div style="display:grid;grid-template-columns:1fr 200px;gap:24px;align-items:baseline;padding:18px 32px;border-bottom:1px solid #EDEFF1"><span style="font-size:31px;font-weight:600">Heading 2</span><span style="font-family:'JetBrains Mono',monospace;font-size:22px;color:#7C8794;text-align:right">20 / 28 · 600</span></div>
+          <div style="display:grid;grid-template-columns:1fr 200px;gap:24px;align-items:baseline;padding:18px 32px;border-bottom:1px solid #EDEFF1"><span style="font-size:26px;font-weight:600">Heading 3</span><span style="font-family:'JetBrains Mono',monospace;font-size:22px;color:#7C8794;text-align:right">16 / 24 · 600</span></div>
+          <div style="display:grid;grid-template-columns:1fr 200px;gap:24px;align-items:baseline;padding:18px 32px;border-bottom:1px solid #EDEFF1"><span style="font-size:24px">Body — default aplikasi</span><span style="font-family:'JetBrains Mono',monospace;font-size:22px;color:#7C8794;text-align:right">14 / 20 · 400</span></div>
+          <div style="display:grid;grid-template-columns:1fr 200px;gap:24px;align-items:baseline;padding:18px 32px;border-bottom:1px solid #EDEFF1"><span style="font-size:22px">Small — baris tabel</span><span style="font-family:'JetBrains Mono',monospace;font-size:22px;color:#7C8794;text-align:right">13 / 18 · 400</span></div>
+          <div style="display:grid;grid-template-columns:1fr 200px;gap:24px;align-items:baseline;padding:18px 32px;border-bottom:1px solid #EDEFF1"><span style="font-size:21px;color:#5B6672">Caption — helper, label kolom</span><span style="font-family:'JetBrains Mono',monospace;font-size:22px;color:#7C8794;text-align:right">12 / 16 · 400</span></div>
+          <div style="display:grid;grid-template-columns:1fr 200px;gap:24px;align-items:baseline;padding:18px 32px"><span style="font-size:19px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#7C8794">Micro — overline KPI</span><span style="font-family:'JetBrains Mono',monospace;font-size:22px;color:#7C8794;text-align:right">11 / 16 · 600</span></div>
+        </div>
+        <p style="margin:0;font-size:24px;line-height:1.5;color:#5B6672;text-wrap:pretty">Body 14px adalah pilihan sadar untuk aplikasi data-dense — bukan 16px milik marketing site. Bobot hanya 400 / 500 / 600; bold 700 tidak pernah dipakai.</p>
+      </div>
+    </div>
+    <div style="position:absolute;left:120px;right:120px;bottom:56px;display:flex;align-items:center;gap:16px;font-family:'JetBrains Mono',monospace;font-size:24px;color:#A9B2BB"><svg width="24" height="24" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M2.35 9.14H20.9A3.78 3.78 0 0 1 24.68 12.92V21.18" stroke="#3A34B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.32 3.4V7.74" stroke="#3A34B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M29.65 22.86H11.1A3.78 3.78 0 0 0 7.32 19.08V10.82" stroke="#3A34B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M24.68 28.6V24.26" stroke="#3A34B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>PAADU FLOW · BRAND GUIDELINES</span><span style="margin-left:auto">14</span></div>
+  </section>
+
+  <section data-label="Perlakuan angka" data-screen-label="15 Angka" data-speaker-notes="Empat aturan angka finansial: tabular-nums, rata kanan, format id-ID, negatif eksplisit dengan minus + warna + tanda kurung." style="position:relative;background:#FFFFFF;color:#0B0F14;font-family:Inter,system-ui,sans-serif;display:flex;flex-direction:column;box-sizing:border-box;padding:96px 120px">
+    <div style="font-family:'JetBrains Mono',monospace;font-size:24px;letter-spacing:.12em;color:#3A34B5;margin-bottom:16px">06 · TIPOGRAFI</div>
+    <h2 style="margin:0 0 12px;font-size:64px;line-height:1.15;font-weight:600;letter-spacing:-0.02em">Perlakuan angka finansial</h2>
+    <p style="margin:0 0 56px;font-size:26px;line-height:1.5;color:#5B6672">Aturan tak bisa ditawar — produk ini dipercaya memegang angka orang.</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;flex:1;align-content:start">
+      <div style="display:flex;gap:40px;align-items:center;padding:36px 40px;border:1px solid #E3E6E9;border-radius:16px">
+        <div style="flex:1"><div style="font-size:28px;font-weight:600;margin-bottom:8px">1 · Tabular numerals wajib</div><div style="font-size:24px;line-height:1.5;color:#5B6672">Setiap angka dalam tabel, total, dan KPI. Tanpa ini kolom tidak sejajar.</div></div>
+        <div style="font-variant-numeric:tabular-nums;text-align:right;font-size:27px;line-height:1.6;padding:20px 28px;background:#F7F8F9;border-radius:12px;flex-shrink:0"><div>1.847.500</div><div>911.100</div><div style="border-top:2px solid #C9CFD5;font-weight:600">2.758.600</div></div>
+      </div>
+      <div style="display:flex;gap:40px;align-items:center;padding:36px 40px;border:1px solid #E3E6E9;border-radius:16px">
+        <div style="flex:1"><div style="font-size:28px;font-weight:600;margin-bottom:8px">2 · Nominal selalu rata kanan</div><div style="font-size:24px;line-height:1.5;color:#5B6672">Di tabel, form, dan kartu. Perbandingan besaran terjadi di digit terakhir.</div></div>
+        <div style="font-variant-numeric:tabular-nums;text-align:right;font-size:27px;line-height:1.6;padding:20px 28px;background:#F7F8F9;border-radius:12px;flex-shrink:0;min-width:280px"><div><span style="color:#7C8794;font-size:22px">Rp</span> 184.750.000</div><div><span style="color:#7C8794;font-size:22px">Rp</span> 4.200.000</div></div>
+      </div>
+      <div style="display:flex;gap:40px;align-items:center;padding:36px 40px;border:1px solid #E3E6E9;border-radius:16px">
+        <div style="flex:1"><div style="font-size:28px;font-weight:600;margin-bottom:8px">3 · Format Indonesia (id-ID)</div><div style="font-size:24px;line-height:1.5;color:#5B6672">Titik ribuan, koma desimal. Simbol mata uang sebagai affix terpisah.</div></div>
+        <div style="font-variant-numeric:tabular-nums;font-size:27px;line-height:1.6;padding:20px 28px;background:#F7F8F9;border-radius:12px;flex-shrink:0"><div style="color:#0E6A4C">✓ 1.234.567,89</div><div style="color:#912018">✗ 1,234,567.89</div></div>
+      </div>
+      <div style="display:flex;gap:40px;align-items:center;padding:36px 40px;border:1px solid #E3E6E9;border-radius:16px">
+        <div style="flex:1"><div style="font-size:28px;font-weight:600;margin-bottom:8px">4 · Negatif selalu eksplisit</div><div style="font-size:24px;line-height:1.5;color:#5B6672">Minus + warna danger; tanda kurung untuk laporan akuntansi. Tidak pernah warna saja.</div></div>
+        <div style="font-variant-numeric:tabular-nums;text-align:right;font-size:27px;line-height:1.6;padding:20px 28px;background:#F7F8F9;border-radius:12px;flex-shrink:0"><div style="color:#912018">−12.400.000</div><div style="color:#912018">(12.400.000)</div></div>
+      </div>
+    </div>
+    <div style="position:absolute;left:120px;right:120px;bottom:56px;display:flex;align-items:center;gap:16px;font-family:'JetBrains Mono',monospace;font-size:24px;color:#A9B2BB"><svg width="24" height="24" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M2.35 9.14H20.9A3.78 3.78 0 0 1 24.68 12.92V21.18" stroke="#3A34B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.32 3.4V7.74" stroke="#3A34B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M29.65 22.86H11.1A3.78 3.78 0 0 0 7.32 19.08V10.82" stroke="#3A34B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M24.68 28.6V24.26" stroke="#3A34B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>PAADU FLOW · BRAND GUIDELINES</span><span style="margin-left:auto">15</span></div>
+  </section>
+
+  <section data-label="Ikonografi" data-screen-label="16 Ikonografi" data-speaker-notes="Stroke 1.5px grid 16, sudut membulat mengikuti mark. Ikon rail wajib lulus uji pembedaan 80% dengan nama." style="position:relative;background:#FFFFFF;color:#0B0F14;font-family:Inter,system-ui,sans-serif;display:flex;flex-direction:column;box-sizing:border-box;padding:96px 120px">
+    <div style="font-family:'JetBrains Mono',monospace;font-size:24px;letter-spacing:.12em;color:#3A34B5;margin-bottom:16px">07 · IKONOGRAFI</div>
+    <h2 style="margin:0 0 56px;font-size:64px;line-height:1.15;font-weight:600;letter-spacing:-0.02em">Satu bahasa dengan mark</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:64px;flex:1;align-content:start">
+      <div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:20px;margin-bottom:32px">
+          <div style="display:grid;place-items:center;height:160px;background:#F7F8F9;border:1px solid #E3E6E9;border-radius:12px"><svg width="56" height="56" viewBox="0 0 16 16" fill="none" aria-hidden="true" style="color:#2E3843"><path d="M3 2.5h7l3 3v8H3v-11Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M5.5 8.5h5M5.5 11h3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></div>
+          <div style="display:grid;place-items:center;height:160px;background:#F7F8F9;border:1px solid #E3E6E9;border-radius:12px"><svg width="56" height="56" viewBox="0 0 16 16" fill="none" aria-hidden="true" style="color:#2E3843"><path d="M2.5 5.5 8 2.5l5.5 3v5L8 13.5l-5.5-3v-5Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M2.5 5.5 8 8.5l5.5-3M8 8.5v5" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg></div>
+          <div style="display:grid;place-items:center;height:160px;background:#F7F8F9;border:1px solid #E3E6E9;border-radius:12px"><svg width="56" height="56" viewBox="0 0 16 16" fill="none" aria-hidden="true" style="color:#2E3843"><path d="M2.5 13.5v-4M6.5 13.5v-8M10.5 13.5v-6M14 13.5v-10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+          <div style="display:grid;place-items:center;height:160px;background:#F7F8F9;border:1px solid #E3E6E9;border-radius:12px"><svg width="56" height="56" viewBox="0 0 16 16" fill="none" aria-hidden="true" style="color:#2E3843"><circle cx="6" cy="5" r="2.5" stroke="currentColor" stroke-width="1.4"/><path d="M2 13.5c0-2.2 1.8-4 4-4s4 1.8 4 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M11 6.5c1.2.3 2 1.3 2 2.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:16px;font-size:25px;line-height:1.5">
+          <div style="display:flex;gap:16px"><span style="color:#3A34B5;font-weight:600;flex-shrink:0">—</span><span><strong style="font-weight:600">Stroke 1.5px pada grid 16px</strong>, ujung dan sudut membulat — bahasa yang sama dengan mark.</span></div>
+          <div style="display:flex;gap:16px"><span style="color:#3A34B5;font-weight:600;flex-shrink:0">—</span><span><strong style="font-weight:600">Outline default;</strong> versi fill hanya untuk state aktif navigasi.</span></div>
+          <div style="display:flex;gap:16px"><span style="color:#3A34B5;font-weight:600;flex-shrink:0">—</span><span><strong style="font-weight:600">Warna ikon = warna teks</strong> di sebelahnya. Ikon dekoratif multi-warna tidak ada.</span></div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:24px">
+        <div style="padding:36px 40px;background:#F7F8F9;border:1px solid #E3E6E9;border-radius:16px">
+          <div style="font-size:28px;font-weight:600;margin-bottom:12px">Uji pembedaan — wajib</div>
+          <p style="margin:0;font-size:24px;line-height:1.5;color:#5B6672;text-wrap:pretty">Ikon modul di rail harus dapat dipasangkan dengan nama modulnya oleh pengguna baru dengan akurasi 80%. Ikon yang gagal diganti, bukan dipertahankan karena bagus.</p>
+        </div>
+        <div style="padding:36px 40px;background:#FDF3E3;border:1px solid #F0D3A0;border-radius:16px">
+          <div style="font-size:28px;font-weight:600;color:#8A5A12;margin-bottom:12px">Ikon AI — satu-satunya pengecualian warna</div>
+          <p style="margin:0;font-size:24px;line-height:1.5;color:#8A5A12;text-wrap:pretty">Fitur AI ditandai ikon spark memakai Flow Amber. Ini satu-satunya ikon yang boleh berwarna berbeda dari teksnya — konsisten dengan peran amber di seluruh sistem.</p>
+        </div>
+        <div style="display:flex;align-items:center;gap:24px;padding:28px 40px;border:1px solid #E3E6E9;border-radius:16px">
+          <svg width="48" height="48" viewBox="0 0 16 16" fill="none" aria-hidden="true" style="color:#E8A33D;flex-shrink:0"><path d="M8 2.5l1.5 3.8L13.5 8l-4 1.7L8 13.5l-1.5-3.8L2.5 8l4-1.7L8 2.5Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>
+          <span style="font-size:25px;line-height:1.4;color:#5B6672">Spark amber = "ini dikerjakan AI, periksa sebelum posting"</span>
+        </div>
+      </div>
+    </div>
+    <div style="position:absolute;left:120px;right:120px;bottom:56px;display:flex;align-items:center;gap:16px;font-family:'JetBrains Mono',monospace;font-size:24px;color:#A9B2BB"><svg width="24" height="24" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M2.35 9.14H20.9A3.78 3.78 0 0 1 24.68 12.92V21.18" stroke="#3A34B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.32 3.4V7.74" stroke="#3A34B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M29.65 22.86H11.1A3.78 3.78 0 0 0 7.32 19.08V10.82" stroke="#3A34B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M24.68 28.6V24.26" stroke="#3A34B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>PAADU FLOW · BRAND GUIDELINES</span><span style="margin-left:auto">16</span></div>
+  </section>
+
+  <section data-label="Fotografi & ilustrasi" data-screen-label="17 Fotografi" data-speaker-notes="Foto: tempat kerja Indonesia nyata, cahaya alami, tanpa stok klise. Ilustrasi: geometris stroke-based dari bahasa mark." style="position:relative;background:#FFFFFF;color:#0B0F14;font-family:Inter,system-ui,sans-serif;display:flex;flex-direction:column;box-sizing:border-box;padding:96px 120px">
+    <div style="font-family:'JetBrains Mono',monospace;font-size:24px;letter-spacing:.12em;color:#3A34B5;margin-bottom:16px">08 · FOTOGRAFI &amp; ILUSTRASI</div>
+    <h2 style="margin:0 0 56px;font-size:64px;line-height:1.15;font-weight:600;letter-spacing:-0.02em">Nyata, bukan stok</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:64px;flex:1;align-content:start">
+      <div>
+        <div style="font-size:30px;font-weight:600;margin-bottom:24px">Fotografi</div>
+        <div style="display:flex;flex-direction:column;gap:18px;font-size:25px;line-height:1.5">
+          <div style="display:flex;gap:16px"><span style="color:#0E6A4C;font-weight:600;flex-shrink:0">✓</span><span>Tempat kerja Indonesia yang nyata: gudang, kasir, kantor kecil, pabrik — orang sedang bekerja, bukan berpose.</span></div>
+          <div style="display:flex;gap:16px"><span style="color:#0E6A4C;font-weight:600;flex-shrink:0">✓</span><span>Cahaya alami, warna tanpa filter berat, komposisi tenang dengan ruang kosong untuk teks.</span></div>
+          <div style="display:flex;gap:16px"><span style="color:#912018;font-weight:600;flex-shrink:0">✗</span><span>Stok klise: jabat tangan, tim menunjuk layar sambil tertawa, kota malam ber-overlay data.</span></div>
+          <div style="display:flex;gap:16px"><span style="color:#912018;font-weight:600;flex-shrink:0">✗</span><span>Duotone biru di atas foto — warna brand tidak dipakai sebagai filter.</span></div>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:30px;font-weight:600;margin-bottom:24px">Ilustrasi</div>
+        <div style="display:flex;align-items:center;justify-content:center;gap:40px;padding:48px;background:#F7F8F9;border:1px solid #E3E6E9;border-radius:16px;margin-bottom:24px">
+          <svg width="120" height="120" viewBox="0 0 48 48" fill="none" aria-hidden="true"><rect x="6" y="10" width="36" height="28" rx="3" stroke="#2E3843" stroke-width="2"/><path d="M6 18h36" stroke="#2E3843" stroke-width="2"/><path d="M12 26h12M12 32h8" stroke="#3A34B5" stroke-width="2" stroke-linecap="round"/><circle cx="34" cy="29" r="5" stroke="#E8A33D" stroke-width="2"/></svg>
+          <svg width="120" height="120" viewBox="0 0 48 48" fill="none" aria-hidden="true"><path d="M8 38V22M18 38V12M28 38V18M38 38V8" stroke="#2E3843" stroke-width="2" stroke-linecap="round"/><path d="M8 20c8 0 12-8 30-10" stroke="#3A34B5" stroke-width="2" stroke-linecap="round"/><circle cx="38" cy="10" r="3" stroke="#E8A33D" stroke-width="2"/></svg>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:18px;font-size:25px;line-height:1.5">
+          <div style="display:flex;gap:16px"><span style="color:#3A34B5;font-weight:600;flex-shrink:0">—</span><span>Geometris, stroke-based, dari bahasa visual mark: netral gelap + biru, aksen amber maksimal satu elemen.</span></div>
+          <div style="display:flex;gap:16px"><span style="color:#3A34B5;font-weight:600;flex-shrink:0">—</span><span>Untuk empty state, onboarding, dan dokumen. Tidak ada maskot; tidak ada ilustrasi orang bergaya kartun.</span></div>
+        </div>
+      </div>
+    </div>
+    <div style="position:absolute;left:120px;right:120px;bottom:56px;display:flex;align-items:center;gap:16px;font-family:'JetBrains Mono',monospace;font-size:24px;color:#A9B2BB"><svg width="24" height="24" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M2.35 9.14H20.9A3.78 3.78 0 0 1 24.68 12.92V21.18" stroke="#3A34B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.32 3.4V7.74" stroke="#3A34B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M29.65 22.86H11.1A3.78 3.78 0 0 0 7.32 19.08V10.82" stroke="#3A34B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M24.68 28.6V24.26" stroke="#3A34B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>PAADU FLOW · BRAND GUIDELINES</span><span style="margin-left:auto">17</span></div>
+  </section>
+
+  <section data-label="Motion" data-screen-label="18 Motion" data-speaker-notes="Motion menjelaskan sebab-akibat, bukan menghibur. 3 durasi, 1 easing. Reduced-motion dihormati." style="position:relative;background:#FFFFFF;color:#0B0F14;font-family:Inter,system-ui,sans-serif;display:flex;flex-direction:column;box-sizing:border-box;padding:96px 120px">
+    <div style="font-family:'JetBrains Mono',monospace;font-size:24px;letter-spacing:.12em;color:#3A34B5;margin-bottom:16px">09 · MOTION</div>
+    <h2 style="margin:0 0 12px;font-size:64px;line-height:1.15;font-weight:600;letter-spacing:-0.02em">Motion menjelaskan, tidak menghibur</h2>
+    <p style="margin:0 0 56px;font-size:26px;line-height:1.5;color:#5B6672">Setiap animasi harus menjawab "dari mana elemen ini datang" atau "apa akibat aksi saya". Bila tidak menjawab keduanya, hapus.</p>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-bottom:40px">
+      <div style="padding:40px;border:1px solid #E3E6E9;border-radius:16px"><div style="font-family:'JetBrains Mono',monospace;font-size:44px;font-weight:500;color:#3A34B5;margin-bottom:12px">120<span style="font-size:26px;color:#7C8794"> ms</span></div><div style="font-size:28px;font-weight:600;margin-bottom:8px">Instan</div><div style="font-size:24px;line-height:1.45;color:#5B6672">Hover, focus, toggle, checkbox — umpan balik langsung.</div></div>
+      <div style="padding:40px;border:1px solid #E3E6E9;border-radius:16px"><div style="font-family:'JetBrains Mono',monospace;font-size:44px;font-weight:500;color:#3A34B5;margin-bottom:12px">200<span style="font-size:26px;color:#7C8794"> ms</span></div><div style="font-size:28px;font-weight:600;margin-bottom:8px">Transisi</div><div style="font-size:24px;line-height:1.45;color:#5B6672">Dropdown, popover, tab, accordion — perubahan konteks kecil.</div></div>
+      <div style="padding:40px;border:1px solid #E3E6E9;border-radius:16px"><div style="font-family:'JetBrains Mono',monospace;font-size:44px;font-weight:500;color:#3A34B5;margin-bottom:12px">300<span style="font-size:26px;color:#7C8794"> ms</span></div><div style="font-size:28px;font-weight:600;margin-bottom:8px">Panel</div><div style="font-size:24px;line-height:1.45;color:#5B6672">Modal, drawer, command palette — perubahan konteks besar.</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
+      <div style="padding:32px 40px;background:#F7F8F9;border:1px solid #E3E6E9;border-radius:16px"><div style="font-family:'JetBrains Mono',monospace;font-size:26px;color:#3A34B5;margin-bottom:12px">cubic-bezier(0.2, 0, 0, 1)</div><div style="font-size:24px;line-height:1.5;color:#5B6672">Satu easing untuk semua — berangkat cepat, mendarat halus. Tidak ada bounce, tidak ada spring, tidak ada overshoot.</div></div>
+      <div style="padding:32px 40px;background:#F7F8F9;border:1px solid #E3E6E9;border-radius:16px"><div style="font-family:'JetBrains Mono',monospace;font-size:26px;color:#3A34B5;margin-bottom:12px">prefers-reduced-motion</div><div style="font-size:24px;line-height:1.5;color:#5B6672">Dihormati tanpa kecuali: semua transisi jatuh ke perubahan instan. Angka dan data tidak pernah dianimasikan menghitung.</div></div>
+    </div>
+    <div style="position:absolute;left:120px;right:120px;bottom:56px;display:flex;align-items:center;gap:16px;font-family:'JetBrains Mono',monospace;font-size:24px;color:#A9B2BB"><svg width="24" height="24" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M2.35 9.14H20.9A3.78 3.78 0 0 1 24.68 12.92V21.18" stroke="#3A34B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.32 3.4V7.74" stroke="#3A34B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M29.65 22.86H11.1A3.78 3.78 0 0 0 7.32 19.08V10.82" stroke="#3A34B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M24.68 28.6V24.26" stroke="#3A34B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>PAADU FLOW · BRAND GUIDELINES</span><span style="margin-left:auto">18</span></div>
+  </section>
+
+  <section data-label="Voice & tone" data-screen-label="19 Voice tone" data-speaker-notes="Empat prinsip dengan contoh tulis-ulang. Bahasa Indonesia baku yang hangat; istilah akuntansi baku tidak diterjemahkan kreatif." style="position:relative;background:#FFFFFF;color:#0B0F14;font-family:Inter,system-ui,sans-serif;display:flex;flex-direction:column;box-sizing:border-box;padding:96px 120px">
+    <div style="font-family:'JetBrains Mono',monospace;font-size:24px;letter-spacing:.12em;color:#3A34B5;margin-bottom:16px">10 · VOICE &amp; TONE</div>
+    <h2 style="margin:0 0 56px;font-size:64px;line-height:1.15;font-weight:600;letter-spacing:-0.02em">Cara Paadu Flow berbicara</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;flex:1;align-content:start">
+      <div style="padding:36px 40px;border:1px solid #E3E6E9;border-radius:16px">
+        <div style="font-size:28px;font-weight:600;margin-bottom:20px">Sebut objeknya, bukan sistemnya</div>
+        <div style="font-size:25px;line-height:1.55;display:flex;flex-direction:column;gap:12px">
+          <div style="color:#912018">✗ &nbsp;Terjadi kesalahan saat memproses permintaan Anda.</div>
+          <div style="color:#0E6A4C">✓ &nbsp;Faktur belum tersimpan — koneksi terputus. Draf aman di perangkat ini.</div>
+        </div>
+      </div>
+      <div style="padding:36px 40px;border:1px solid #E3E6E9;border-radius:16px">
+        <div style="font-size:28px;font-weight:600;margin-bottom:20px">Angka spesifik, bukan kira-kira</div>
+        <div style="font-size:25px;line-height:1.55;display:flex;flex-direction:column;gap:12px">
+          <div style="color:#912018">✗ &nbsp;Beberapa faktur akan segera jatuh tempo.</div>
+          <div style="color:#0E6A4C">✓ &nbsp;7 faktur jatuh tempo dalam 5 hari — total Rp 214.300.000.</div>
+        </div>
+      </div>
+      <div style="padding:36px 40px;border:1px solid #E3E6E9;border-radius:16px">
+        <div style="font-size:28px;font-weight:600;margin-bottom:20px">Akibat sebelum konfirmasi</div>
+        <div style="font-size:25px;line-height:1.55;display:flex;flex-direction:column;gap:12px">
+          <div style="color:#912018">✗ &nbsp;Apakah Anda yakin? Tindakan ini tidak dapat dibatalkan.</div>
+          <div style="color:#0E6A4C">✓ &nbsp;Void membuat jurnal pembalik di periode berjalan. Faktur asli tetap di buku besar.</div>
+        </div>
+      </div>
+      <div style="padding:36px 40px;border:1px solid #E3E6E9;border-radius:16px">
+        <div style="font-size:28px;font-weight:600;margin-bottom:20px">Istilah baku tidak diterjemahkan kreatif</div>
+        <div style="font-size:25px;line-height:1.55;display:flex;flex-direction:column;gap:12px">
+          <div style="color:#912018">✗ &nbsp;Uang masuk · Uang keluar · Catatan utang</div>
+          <div style="color:#0E6A4C">✓ &nbsp;Piutang Usaha · Hutang Usaha · Jurnal Umum — istilah yang dipakai akuntan &amp; auditor.</div>
+        </div>
+      </div>
+    </div>
+    <p style="margin:40px 0 0;font-size:24px;line-height:1.5;color:#5B6672;max-width:1400px;text-wrap:pretty">Bahasa Indonesia baku yang hangat — "Anda" formal, tidak pernah "kamu". Tanpa seru ganda, tanpa emoji di antarmuka. Konten AI selalu ditandai dan selalu dapat diperiksa sumbernya.</p>
+    <div style="position:absolute;left:120px;right:120px;bottom:56px;display:flex;align-items:center;gap:16px;font-family:'JetBrains Mono',monospace;font-size:24px;color:#A9B2BB"><svg width="24" height="24" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M2.35 9.14H20.9A3.78 3.78 0 0 1 24.68 12.92V21.18" stroke="#3A34B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.32 3.4V7.74" stroke="#3A34B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M29.65 22.86H11.1A3.78 3.78 0 0 0 7.32 19.08V10.82" stroke="#3A34B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M24.68 28.6V24.26" stroke="#3A34B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>PAADU FLOW · BRAND GUIDELINES</span><span style="margin-left:auto">19</span></div>
+  </section>
+
+  <section data-label="Penerapan" data-screen-label="20 Penerapan" data-speaker-notes="Aset yang diproduksi dari guidelines ini, dengan pemilik & prioritas." style="position:relative;background:#FFFFFF;color:#0B0F14;font-family:Inter,system-ui,sans-serif;display:flex;flex-direction:column;box-sizing:border-box;padding:96px 120px">
+    <div style="font-family:'JetBrains Mono',monospace;font-size:24px;letter-spacing:.12em;color:#3A34B5;margin-bottom:16px">11 · PENERAPAN</div>
+    <h2 style="margin:0 0 56px;font-size:64px;line-height:1.15;font-weight:600;letter-spacing:-0.02em">Aset yang diturunkan dari dokumen ini</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:24px;flex:1;align-content:start">
+      <div style="padding:40px;border:1px solid #E3E6E9;border-radius:16px">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:24px;color:#3A34B5;margin-bottom:16px">SEKARANG</div>
+        <div style="display:flex;flex-direction:column;gap:14px;font-size:25px;line-height:1.45">
+          <div>Paket logo SVG (semua varian + optis)</div>
+          <div>Design tokens — <span style="font-family:'JetBrains Mono',monospace;font-size:22px">tokens.json</span> light + dark</div>
+          <div>Favicon &amp; app icon</div>
+          <div>Template dokumen keluar: faktur, kuitansi, SO</div>
+        </div>
+      </div>
+      <div style="padding:40px;border:1px solid #E3E6E9;border-radius:16px">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:24px;color:#3A34B5;margin-bottom:16px">FASE BERIKUT</div>
+        <div style="display:flex;flex-direction:column;gap:14px;font-size:25px;line-height:1.45">
+          <div>Template slide internal &amp; proposal</div>
+          <div>Tanda tangan email</div>
+          <div>Set ilustrasi empty state (8 pola)</div>
+          <div>Landing page — turunan, bukan pengecualian</div>
+        </div>
+      </div>
+      <div style="padding:40px;border:1px solid #E3E6E9;border-radius:16px">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:24px;color:#3A34B5;margin-bottom:16px">SAAT DIBUTUHKAN</div>
+        <div style="display:flex;flex-direction:column;gap:14px;font-size:25px;line-height:1.45">
+          <div>Booth &amp; materi event</div>
+          <div>Merchandise (satu warna — uji varian monokrom)</div>
+          <div>Dokumen kemitraan &amp; co-branding</div>
+        </div>
+      </div>
+    </div>
+    <p style="margin:40px 0 0;font-size:24px;line-height:1.5;color:#5B6672;max-width:1400px;text-wrap:pretty">Setiap aset baru memakai token, bukan menyalin nilai. Bila sebuah kebutuhan tidak terjawab dokumen ini, jawabannya ditambahkan ke dokumen — bukan diputuskan lokal per aset.</p>
+    <div style="position:absolute;left:120px;right:120px;bottom:56px;display:flex;align-items:center;gap:16px;font-family:'JetBrains Mono',monospace;font-size:24px;color:#A9B2BB"><svg width="24" height="24" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M2.35 9.14H20.9A3.78 3.78 0 0 1 24.68 12.92V21.18" stroke="#3A34B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.32 3.4V7.74" stroke="#3A34B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M29.65 22.86H11.1A3.78 3.78 0 0 0 7.32 19.08V10.82" stroke="#3A34B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M24.68 28.6V24.26" stroke="#3A34B5" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>PAADU FLOW · BRAND GUIDELINES</span><span style="margin-left:auto">20</span></div>
+  </section>
+
+  <section data-label="Tata kelola" data-screen-label="21 Tata kelola" data-speaker-notes="Satu sumber kebenaran: tokens.json. Perubahan brand = perubahan dokumen ini dulu." style="position:relative;background:#0B0F14;color:#F7F8F9;font-family:Inter,system-ui,sans-serif;display:flex;flex-direction:column;box-sizing:border-box;padding:96px 120px">
+    <div style="font-family:'JetBrains Mono',monospace;font-size:24px;letter-spacing:.12em;color:#A5A0F0;margin-bottom:16px">12 · TATA KELOLA</div>
+    <h2 style="margin:0 0 56px;font-size:64px;line-height:1.15;font-weight:600;letter-spacing:-0.02em">Sumber kebenaran</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:64px;flex:1;align-content:start">
+      <div style="display:flex;flex-direction:column;gap:20px">
+        <div style="display:flex;gap:24px;padding:28px 32px;background:#141A21;border:1px solid #2E3843;border-radius:16px"><span style="font-family:'JetBrains Mono',monospace;font-size:24px;color:#A5A0F0;flex-shrink:0">1</span><div style="font-size:26px;line-height:1.5"><strong style="font-weight:600">Nilai hidup di <span style="font-family:'JetBrains Mono',monospace;font-size:24px">docs/tokens.json</span>.</strong> <span style="color:#A9B2BB">Dokumen ini menjelaskan alasannya; angka diambil dari token, tidak pernah disalin manual.</span></div></div>
+        <div style="display:flex;gap:24px;padding:28px 32px;background:#141A21;border:1px solid #2E3843;border-radius:16px"><span style="font-family:'JetBrains Mono',monospace;font-size:24px;color:#A5A0F0;flex-shrink:0">2</span><div style="font-size:26px;line-height:1.5"><strong style="font-weight:600">Perubahan brand melalui dokumen ini dulu.</strong> <span style="color:#A9B2BB">Tidak ada keputusan visual baru yang lahir di aset turunannya.</span></div></div>
+        <div style="display:flex;gap:24px;padding:28px 32px;background:#141A21;border:1px solid #2E3843;border-radius:16px"><span style="font-family:'JetBrains Mono',monospace;font-size:24px;color:#A5A0F0;flex-shrink:0">3</span><div style="font-size:26px;line-height:1.5"><strong style="font-weight:600">Lint menegakkan yang bisa ditegakkan.</strong> <span style="color:#A9B2BB">Hex mentah, spacing di luar skala, dan kontras di bawah AA gagal di build — bukan direview manusia.</span></div></div>
+      </div>
+      <div style="display:flex;flex-direction:column;justify-content:center;gap:32px;padding:48px;background:#141A21;border:1px solid #2E3843;border-radius:16px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;padding-bottom:24px;border-bottom:1px solid #2E3843"><span style="font-size:26px;color:#A9B2BB">Versi</span><span style="font-family:'JetBrains Mono',monospace;font-size:26px">1.0 · Fase 2</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;padding-bottom:24px;border-bottom:1px solid #2E3843"><span style="font-size:26px;color:#A9B2BB">Menggantikan</span><span style="font-family:'JetBrains Mono',monospace;font-size:26px">v0.9 · Fase 1</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;padding-bottom:24px;border-bottom:1px solid #2E3843"><span style="font-size:26px;color:#A9B2BB">Pemilik</span><span style="font-size:26px">Design — Paadu Flow</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:26px;color:#A9B2BB">Tinjauan berikutnya</span><span style="font-family:'JetBrains Mono',monospace;font-size:26px">Q1 2027</span></div>
+      </div>
+    </div>
+    <div style="position:absolute;left:120px;right:120px;bottom:56px;display:flex;align-items:center;gap:16px;font-family:'JetBrains Mono',monospace;font-size:24px;color:#45525F"><svg width="24" height="24" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M2.35 9.14H20.9A3.78 3.78 0 0 1 24.68 12.92V21.18" stroke="#A5A0F0" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.32 3.4V7.74" stroke="#A5A0F0" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M29.65 22.86H11.1A3.78 3.78 0 0 0 7.32 19.08V10.82" stroke="#A5A0F0" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M24.68 28.6V24.26" stroke="#A5A0F0" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>PAADU FLOW · BRAND GUIDELINES</span><span style="margin-left:auto">21</span></div>
+  </section>
+
+  <section data-label="Penutup" data-screen-label="22 Penutup" data-speaker-notes="Closing." style="position:relative;background:#0B0F14;color:#F7F8F9;font-family:Inter,system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;box-sizing:border-box;padding:96px 120px">
+    <svg width="120" height="120" viewBox="0 0 32 32" fill="none" aria-hidden="true" style="margin-bottom:48px"><path d="M2.35 9.14H20.9A3.78 3.78 0 0 1 24.68 12.92V21.18" stroke="#A5A0F0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.32 3.4V7.74" stroke="#A5A0F0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M29.65 22.86H11.1A3.78 3.78 0 0 0 7.32 19.08V10.82" stroke="#A5A0F0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M24.68 28.6V24.26" stroke="#A5A0F0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <div style="font-size:56px;line-height:1.2;font-weight:600;letter-spacing:-0.02em;margin-bottom:16px">One Platform. Every Business.</div>
+    <div style="font-size:28px;color:#7C8794">Pertanyaan tentang penerapan brand: tim Design Paadu Flow</div>
+    <div style="position:absolute;left:120px;right:120px;bottom:56px;display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:24px;color:#45525F"><span>PAADU FLOW · BRAND GUIDELINES · V1.0</span><span>22</span></div>
+  </section>
+
+</x-import>
+</x-dc>
+</body>
+</html>

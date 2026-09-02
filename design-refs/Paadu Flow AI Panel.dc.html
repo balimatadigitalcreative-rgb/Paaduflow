@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  body { margin:0; background:#EDEFF1; font-family:Inter,system-ui,sans-serif; font-size:14px; line-height:20px; -webkit-font-smoothing:antialiased; font-variant-numeric:tabular-nums; }
+  a { color:#3A34B5; text-decoration:none; } a:hover { color:#2F2A94; }
+  @keyframes pf-shimmer { 0% { background-position:-220px 0; } 100% { background-position:260px 0; } }
+  @keyframes pf-pulse { 0%,100% { opacity:1; } 50% { opacity:.4; } }
+</style>
+</helmet>
+
+<div style="padding:32px;box-sizing:border-box;display:flex;flex-direction:column;gap:24px;min-width:1440px">
+
+  <div>
+    <h1 style="margin:0 0 4px;font-size:20px;line-height:28px;font-weight:600;letter-spacing:-0.01em">Paadu AI — Side Panel</h1>
+    <p style="margin:0;font-size:13px;line-height:18px;color:#5B6672;max-width:720px;text-wrap:pretty">Lebar 420px, masuk dari kanan menutupi konten tanpa menutup shell. Amber dipakai hanya untuk menandai permukaan AI — tombol aksi di dalamnya tetap biru, karena aksinya bukan aksi AI melainkan aksi produk.</p>
+  </div>
+
+  <div style="display:flex;gap:24px;align-items:flex-start">
+
+    <div>
+      <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:8px">
+        <span style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.12em;color:#3A34B5">STATE KOSONG</span>
+        <span style="font-size:13px;color:#5B6672">4 saran pertanyaan</span>
+      </div>
+      <div style="width:420px;height:860px;display:flex;flex-direction:column;background:#FFFFFF;border:1px solid #E3E6E9;border-radius:12px;overflow:hidden;box-shadow:0 12px 32px rgba(11,15,20,.10)">
+        <div style="flex-shrink:0;padding:14px 16px;border-bottom:1px solid #EDEFF1">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+            <span style="display:grid;place-items:center;width:28px;height:28px;flex-shrink:0;border-radius:6px;background:#FDF3E3;border:1px solid #F0D3A0">
+              <svg width="18" height="18" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M2.35 9.14H20.9A3.78 3.78 0 0 1 24.68 12.92V21.18" stroke="#E8A33D" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.32 3.4V7.74" stroke="#E8A33D" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M29.65 22.86H11.1A3.78 3.78 0 0 0 7.32 19.08V10.82" stroke="#E8A33D" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M24.68 28.6V24.26" stroke="#E8A33D" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+            <span style="flex:1;min-width:0;font-size:14px;font-weight:600">Paadu AI</span>
+            <button type="button" aria-label="Tutup panel" style="display:grid;place-items:center;width:28px;height:28px;flex-shrink:0;border:0;border-radius:6px;background:transparent;color:#5B6672;cursor:pointer" style-hover="background:#F7F8F9"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+          </div>
+          <button type="button" style="display:flex;align-items:center;gap:8px;width:100%;min-height:32px;padding:0 10px;border:1px solid #E3E6E9;border-radius:6px;background:#F7F8F9;font:inherit;font-size:12px;color:#0B0F14;cursor:pointer;text-align:left" style-hover="border-color:#C9CFD5">
+            <span style="flex-shrink:0;color:#5B6672">Konteks:</span>
+            <span style="flex:1;min-width:0;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Faktur Penjualan · Q1 2026</span>
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true" style="flex-shrink:0;color:#7C8794"><path d="M3 4.5 6 8l3-3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+
+        <div style="flex:1;min-height:0;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:16px">
+          <div style="padding:14px;background:#FDF3E3;border:1px solid #F0D3A0;border-radius:8px">
+            <div style="font-size:13px;line-height:19px;font-weight:600;color:#8A5A12;margin-bottom:4px">Bertanya tentang data Anda sendiri</div>
+            <p style="margin:0;font-size:12px;line-height:17px;color:#8A5A12;text-wrap:pretty">Jawaban hanya diambil dari data PT Nusantara Jaya Abadi dalam konteks di atas, selalu menyebutkan sumbernya, dan tidak pernah memposting apa pun ke buku besar.</p>
+          </div>
+          <div>
+            <div style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#5B6672;margin-bottom:10px">Saran pertanyaan</div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <button type="button" style="display:flex;flex-direction:column;gap:3px;width:100%;padding:12px;border:1px solid #E3E6E9;border-radius:8px;background:#FFFFFF;font:inherit;text-align:left;cursor:pointer" style-hover="border-color:#B9B5EC;background:#F7F8F9">
+                <span style="font-size:13px;line-height:18px;font-weight:500;color:#0B0F14">Siapa pelanggan yang paling telat bayar?</span>
+                <span style="font-size:12px;line-height:16px;color:#5B6672">Peringkat berdasarkan rata-rata hari keterlambatan</span>
+              </button>
+              <button type="button" style="display:flex;flex-direction:column;gap:3px;width:100%;padding:12px;border:1px solid #E3E6E9;border-radius:8px;background:#FFFFFF;font:inherit;text-align:left;cursor:pointer" style-hover="border-color:#B9B5EC;background:#F7F8F9">
+                <span style="font-size:13px;line-height:18px;font-weight:500;color:#0B0F14">Kenapa margin turun bulan ini?</span>
+                <span style="font-size:12px;line-height:16px;color:#5B6672">Membandingkan HPP dan beban terhadap bulan lalu</span>
+              </button>
+              <button type="button" style="display:flex;flex-direction:column;gap:3px;width:100%;padding:12px;border:1px solid #E3E6E9;border-radius:8px;background:#FFFFFF;font:inherit;text-align:left;cursor:pointer" style-hover="border-color:#B9B5EC;background:#F7F8F9">
+                <span style="font-size:13px;line-height:18px;font-weight:500;color:#0B0F14">Buatkan ringkasan arus kas kuartal ini</span>
+                <span style="font-size:12px;line-height:16px;color:#5B6672">Pemasukan, pengeluaran, dan saldo per bulan</span>
+              </button>
+              <button type="button" style="display:flex;flex-direction:column;gap:3px;width:100%;padding:12px;border:1px solid #E3E6E9;border-radius:8px;background:#FFFFFF;font:inherit;text-align:left;cursor:pointer" style-hover="border-color:#B9B5EC;background:#F7F8F9">
+                <span style="font-size:13px;line-height:18px;font-weight:500;color:#0B0F14">Faktur mana yang berisiko tidak tertagih?</span>
+                <span style="font-size:12px;line-height:16px;color:#5B6672">Berdasarkan riwayat pembayaran tiap pelanggan</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div style="flex-shrink:0;padding:12px 16px 16px;border-top:1px solid #EDEFF1">
+          <div style="display:flex;align-items:center;gap:8px;min-height:40px;padding:0 12px;background:#F7F8F9;border:1px solid #C9CFD5;border-radius:8px">
+            <span style="flex:1;min-width:0;font-size:13px;color:#7C8794;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Tanya tentang data Anda…</span>
+            <button type="button" aria-label="Kirim" style="display:grid;place-items:center;width:28px;height:28px;flex-shrink:0;border:0;border-radius:6px;background:#3A34B5;color:#FFFFFF;cursor:pointer"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M7 11V3M3.5 6.5 7 3l3.5 3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:8px">
+        <span style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.12em;color:#3A34B5">STATE PERCAKAPAN</span>
+        <span style="font-size:13px;color:#5B6672">Teks + tabel + chart mini + aksi</span>
+      </div>
+      <div style="width:420px;height:860px;display:flex;flex-direction:column;background:#FFFFFF;border:1px solid #E3E6E9;border-radius:12px;overflow:hidden;box-shadow:0 12px 32px rgba(11,15,20,.10)">
+        <div style="flex-shrink:0;padding:14px 16px;border-bottom:1px solid #EDEFF1">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+            <span style="display:grid;place-items:center;width:28px;height:28px;flex-shrink:0;border-radius:6px;background:#FDF3E3;border:1px solid #F0D3A0">
+              <svg width="18" height="18" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M2.35 9.14H20.9A3.78 3.78 0 0 1 24.68 12.92V21.18" stroke="#E8A33D" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.32 3.4V7.74" stroke="#E8A33D" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M29.65 22.86H11.1A3.78 3.78 0 0 0 7.32 19.08V10.82" stroke="#E8A33D" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M24.68 28.6V24.26" stroke="#E8A33D" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+            <span style="flex:1;min-width:0;font-size:14px;font-weight:600">Paadu AI</span>
+            <button type="button" aria-label="Percakapan baru" style="display:grid;place-items:center;width:28px;height:28px;flex-shrink:0;border:1px solid #E3E6E9;border-radius:6px;background:#FFFFFF;color:#5B6672;cursor:pointer"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M7 3.5v7M3.5 7h7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+            <button type="button" aria-label="Tutup panel" style="display:grid;place-items:center;width:28px;height:28px;flex-shrink:0;border:0;border-radius:6px;background:transparent;color:#5B6672;cursor:pointer" style-hover="background:#F7F8F9"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+          </div>
+          <button type="button" style="display:flex;align-items:center;gap:8px;width:100%;min-height:32px;padding:0 10px;border:1px solid #E3E6E9;border-radius:6px;background:#F7F8F9;font:inherit;font-size:12px;color:#0B0F14;cursor:pointer;text-align:left">
+            <span style="flex-shrink:0;color:#5B6672">Konteks:</span>
+            <span style="flex:1;min-width:0;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Faktur Penjualan · Q1 2026</span>
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true" style="flex-shrink:0;color:#7C8794"><path d="M3 4.5 6 8l3-3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+
+        <div style="flex:1;min-height:0;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:16px">
+          <div style="align-self:flex-end;max-width:88%;padding:10px 12px;background:#ECEBFA;border:1px solid #B9B5EC;border-radius:10px 10px 2px 10px">
+            <span style="font-size:13px;line-height:19px;color:#0B0F14">Siapa pelanggan yang paling telat bayar?</span>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <p style="margin:0;font-size:13px;line-height:20px;text-wrap:pretty">Tiga pelanggan menyumbang <strong style="font-weight:600">68%</strong> dari total keterlambatan. PT Global Mandiri Persada paling konsisten telat — rata-rata 34 hari setelah jatuh tempo pada 21 faktur terakhir, meski nilai tertunggaknya bukan yang terbesar.</p>
+
+            <div style="border:1px solid #E3E6E9;border-radius:8px;overflow:hidden">
+              <table style="width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums">
+                <thead>
+                  <tr>
+                    <th scope="col" style="padding:7px 10px;background:#F7F8F9;border-bottom:1px solid #E3E6E9;text-align:left;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#5B6672">Pelanggan</th>
+                    <th scope="col" style="padding:7px 10px;background:#F7F8F9;border-bottom:1px solid #E3E6E9;text-align:right;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#5B6672;white-space:nowrap">Telat</th>
+                    <th scope="col" style="padding:7px 10px;background:#F7F8F9;border-bottom:1px solid #E3E6E9;text-align:right;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#5B6672;white-space:nowrap">Tertunggak</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><td style="height:34px;padding:0 10px;border-bottom:1px solid #EDEFF1;font-size:12px">PT Global Mandiri Persada</td><td style="height:34px;padding:0 10px;border-bottom:1px solid #EDEFF1;text-align:right;font-size:12px;font-weight:500;color:#912018;white-space:nowrap">34 hari</td><td style="height:34px;padding:0 10px;border-bottom:1px solid #EDEFF1;text-align:right;font-size:12px;white-space:nowrap">96,8 jt</td></tr>
+                  <tr><td style="height:34px;padding:0 10px;border-bottom:1px solid #EDEFF1;font-size:12px">PT Anyaman Nusantara</td><td style="height:34px;padding:0 10px;border-bottom:1px solid #EDEFF1;text-align:right;font-size:12px;font-weight:500;color:#912018;white-space:nowrap">27 hari</td><td style="height:34px;padding:0 10px;border-bottom:1px solid #EDEFF1;text-align:right;font-size:12px;white-space:nowrap">96,3 jt</td></tr>
+                  <tr><td style="height:34px;padding:0 10px;font-size:12px">CV Karya Bahari</td><td style="height:34px;padding:0 10px;text-align:right;font-size:12px;font-weight:500;color:#92400E;white-space:nowrap">12 hari</td><td style="height:34px;padding:0 10px;text-align:right;font-size:12px;white-space:nowrap">17,0 jt</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div style="padding:12px;border:1px solid #E3E6E9;border-radius:8px">
+              <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:10px">
+                <span style="font-size:12px;font-weight:600">Rata-rata hari keterlambatan</span>
+                <span style="font-size:11px;color:#5B6672">Okt 2025 – Mar 2026</span>
+              </div>
+              <svg viewBox="0 -16 340 116" width="100%" role="img" aria-label="Chart mini rata-rata hari keterlambatan naik dari 18 ke 34 hari" style="display:block">
+                <line x1="0" y1="84" x2="340" y2="84" stroke="#EDEFF1" stroke-width="1"/>
+                <line x1="0" y1="44" x2="340" y2="44" stroke="#EDEFF1" stroke-width="1"/>
+                <rect x="14" y="42" width="30" height="42" rx="2" fill="#C9CFD5"/>
+                <rect x="68" y="46" width="30" height="38" rx="2" fill="#C9CFD5"/>
+                <rect x="122" y="34" width="30" height="50" rx="2" fill="#C9CFD5"/>
+                <rect x="176" y="28" width="30" height="56" rx="2" fill="#E7A8A2"/>
+                <rect x="230" y="20" width="30" height="64" rx="2" fill="#E7A8A2"/>
+                <rect x="284" y="8" width="30" height="76" rx="2" fill="#B42318"/>
+                <text x="299" y="-4" fill="#912018" font-size="11" font-weight="600" text-anchor="middle" font-family="Inter, sans-serif">34</text>
+                <text x="29" y="98" fill="#5B6672" font-size="11" text-anchor="middle" font-family="Inter, sans-serif">Okt</text>
+                <text x="83" y="98" fill="#5B6672" font-size="11" text-anchor="middle" font-family="Inter, sans-serif">Nov</text>
+                <text x="137" y="98" fill="#5B6672" font-size="11" text-anchor="middle" font-family="Inter, sans-serif">Des</text>
+                <text x="191" y="98" fill="#5B6672" font-size="11" text-anchor="middle" font-family="Inter, sans-serif">Jan</text>
+                <text x="245" y="98" fill="#5B6672" font-size="11" text-anchor="middle" font-family="Inter, sans-serif">Feb</text>
+                <text x="299" y="98" fill="#5B6672" font-size="11" text-anchor="middle" font-family="Inter, sans-serif">Mar</text>
+              </svg>
+            </div>
+
+            <div style="display:flex;flex-wrap:wrap;gap:8px">
+              <button type="button" style="display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 12px;border:1px solid transparent;border-radius:6px;background:#3A34B5;color:#FFFFFF;font:inherit;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap" style-hover="background:#2F2A94">Buka laporan lengkap</button>
+              <button type="button" style="display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 12px;border:1px solid #C9CFD5;border-radius:6px;background:#FFFFFF;color:#0B0F14;font:inherit;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap" style-hover="background:#F7F8F9"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 2v8m0 0 3-3m-3 3L5 7M3 12.5h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>Ekspor ke Excel</button>
+              <button type="button" style="display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0 12px;border:1px solid #C9CFD5;border-radius:6px;background:#FFFFFF;color:#0B0F14;font:inherit;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap" style-hover="background:#F7F8F9">Buatkan draft email penagihan</button>
+            </div>
+
+            <div style="display:flex;align-items:center;gap:8px;padding-top:10px;border-top:1px solid #EDEFF1;flex-wrap:wrap">
+              <span style="font-size:11px;line-height:16px;color:#5B6672">Berdasarkan 248 faktur · Data per 1 Sep 2026</span>
+              <div style="margin-left:auto;display:flex;align-items:center;gap:2px">
+                <button type="button" aria-label="Jawaban ini membantu" style="display:grid;place-items:center;width:26px;height:26px;border:0;border-radius:6px;background:transparent;color:#5B6672;cursor:pointer" style-hover="background:#E6F4EF;color:#0E6A4C"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M5.5 14V7l3-5 .9.5a2 2 0 0 1 1 2.2L10 7h3a1.5 1.5 0 0 1 1.45 1.9l-1.1 4A1.5 1.5 0 0 1 11.9 14H5.5Zm0 0H2V7h3.5" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg></button>
+                <button type="button" aria-label="Jawaban ini tidak akurat" style="display:grid;place-items:center;width:26px;height:26px;border:0;border-radius:6px;background:transparent;color:#5B6672;cursor:pointer" style-hover="background:#FDECEA;color:#912018"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M10.5 2v7l-3 5-.9-.5a2 2 0 0 1-1-2.2L6 9H3a1.5 1.5 0 0 1-1.45-1.9l1.1-4A1.5 1.5 0 0 1 4.1 2h6.4Zm0 0H14v7h-3.5" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg></button>
+                <button type="button" aria-label="Salin jawaban" style="display:grid;place-items:center;width:26px;height:26px;border:0;border-radius:6px;background:transparent;color:#5B6672;cursor:pointer" style-hover="background:#F7F8F9;color:#0B0F14"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><rect x="2" y="2" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M5 11.5h5.5a1 1 0 0 0 1-1V5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="flex-shrink:0;padding:12px 16px 16px;border-top:1px solid #EDEFF1">
+          <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
+            <button type="button" style="min-height:26px;padding:0 10px;border:1px solid #E3E6E9;border-radius:999px;background:#FFFFFF;color:#0B0F14;font:inherit;font-size:12px;cursor:pointer;white-space:nowrap" style-hover="border-color:#B9B5EC">Bandingkan dengan Q4 2025</button>
+            <button type="button" style="min-height:26px;padding:0 10px;border:1px solid #E3E6E9;border-radius:999px;background:#FFFFFF;color:#0B0F14;font:inherit;font-size:12px;cursor:pointer;white-space:nowrap" style-hover="border-color:#B9B5EC">Hanya faktur &gt; Rp 50 jt</button>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;min-height:40px;padding:0 12px;background:#FFFFFF;border:1px solid #3A34B5;border-radius:8px;box-shadow:0 0 0 2px #ECEBFA">
+            <span style="flex:1;min-width:0;font-size:13px;color:#0B0F14;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Tanya lanjutan…<span style="display:inline-block;width:1px;height:15px;margin-left:1px;background:#0B0F14;vertical-align:-3px"></span></span>
+            <button type="button" aria-label="Kirim" style="display:grid;place-items:center;width:28px;height:28px;flex-shrink:0;border:0;border-radius:6px;background:#3A34B5;color:#FFFFFF;cursor:pointer"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M7 11V3M3.5 6.5 7 3l3.5 3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:8px">
+        <span style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.12em;color:#3A34B5">STATE LOADING</span>
+        <span style="font-size:13px;color:#5B6672">Streaming shimmer + langkah yang sedang dikerjakan</span>
+      </div>
+      <div style="width:420px;height:860px;display:flex;flex-direction:column;background:#FFFFFF;border:1px solid #E3E6E9;border-radius:12px;overflow:hidden;box-shadow:0 12px 32px rgba(11,15,20,.10)">
+        <div style="flex-shrink:0;padding:14px 16px;border-bottom:1px solid #EDEFF1">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+            <span style="display:grid;place-items:center;width:28px;height:28px;flex-shrink:0;border-radius:6px;background:#FDF3E3;border:1px solid #F0D3A0;animation:pf-pulse 1.6s ease-in-out infinite">
+              <svg width="18" height="18" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M2.35 9.14H20.9A3.78 3.78 0 0 1 24.68 12.92V21.18" stroke="#E8A33D" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M7.32 3.4V7.74" stroke="#E8A33D" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M29.65 22.86H11.1A3.78 3.78 0 0 0 7.32 19.08V10.82" stroke="#E8A33D" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M24.68 28.6V24.26" stroke="#E8A33D" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+            <span style="flex:1;min-width:0;font-size:14px;font-weight:600">Paadu AI</span>
+            <button type="button" style="min-height:26px;padding:0 10px;flex-shrink:0;border:1px solid #C9CFD5;border-radius:6px;background:#FFFFFF;color:#0B0F14;font:inherit;font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap">Hentikan</button>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;min-height:32px;padding:0 10px;border:1px solid #E3E6E9;border-radius:6px;background:#F7F8F9;font-size:12px;color:#0B0F14">
+            <span style="flex-shrink:0;color:#5B6672">Konteks:</span>
+            <span style="flex:1;min-width:0;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Faktur Penjualan · Q1 2026</span>
+          </div>
+        </div>
+
+        <div style="flex:1;min-height:0;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:16px">
+          <div style="align-self:flex-end;max-width:88%;padding:10px 12px;background:#ECEBFA;border:1px solid #B9B5EC;border-radius:10px 10px 2px 10px">
+            <span style="font-size:13px;line-height:19px;color:#0B0F14">Siapa pelanggan yang paling telat bayar?</span>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:#8A5A12">
+              <span style="width:12px;height:12px;border:2px solid #E8A33D;border-top-color:transparent;border-radius:999px;animation:pf-pulse 1s linear infinite"></span>
+              Membaca 248 faktur dan riwayat pelunasannya…
+            </div>
+            <span style="display:block;width:100%;height:12px;border-radius:4px;background:#EDEFF1;background-image:linear-gradient(90deg,transparent,rgba(125,135,148,.20),transparent);background-repeat:no-repeat;background-size:220px 100%;animation:pf-shimmer 1.3s linear infinite"></span>
+            <span style="display:block;width:92%;height:12px;border-radius:4px;background:#EDEFF1;background-image:linear-gradient(90deg,transparent,rgba(125,135,148,.20),transparent);background-repeat:no-repeat;background-size:220px 100%;animation:pf-shimmer 1.3s linear infinite"></span>
+            <span style="display:block;width:64%;height:12px;border-radius:4px;background:#EDEFF1;background-image:linear-gradient(90deg,transparent,rgba(125,135,148,.20),transparent);background-repeat:no-repeat;background-size:220px 100%;animation:pf-shimmer 1.3s linear infinite"></span>
+            <div style="margin-top:4px;border:1px solid #EDEFF1;border-radius:8px;overflow:hidden">
+              <div style="display:flex;gap:10px;padding:8px 10px;background:#F7F8F9;border-bottom:1px solid #EDEFF1"><span style="display:block;width:96px;height:10px;border-radius:3px;background:#E3E6E9"></span><span style="display:block;width:48px;height:10px;border-radius:3px;background:#E3E6E9;margin-left:auto"></span><span style="display:block;width:56px;height:10px;border-radius:3px;background:#E3E6E9"></span></div>
+              <div style="display:flex;gap:10px;padding:9px 10px;border-bottom:1px solid #EDEFF1"><span style="display:block;width:132px;height:10px;border-radius:3px;background:#EDEFF1"></span><span style="display:block;width:40px;height:10px;border-radius:3px;background:#EDEFF1;margin-left:auto"></span><span style="display:block;width:52px;height:10px;border-radius:3px;background:#EDEFF1"></span></div>
+              <div style="display:flex;gap:10px;padding:9px 10px"><span style="display:block;width:112px;height:10px;border-radius:3px;background:#EDEFF1"></span><span style="display:block;width:40px;height:10px;border-radius:3px;background:#EDEFF1;margin-left:auto"></span><span style="display:block;width:52px;height:10px;border-radius:3px;background:#EDEFF1"></span></div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px;margin-top:4px;font-size:12px;line-height:17px;color:#5B6672">
+              <span style="display:inline-flex;align-items:center;gap:8px"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true" style="color:#0E6A4C;flex-shrink:0"><path d="M2.2 6.4 4.6 8.8 9.8 3.4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Mengelompokkan per pelanggan</span>
+              <span style="display:inline-flex;align-items:center;gap:8px"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true" style="color:#0E6A4C;flex-shrink:0"><path d="M2.2 6.4 4.6 8.8 9.8 3.4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>Menghitung rata-rata hari keterlambatan</span>
+              <span style="display:inline-flex;align-items:center;gap:8px;color:#7C8794"><span style="width:12px;height:12px;flex-shrink:0;border:1px solid #C9CFD5;border-radius:999px"></span>Menyusun ringkasan</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="flex-shrink:0;padding:12px 16px 16px;border-top:1px solid #EDEFF1">
+          <div style="display:flex;align-items:center;gap:8px;min-height:40px;padding:0 12px;background:#F7F8F9;border:1px solid #E3E6E9;border-radius:8px">
+            <span style="flex:1;min-width:0;font-size:13px;color:#A9B2BB;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Menunggu jawaban…</span>
+            <button type="button" aria-label="Kirim" aria-disabled="true" style="display:grid;place-items:center;width:28px;height:28px;flex-shrink:0;border:0;border-radius:6px;background:#E3E6E9;color:#A9B2BB;cursor:not-allowed"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M7 11V3M3.5 6.5 7 3l3.5 3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{}"></script>
+</body>
+</html>
