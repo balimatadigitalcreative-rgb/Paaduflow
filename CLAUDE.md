@@ -23,6 +23,19 @@ Keputusan arsitektur dan penyimpangan dari dokumen dicatat di `docs/DECISIONS.md
 - Pagination berbasis kursor. Tidak ada parameter `offset`.
 - Konteks company diambil dari path URL, bukan dari token.
 
+## Deploy
+
+- "ship" berarti `npm run ship` (commit → push → deploy). "deploy" berarti
+  `npm run deploy` (deploy saja). Jalankan perintahnya apa adanya.
+- Jangan pernah menyusun sendiri rangkaian `git add`/`commit`/`push` atau
+  perintah deploy manual. Seluruh gerbang sudah tertanam di script itu.
+- Laporkan hasilnya ringkas, termasuk sha bundel yang melayani. Baris terakhir
+  `deploy` mencetaknya sebagai `versi disajikan <sha>`.
+- Bila sha itu sama dengan deploy sebelumnya, katakan perubahannya kemungkinan
+  belum tayang.
+- Bila gerbang menolak, tampilkan pelanggarannya dan berhenti. Jangan mencari
+  jalan lain melewatinya.
+
 ## Sebelum menyatakan selesai
 
 - Jalankan `npm run lint` dan `npm test`
