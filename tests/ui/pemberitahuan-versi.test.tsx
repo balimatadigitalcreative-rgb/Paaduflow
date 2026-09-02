@@ -85,6 +85,46 @@ test('yang diabaikan kembali setelah penundaannya habis', async () => {
   }
 })
 
+test('pemberitahuan hilang bila server kembali ke versi tab ini', async () => {
+  /*
+   * Rollback. Tab yang sudah melihat pemberitahuan lalu ditarik kembali ke
+   * versinya sendiri tidak boleh terus disuruh memuat ulang untuk sesuatu yang
+   * tidak lagi berbeda — itu memberi tahu padahal tidak ada versi baru.
+   */
+  vi.useFakeTimers({ shouldAdvanceTime: true })
+  try {
+    const ambil = vi
+      .fn()
+      .mockResolvedValueOnce('def5678')
+      .mockResolvedValue('abc1234')
+
+    render(<PemberitahuanVersi ambil={ambil} versiTerpasang="abc1234" />)
+    await screen.findByText(PESAN)
+
+    await vi.advanceTimersByTimeAsync(6 * 60 * 1000)
+    await waitFor(() => expect(screen.queryByText(PESAN)).toBeNull())
+  } finally {
+    vi.useRealTimers()
+  }
+})
+
+test('jaringan yang putus tidak menghapus pemberitahuan yang sudah benar', async () => {
+  // `null` berarti belum tahu. Belum tahu tidak boleh membatalkan sesuatu yang
+  // sudah diketahui.
+  vi.useFakeTimers({ shouldAdvanceTime: true })
+  try {
+    const ambil = vi.fn().mockResolvedValueOnce('def5678').mockResolvedValue(null)
+
+    render(<PemberitahuanVersi ambil={ambil} versiTerpasang="abc1234" />)
+    await screen.findByText(PESAN)
+
+    await vi.advanceTimersByTimeAsync(11 * 60 * 1000)
+    expect(screen.queryByText(PESAN)).not.toBeNull()
+  } finally {
+    vi.useRealTimers()
+  }
+})
+
 test('tab yang tersembunyi berhenti memeriksa', async () => {
   /*
    * Bukan "melambat" — berhenti. Peramban memang melambatkan timer di tab

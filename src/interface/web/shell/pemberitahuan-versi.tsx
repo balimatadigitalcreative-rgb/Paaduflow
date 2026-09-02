@@ -92,9 +92,23 @@ export function PemberitahuanVersi({
     const disajikan = await ambilRef.current()
 
     // `null` berarti tidak terjawab. Bukan "tidak ada versi baru", dan bukan
-    // alasan menampilkan apa pun — termasuk galat.
+    // alasan menampilkan apa pun — termasuk galat. Keadaan sebelumnya
+    // dibiarkan apa adanya: jaringan yang putus sesaat tidak boleh menghapus
+    // pemberitahuan yang sudah benar.
     if (disajikan === null) return
-    if (disajikan !== versiRef.current) setTertinggal(true)
+
+    /*
+     * Bendera ini MENGIKUTI jawaban, bukan hanya menyala sekali.
+     *
+     * Rollback mengembalikan rilis lama, dan tab yang sudah melihat
+     * pemberitahuan lalu ditarik kembali ke versinya sendiri seharusnya tidak
+     * terus disuruh memuat ulang untuk sesuatu yang tidak lagi berbeda.
+     * Penundaan ikut dilepas, supaya perubahan berikutnya yang sungguhan tidak
+     * perlu menunggu sisa tiga puluh menit yang sudah kehilangan sebabnya.
+     */
+    const berbeda = disajikan !== versiRef.current
+    setTertinggal(berbeda)
+    if (!berbeda) setDiabaikanPada(null)
   }, [])
 
   useEffect(() => {
