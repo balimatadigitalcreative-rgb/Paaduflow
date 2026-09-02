@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 
 import react from '@vitejs/plugin-react'
@@ -8,11 +9,36 @@ const dir = (relative: string): string => fileURLToPath(new URL(relative, import
 /**
  * Sha commit yang sedang dibangun.
  *
- * Diisi `tools/deploy/deploy.js` lewat lingkungan. Kosong saat pengembangan,
- * dan `dev` di kedua sisi berarti pemeriksaan versi tidak pernah berbunyi di
- * mesin siapa pun — yang memang benar, karena Vite sudah punya hot reload.
+ * ═══════════════════════════════════════════════════════════════════════════
+ *   DUA SUMBER, DAN URUTANNYA MENUTUP KEGAGALAN YANG PALING SUNYI
+ *
+ *   Kalau satu-satunya sumber adalah `PAADU_SHA` dari `deploy.js`, maka build
+ *   yang dijalankan dengan tangan — `npm run build:web` di server, yang
+ *   didokumentasikan README sebagai bagian penyiapan — akan memanggang `dev`
+ *   ke dalam bundel MAUPUN ke `versi.json`. Keduanya lalu cocok selamanya,
+ *   pemberitahuan versi tidak pernah berbunyi lagi, dan tidak ada satu pun
+ *   tanda di mana pun bahwa ia sudah mati.
+ *
+ *   Fitur yang mati diam-diam tidak dapat dibedakan dari fitur yang bekerja
+ *   sampai hari ia dibutuhkan. Karena itu build apa pun di dalam repo ini
+ *   mengambil sha-nya sendiri dari git bila lingkungan tidak memberinya.
+ * ═══════════════════════════════════════════════════════════════════════════
  */
-const VERSI = process.env.PAADU_SHA ?? 'dev'
+function shaTerbangun(): string {
+  const dariLingkungan = process.env.PAADU_SHA
+  if (dariLingkungan !== undefined && dariLingkungan !== '') return dariLingkungan
+
+  try {
+    return execFileSync('git', ['rev-parse', '--short', 'HEAD'], {
+      cwd: dir('.'),
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+    }).trim()
+  } catch {
+    // Tanpa git — arsip sumber, kontainer build tanpa riwayat. Bukan galat.
+    return 'dev'
+  }
+}
 
 /**
  * Menuliskan versi ke DUA tempat dari satu nilai.
@@ -28,13 +54,30 @@ const VERSI = process.env.PAADU_SHA ?? 'dev'
  * fitur yang membandingkan dua angka harus yakin keduanya berarti hal yang sama.
  */
 function versiTerbangun(): Plugin {
+  let versi = 'dev'
+
   return {
     name: 'paadu-versi',
+
+    /**
+     * Server pengembangan SELALU `dev`, meski repo ini punya git.
+     *
+     * `/versi` menjawab `dev` saat tidak ada `webRoot`, dan di pengembangan
+     * memang tidak ada — Vite yang menyajikan. Memanggang sha sungguhan ke
+     * bundel dev berarti kedua sisi selamanya berbeda, dan setiap orang yang
+     * menjalankan `npm run dev` akan melihat banner "ada versi baru" terus
+     * menerus atas aplikasi yang sedang ia tulis sendiri.
+     */
+    config(_konfigurasi, lingkungan) {
+      versi = lingkungan.command === 'build' ? shaTerbangun() : 'dev'
+      return { define: { __VERSI_APLIKASI__: JSON.stringify(versi) } }
+    },
+
     generateBundle() {
       this.emitFile({
         type: 'asset',
         fileName: 'versi.json',
-        source: `${JSON.stringify({ sha: VERSI })}\n`,
+        source: `${JSON.stringify({ sha: versi })}\n`,
       })
     },
   }
@@ -49,9 +92,6 @@ function versiTerbangun(): Plugin {
 export default defineConfig({
   root: dir('./src/interface/web'),
   plugins: [react(), versiTerbangun()],
-  define: {
-    __VERSI_APLIKASI__: JSON.stringify(VERSI),
-  },
   resolve: {
     alias: {
       '#shared': dir('./src/shared'),
