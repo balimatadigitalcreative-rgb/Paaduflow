@@ -17,6 +17,7 @@ import { BAHASA, type Bahasa } from '../i18n/index.js'
 
 import { CommandPalette } from './command-palette.js'
 import { CompanySwitcher, type CompanySwitcherProps } from './company-switcher.js'
+import { PemberitahuanVersi } from './pemberitahuan-versi.js'
 import { usePreferences } from './preferences.js'
 import styles from './shell.module.css'
 import {
@@ -423,6 +424,10 @@ export function AppShell(props: AppShellProps): ReactNode {
       )}
 
       <div className={styles.content}>
+        {/* Versi baru yang tersedia diberitahukan di sini — TIDAK pernah dengan
+            memuat ulang sendiri. Lihat pemberitahuan-versi.tsx. */}
+        <PemberitahuanVersi />
+
         {/* Perpindahan konteks diumumkan assertive, bukan polite. Ia memengaruhi
             kebenaran seluruh data di layar, jadi ia harus menyela. */}
         <div aria-live="assertive" aria-atomic="true">

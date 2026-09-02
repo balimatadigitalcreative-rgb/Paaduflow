@@ -396,7 +396,22 @@ const bangun = await diServer(
      * deploy berakhir hijau. Ini bentuk lain dari D-145.
      */
     `npm run tokens:build`,
-    `npx vite build --outDir ${APP_DIR}/dist/web-baru --emptyOutDir`,
+    /*
+     * `PAADU_SHA` menyuntikkan sha commit ke dalam build.
+     *
+     * Dari satu nilai ini `vite.config.ts` menulis dua hal: konstanta
+     * `__VERSI_APLIKASI__` di dalam bundel, dan `versi.json` di direktori
+     * hasil. Yang pertama membuat tab dapat mengatakan bundel mana yang
+     * sedang ia jalankan; yang kedua membuat server dapat mengatakan bundel
+     * mana yang sedang ia sajikan. Pemberitahuan "ada versi baru" adalah
+     * selisih keduanya.
+     *
+     * Dibaca di sini, bukan di dalam Vite lewat `git rev-parse`: build
+     * berjalan di direktori aplikasi yang memang repo git, tetapi menaruh
+     * pemanggilan git di dalam konfigurasi build membuat build gagal di
+     * tempat yang tidak punya git — dan CI adalah tempat seperti itu.
+     */
+    `PAADU_SHA=$(git rev-parse --short HEAD) npx vite build --outDir ${APP_DIR}/dist/web-baru --emptyOutDir`,
     `npm run build:server`,
     /*
      * Token yang dipakai tanpa deklarasi diperiksa DI SINI, atas hasil build

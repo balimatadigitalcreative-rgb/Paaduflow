@@ -55,11 +55,45 @@ export async function startApi(options: ApiOptions = {}): Promise<void> {
     permissionCache: cacheIzin,
   })
 
-  const app = await buildHttpApp({ services, logger: true, keadaan })
+  const app = await buildHttpApp({ services, logger: true, keadaan, webRoot: options.webRoot })
 
   if (options.webRoot !== undefined && options.webRoot !== '') {
     const { default: fastifyStatic } = await import('@fastify/static')
-    await app.register(fastifyStatic, { root: options.webRoot, wildcard: false })
+    await app.register(fastifyStatic, {
+      root: options.webRoot,
+      wildcard: false,
+
+      /**
+       * Dua kelas berkas, dua umur cache — dan hanya satu yang perlu diatur.
+       *
+       * Bawaan `@fastify/static` mengirim `cache-control: public, max-age=0`
+       * beserta ETag untuk SEMUANYA. Diperiksa di produksi, bukan disimpulkan
+       * dari dokumentasi.
+       *
+       * Untuk `index.html` itu sudah benar dan tidak diubah: `max-age=0`
+       * memaksa peramban bertanya ulang setiap kali, dan ETag membuat
+       * jawabannya 304 tanpa isi. Ia tidak pernah tersaji basi, dan biayanya
+       * satu perjalanan bolak-balik yang memang harus terjadi.
+       *
+       * Untuk `assets/` itu salah, dan biayanya nyata: bundel 392 KB
+       * divalidasi ulang pada setiap pemuatan halaman meskipun namanya sudah
+       * mengandung sidik isinya. Nama berubah setiap kali isi berubah, jadi
+       * berkas itu tidak akan pernah menjadi basi — menyimpannya setahun
+       * bukan sekadar aman, ia yang diinginkan. `immutable` menghapus
+       * revalidasinya sama sekali.
+       *
+       * Perubahan ini sekaligus yang membuat pemberitahuan versi bermakna:
+       * tanpa `immutable`, tab yang memuat ulang tetap membayar ulang seluruh
+       * bundel yang sudah ia punya.
+       */
+      setHeaders(reply, path) {
+        // Kedua pemisah jalur diterima: yang datang ke sini adalah jalur
+        // filesystem, dan ia memakai `\` di Windows.
+        if (/[\\/]assets[\\/]/.test(path)) {
+          reply.header('cache-control', 'public, max-age=31536000, immutable')
+        }
+      },
+    })
 
     /**
      * Rute non-API diarahkan ke index.html.

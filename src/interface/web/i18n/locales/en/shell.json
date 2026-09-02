@@ -128,5 +128,8 @@
     "kosongJudul": "No companies for this account yet",
     "kosongPenjelasan": "You are signed in, but your account has not been granted access to any company. Ask your tenant admin to add access, then check again.",
     "sesiBerakhir": "Your session has ended. Please sign in again."
+  },
+  "versi": {
+    "tersedia": "A new version of Paadu Flow is available. Reload once your work is saved — anything unsaved will be lost."
   }
 }

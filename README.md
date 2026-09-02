@@ -182,6 +182,22 @@ menampilkan pesan galat utuh:
 Bila langkah 6 gagal, ia menampilkan **30 baris terakhir log PM2** — tidak perlu
 SSH manual untuk tahu sebabnya.
 
+#### Setelah deploy, klien melihat pemberitahuan
+
+Tab yang sudah terbuka di peramban klien tetap menjalankan bundel lama sampai
+halamannya dimuat ulang — dan selama itu, frontend lama memanggil backend baru.
+Setiap deploy memanggang sha commit ke dalam bundel dan menuliskannya ke
+`versi.json`; aplikasi membandingkan keduanya lewat `GET /versi` saat tab kembali
+mendapat fokus, dan sekali setiap lima menit selama tab terlihat. Bila berbeda,
+sebuah banner muncul di atas halaman dengan tombol **Muat ulang**.
+
+**Aplikasi tidak pernah memuat ulang sendiri.** Orang yang sedang mengisi Faktur
+Penjualan memilih sendiri kapan halamannya disegarkan; yang ditunda dengan
+"Nanti saja" kembali setelah tiga puluh menit. Artinya beberapa menit setelah
+setiap deploy, klien yang sedang bekerja akan melihat pemberitahuan ini — itu
+perilaku yang benar, bukan gangguan, dan ada baiknya mereka tahu sebelumnya.
+Keputusan dan alasannya di D-172 sampai D-175.
+
 Migrasi tidak pernah berjalan diam-diam. Bila tidak ada yang tertunda, langkah 4
 dilewati tanpa bertanya. Membatalkan di titik itu **tidak** menyegarkan proses,
 sehingga kode lama tetap melayani.

@@ -128,5 +128,8 @@
     "kosongJudul": "Belum ada company untuk akun ini",
     "kosongPenjelasan": "Anda sudah masuk, tetapi akun Anda belum diberi akses ke company mana pun. Mintalah admin tenant Anda menambahkan aksesnya, lalu periksa lagi.",
     "sesiBerakhir": "Sesi Anda berakhir. Silakan masuk lagi."
+  },
+  "versi": {
+    "tersedia": "Versi baru Paadu Flow sudah tersedia. Muat ulang saat pekerjaan Anda sudah tersimpan — yang belum disimpan akan hilang."
   }
 }

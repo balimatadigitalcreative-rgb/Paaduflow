@@ -1,4 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto'
+import { readFile } from 'node:fs/promises'
+import { join } from 'node:path'
 
 import type { AppServices } from '#application/app-services'
 import type { IdempotencyKey } from '#shared/idempotency'
@@ -48,6 +50,15 @@ export interface HttpOptions {
    * siap, yang benar untuk `app.inject()` — di sana tidak ada fase menyala.
    */
   readonly keadaan?: KeadaanProses
+  /**
+   * Direktori hasil build antarmuka. Dipakai `/versi` untuk membaca
+   * `versi.json` yang ditulis Vite di sana.
+   *
+   * Kosong saat pengembangan dan di test: `/versi` menjawab `dev`, sama dengan
+   * yang terpanggang ke bundel Vite dev — sehingga pemeriksaan versi tidak
+   * pernah berbunyi di mesin siapa pun.
+   */
+  readonly webRoot?: string | undefined
 }
 
 /**
@@ -202,6 +213,77 @@ export async function buildHttpApp(options: HttpOptions): Promise<PaaduServer> {
         database: 'unreachable',
         message: galat instanceof Error ? galat.message : 'Basis data tidak terjangkau.',
       })
+    }
+  })
+
+  /*
+   * ═════════════════════════════════════════════════════════════════════════
+   *   `/versi` — bundel MANA yang sedang disajikan
+   *
+   *   Di luar `/v1` dengan sengaja. `/v1` adalah API bisnis: ia bercakupan
+   *   company, menuntut sesi, dan setiap penambahan di sana adalah janji
+   *   kompatibilitas kepada integrasi. Pertanyaan "berkas apa yang sedang kamu
+   *   sajikan" bukan salah satu pun dari itu — ia sekerabat dengan `/healthz`,
+   *   dan diletakkan di sebelahnya.
+   *
+   *   Tanpa sesi, dan itu syarat, bukan kelalaian: tab yang tokennya sudah
+   *   mati semalaman tetap menjalankan bundel lama, dan justru tab itu yang
+   *   paling perlu diberi tahu.
+   *
+   *   Tidak menyentuh basis data. Setiap tab yang terbuka memanggilnya
+   *   beberapa menit sekali; endpoint yang menyentuh basis data akan
+   *   menjadikan jumlah tab terbuka sebagai beban basis data.
+   * ═════════════════════════════════════════════════════════════════════════
+   */
+
+  /**
+   * Satu pembacaan berkas per sepuluh detik, dibagi seluruh permintaan.
+   *
+   * Nilainya TIDAK dibaca sekali saat menyala. Deploy menukar `dist/web` di
+   * bawah proses yang sedang berjalan, sehingga proses lama menyajikan bundel
+   * BARU beberapa detik sebelum ia disegarkan. Nilai yang dikunci saat menyala
+   * akan menjawab sha lama untuk berkas baru — dan tab yang baru saja dibuka
+   * akan langsung diberi tahu ada versi baru yang sebenarnya sudah ia jalankan.
+   *
+   * Yang ditanyakan adalah keadaan direktori, jadi yang dibaca adalah
+   * direktori.
+   */
+  let versiTerbaca: { sha: string; pada: number } | null = null
+  const UMUR_CACHE_VERSI_MS = 10_000
+
+  app.get('/versi', { schema: { hide: true } }, async (_request, reply) => {
+    // Tidak boleh disimpan di mana pun. Jawaban basi dari endpoint yang
+    // seluruh gunanya adalah mendeteksi kebasian tidak berguna sama sekali.
+    void reply.header('cache-control', 'no-store')
+
+    const webRoot = options.webRoot
+    if (webRoot === undefined || webRoot === '') {
+      return reply.status(200).send({ sha: 'dev' })
+    }
+
+    const sekarang = Date.now()
+    if (versiTerbaca !== null && sekarang - versiTerbaca.pada < UMUR_CACHE_VERSI_MS) {
+      return reply.status(200).send({ sha: versiTerbaca.sha })
+    }
+
+    try {
+      const isi = await readFile(join(webRoot, 'versi.json'), 'utf8')
+      const sha = (JSON.parse(isi) as { sha?: unknown }).sha
+      if (typeof sha !== 'string' || sha === '') throw new Error('versi.json tanpa sha.')
+      versiTerbaca = { sha, pada: sekarang }
+      return reply.status(200).send({ sha })
+    } catch (galat) {
+      /*
+       * 503, bukan menebak.
+       *
+       * Menjawab `dev` atau string kosong saat berkasnya tak terbaca akan
+       * membuat setiap tab mengira versinya berubah, lalu memberi tahu semua
+       * orang untuk memuat ulang tanpa ada yang berubah. Klien memperlakukan
+       * jawaban tidak-OK sebagai "belum tahu" dan diam — itu perilaku yang
+       * benar di sini.
+       */
+      app.log.warn({ err: galat }, 'versi.json tidak terbaca; /versi menjawab 503.')
+      return reply.status(503).send({ sha: null })
     }
   })
 

@@ -1489,6 +1489,62 @@ Bukan kelalaian. Setiap butir punya syarat kapan ia layak diputuskan.
 | Idempotency untuk endpoint pra-autentikasi | Saat dibutuhkan. `idempotency_keys` bertenant dan ber-RLS, sedangkan `/v1/auth/*` berjalan sebelum tenant diketahui. Registrasi sendiri sudah idempoten secara desain (D-067) |
 | Pencabutan access token sebelum kedaluwarsa | Masih terbuka dari B1. Lapisan HTTP kini ada, jadi daftar cabut punya tempat untuk dipasang |
 
+### D-172 · Versi ditanyakan di `/versi`, di luar `/v1`, dan dibaca dari direktori yang disajikan
+**Status:** Berlaku
+
+Deploy menukar `dist/web` di server, tetapi tab yang sudah terbuka tetap menjalankan bundel lama sampai orangnya kebetulan menekan muat ulang. Selama itu, frontend lama memanggil backend baru — dan gejalanya muncul sebagai galat yang tidak dapat dijelaskan siapa pun, jauh dari sebabnya.
+
+**Di luar `/v1`, dan itu bukan soal kerapian.** `/v1` adalah API bisnis: bercakupan company, menuntut sesi, dan setiap penambahan di sana adalah janji kompatibilitas kepada integrasi. "Berkas apa yang sedang kamu sajikan" bukan satu pun dari itu. Ia sekerabat dengan `/healthz` dan `/readyz`, dan diletakkan tepat di sebelahnya.
+
+**Tanpa sesi, dan itu syarat.** Tab yang tokennya mati semalaman tetap menjalankan bundel lama — justru tab itu yang paling perlu diberi tahu. Endpoint yang menuntut sesi akan diam persis pada kasus yang paling sering.
+
+**Tidak menyentuh basis data.** Setiap tab yang terbuka memanggilnya beberapa menit sekali. Endpoint yang menyentuh basis data menjadikan jumlah tab terbuka sebagai beban basis data, dan itu beban yang tumbuh dengan jumlah orang yang sedang bekerja.
+
+**Dibaca dari berkas, bukan dikunci saat proses menyala.** `versi.json` ditulis Vite ke direktori hasil build; `/versi` membacanya dengan cache sepuluh detik. Nilai yang dikunci saat menyala akan salah selama beberapa detik setiap deploy: proses lama menyajikan bundel BARU sebelum ia disegarkan, sehingga ia akan menjawab sha lama untuk berkas baru — dan tab yang baru dibuka langsung diberi tahu ada versi baru yang sebenarnya sudah ia jalankan. Yang ditanyakan adalah keadaan direktori, jadi yang dibaca adalah direktori.
+
+**Berkas yang tak terbaca menjawab 503, bukan menebak.** Menjawab `dev` atau string kosong akan membuat setiap tab mengira versinya berubah. Klien memperlakukan jawaban tidak-OK sebagai "belum tahu" dan diam.
+
+### D-173 · Bundel bersaksi tentang dirinya sendiri; jawaban server pertama tidak cukup
+**Status:** Berlaku
+
+Sisi klien dapat mengetahui "versi saya" dengan dua cara: mencatat jawaban `/versi` yang pertama, atau membawa sha yang dipanggang ke dalam bundel saat build. Yang dipilih yang kedua, lewat `__VERSI_APLIKASI__` dari `vite.config.ts`.
+
+Alasannya justru kasus yang paling penting. Masalah yang dipecahkan fitur ini adalah **bundel lama yang berjalan melawan server baru**. Tab yang menerima `index.html` basi dari cache peramban lalu mencatat jawaban server pertama sebagai "versi saya" akan mencatat versi BARU — dan tidak akan pernah tahu ia tertinggal. Hanya bundelnya sendiri yang dapat bersaksi bundel mana ia.
+
+Keduanya lahir dari satu nilai di satu build: `PAADU_SHA` disuntikkan `tools/deploy/deploy.js`, dan `vite.config.ts` menuliskannya ke bundel maupun ke `versi.json`. Mengambil salah satunya dari sumber lain — env proses, `git rev-parse` saat menyala — membuat dua angka yang dibandingkan dapat berarti hal berbeda.
+
+Di pengembangan dan di uji keduanya `dev`, sehingga pemberitahuan tidak pernah berbunyi di mesin siapa pun.
+
+### D-174 · Banner, bukan toast — komponennya sendiri yang melarangnya
+**Status:** Berlaku
+
+Tebakan pertama adalah toast: ia sudah ada sejak Fase 3, dan UI/UX Guidelines melarang membuat komponen baru bila yang lama masih dapat dipakai. Tetapi `toast.tsx` melarang dirinya sendiri dipakai di sini, dengan kalimat yang sudah tertulis di sana sejak awal:
+
+> **Tidak pernah untuk sesuatu yang harus ditindaklanjuti.** Toast yang menghilang membawa informasi yang tidak ada di tempat lain adalah bug — bila pengguna sedang melihat ke tempat lain, informasinya hilang selamanya.
+
+Pemberitahuan versi persis itu: ia menuntut tindakan, dan ia tidak boleh hilang setelah enam detik. Orang yang kebetulan sedang menoleh tidak akan pernah tahu, dan ia terus menjalankan bundel lama.
+
+Yang dipakai adalah `contextBanner` yang **sudah ada** di app shell — selebar konten, di atas halaman, tidak menutupi apa pun. Tidak ada komponen baru yang dibuat; aturan "pakai yang sudah ada" tetap dipatuhi, hanya bukan pada komponen yang pertama terlintas.
+
+**Ia tidak pernah memuat ulang sendiri.** Orang yang sedang mengisi Faktur Penjualan dan halamannya dimuat ulang tanpa diminta kehilangan pekerjaannya; sistem akuntansi adalah tempat terakhir yang boleh melakukan itu. Tombolnya milik orangnya.
+
+**Diabaikan berarti ditunda tiga puluh menit, bukan dibuang.** Orang yang menutupnya tetap menjalankan versi lama. Menghilangkannya selamanya berarti fitur ini menyerah tepat pada tab yang paling lama terbuka — tab yang paling membutuhkannya.
+
+**Kapan memeriksa lebih menentukan daripada seberapa sering.** Yang paling sering terjadi adalah tab yang ditinggal semalaman lalu kembali mendapat fokus, dan itu ditangani pendengar `focus` tanpa menunggu jam apa pun. Polling lima menit hanya untuk tab yang terbuka DAN aktif, dan jamnya benar-benar dihentikan saat tab tersembunyi — bukan sekadar dilewati isinya.
+
+**Pemeriksaan yang gagal tidak menghasilkan apa pun di layar.** `fetch`-nya telanjang, di luar `panggil()`, karena `panggil()` memutuskan sesi mati begitu ia melihat 401 (D-146). Lewat jalur itu, fitur yang seluruh tugasnya memberi tahu akan melempar tab menganggur ke halaman masuk.
+
+### D-175 · Berkas ber-hash disimpan setahun; `index.html` dibiarkan seperti adanya
+**Status:** Berlaku
+
+`@fastify/static` didaftarkan dengan pengaturan bawaan. Yang benar-benar dikirimkannya diperiksa di produksi, bukan disimpulkan dari dokumentasi: `cache-control: public, max-age=0` beserta ETag dan `last-modified`, untuk **semuanya**.
+
+Untuk `index.html` itu **sudah benar dan tidak diubah**. `max-age=0` memaksa peramban bertanya ulang setiap kali, dan ETag membuat jawabannya 304 tanpa isi. Ia tidak pernah tersaji basi, dan biayanya satu perjalanan bolak-balik yang memang harus terjadi. Perubahan yang tidak diperlukan pada lapisan penyajian statis adalah risiko tanpa imbalan.
+
+Untuk `assets/` itu salah, dan biayanya terukur: bundel 392 KB divalidasi ulang pada setiap pemuatan halaman meskipun namanya sudah mengandung sidik isinya. Nama berubah setiap kali isi berubah, jadi berkas itu tidak akan pernah menjadi basi. `setHeaders` memberi hanya berkas di bawah `assets/` `max-age=31536000, immutable`; `index.html` tidak disentuh.
+
+**Perubahan ini yang membuat pemberitahuan versi bermakna.** Tanpa `immutable`, muat ulang yang diminta pemberitahuan itu membayar ulang seluruh bundel yang sudah ada di peramban.
+
 ---
 
 ## Menunggu Validasi Profesional
