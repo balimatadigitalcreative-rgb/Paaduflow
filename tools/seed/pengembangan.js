@@ -12,12 +12,12 @@
  *   Berkas ini BUKAN migrasi. Ia tidak ada di `migrations/`, tidak ikut
  *   `npm run migrate`, dan tidak akan pernah berjalan di produksi.
  *
- *   Kata sandi kedua akun sengaja sama dan sengaja lemah untuk kemudahan
- *   pengembangan. Jangan pernah memakai basis data yang pernah diisi berkas ini
- *   sebagai basis data produksi.
+ *   Kata sandi kedua akun dibaca dari `SEED_PASSWORD`, tidak pernah dari berkas
+ *   ini. Jangan pernah memakai basis data yang pernah diisi berkas ini sebagai
+ *   basis data produksi.
  *
  *   Cara menjalankan:
- *     DATABASE_URL=postgres://... npm run seed:dev
+ *     SEED_PASSWORD='...' DATABASE_URL=postgres://... npm run seed:dev
  *
  * ═══════════════════════════════════════════════════════════════════════════
  */
@@ -29,7 +29,31 @@ import pg from 'pg'
 
 import { jelaskanKekurangan, pasangKonteks, periksaKemampuan } from './konteks.js'
 
-const KATA_SANDI = 'kata sandi contoh yang panjang'
+/**
+ * Kata sandi seed dibaca dari lingkungan, tidak pernah dari berkas.
+ *
+ * Sebelumnya ia konstanta di berkas ini dan ikut tercetak di README. Pada 3
+ * September 2026 kedua akun `@contoh.test` ditemukan hidup di produksi, dan
+ * sandi yang tertulis di README publik itu menghasilkan token akses yang sah
+ * lewat internet. Nilai bawaan adalah nilai yang suatu hari sampai ke produksi.
+ *
+ * Tanpa `SEED_PASSWORD`, seed berhenti. Ia tidak memilih nilai bawaan.
+ */
+const PANJANG_SANDI_MINIMUM = 12
+
+function bacaSandiSeed() {
+  const nilai = process.env.SEED_PASSWORD
+  if (nilai === undefined || nilai.trim() === '') {
+    throw new Error(
+      'SEED_PASSWORD belum dipasang. Seed tidak memilih kata sandi bawaan.\n' +
+        "  Contoh: SEED_PASSWORD='pilih sendiri, minimal 12 karakter' npm run seed:dev",
+    )
+  }
+  if (nilai.length < PANJANG_SANDI_MINIMUM) {
+    throw new Error(`SEED_PASSWORD minimal ${PANJANG_SANDI_MINIMUM} karakter.`)
+  }
+  return nilai
+}
 
 const AKUN_ADMIN = { email: 'admin@contoh.test', nama: 'Ayu Admin', peran: 'company_admin' }
 const AKUN_STAF = { email: 'staf@contoh.test', nama: 'Budi Staf', peran: 'member' }
@@ -123,6 +147,11 @@ function wajib(nama) {
  * bukan dua yang harus disatukan pembacanya.
  */
 export async function seed(databaseUrl) {
+  // Dibaca SEBELUM menyentuh basis data. Gagal karena lingkungan yang kurang
+  // tidak perlu menunggu koneksi, dan pesannya lebih jelas tanpa galat jaringan
+  // yang mendahuluinya.
+  const kataSandi = bacaSandiSeed()
+
   const client = new pg.Client({ connectionString: databaseUrl })
   await client.connect()
 
@@ -165,7 +194,7 @@ export async function seed(databaseUrl) {
     }
 
     // ── Pengguna ─────────────────────────────────────────────────────────
-    const passwordHash = await hash(KATA_SANDI, {
+    const passwordHash = await hash(kataSandi, {
       algorithm: 2,
       memoryCost: 19_456,
       timeCost: 2,
@@ -318,7 +347,7 @@ export async function seed(databaseUrl) {
       })),
       admin: AKUN_ADMIN.email,
       staf: AKUN_STAF.email,
-      kataSandi: KATA_SANDI,
+      kataSandi,
     }
   } catch (error) {
     await client.query('ROLLBACK').catch(() => undefined)

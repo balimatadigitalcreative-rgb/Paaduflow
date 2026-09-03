@@ -31,13 +31,32 @@ import pg from 'pg'
 import { jelaskanKekurangan, pasangKonteks, periksaKemampuan } from './konteks.js'
 
 /**
- * Kata sandi demo. Panjang, dapat dibaca lewat telepon, dan tetap contoh.
+ * Kata sandi demo dibaca dari `SEED_PASSWORD`, tidak pernah dari berkas ini.
  *
- * Dicetak keras di akhir bersama seluruh alamat surel. Kredensial demo yang
- * tidak tercetak di mana pun adalah kredensial yang akan hilang, dan yang
+ * Ia tetap dicetak keras di akhir bersama seluruh alamat surel — kredensial demo
+ * yang tidak tercetak di mana pun adalah kredensial yang akan hilang, dan yang
  * kehilangannya biasanya orang yang sedang berdiri di depan calon pelanggan.
+ * Yang berubah hanya asalnya: dipilih pemanggil, bukan dipanggang di sini.
+ *
+ * Nilai bawaan adalah nilai yang suatu hari sampai ke produksi. Pada 3 September
+ * 2026 keempat akun `@demo.paaduflow.id` ditemukan hidup di produksi dengan
+ * sandi yang tertulis di repo ini.
  */
-const KATA_SANDI = 'demo paadu flow 2026 yang panjang'
+const PANJANG_SANDI_MINIMUM = 12
+
+function bacaSandiSeed() {
+  const nilai = process.env.SEED_PASSWORD
+  if (nilai === undefined || nilai.trim() === '') {
+    throw new Error(
+      'SEED_PASSWORD belum dipasang. Seed tidak memilih kata sandi bawaan.\n' +
+        "  Contoh: SEED_PASSWORD='pilih sendiri, minimal 12 karakter' npm run seed:demo",
+    )
+  }
+  if (nilai.length < PANJANG_SANDI_MINIMUM) {
+    throw new Error(`SEED_PASSWORD minimal ${PANJANG_SANDI_MINIMUM} karakter.`)
+  }
+  return nilai
+}
 
 const SLUG_TENANT = 'paadu-demo'
 
@@ -285,6 +304,7 @@ export async function seedDemo(connectionString) {
 
     const hariIni = new Date()
     const bulanan = deretBulan(hariIni)
+    const KATA_SANDI = bacaSandiSeed()
     const passwordHash = await hash(KATA_SANDI)
 
     const tenantId = randomUUID()

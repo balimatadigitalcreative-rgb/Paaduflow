@@ -1551,6 +1551,21 @@ Untuk `assets/` itu salah, dan biayanya terukur: bundel 392 KB divalidasi ulang 
 
 **Perubahan ini yang membuat pemberitahuan versi bermakna.** Tanpa `immutable`, muat ulang yang diminta pemberitahuan itu membayar ulang seluruh bundel yang sudah ada di peramban.
 
+### D-176 · Kredensial seed dibaca dari lingkungan, dan akun contoh tidak hidup di sistem yang melayani
+**Status:** Berlaku · Insiden 3 September 2026
+
+Enam akun seed ditemukan **aktif di produksi**: dua `@contoh.test` dari `seed:dev` dan empat `@demo.paaduflow.id` dari `seed:demo`. Kata sandi keduanya konstanta di repo — yang pertama bahkan tercetak di README publik.
+
+**Dibuktikan, bukan disimpulkan.** `POST https://paaduflow.com/v1/auth/login` dengan sandi dari README menjawab **HTTP 200 beserta access token yang sah**. Siapa pun di internet dapat masuk sebagai Admin Company.
+
+Tindakan: keenam akun disetel `deactivated` — bukan diganti sandinya, karena akun contoh tidak punya alasan hidup di sistem yang menerima lalu lintas. Seluruh 47 sesi aktif dicabut dengan alasan `revoked_by_user`; status yang dinonaktifkan menghentikan login dan refresh, tetapi access token yang sudah terbit tetap sah sampai kedaluwarsa, dan mencabut sesi adalah satu-satunya cara menutupnya sekarang. Satu akun admin nyata dibuat dengan sandi acak 24 byte, ditampilkan sekali dan tidak disimpan di berkas mana pun.
+
+**Nilai bawaan adalah nilai yang suatu hari sampai ke produksi.** Kedua seed kini membaca `SEED_PASSWORD` dan **berhenti** bila ia kosong — pemeriksaannya di awal `seed()`, sebelum koneksi dibuka, supaya pesannya tidak didahului galat jaringan. `npm run dev` membangkitkan sandi acak sendiri bila belum dipasang, sehingga janji "satu perintah tanpa penyiapan" tetap berlaku tanpa satu pun nilai tetap di repo.
+
+**Paparannya diukur, bukan ditebak.** Dari internet: porta 22 dan 443 terbuka; 3000 dan 5432 tersaring meski `pm2` mengikat 3000 ke `0.0.0.0`. PostgreSQL sendiri hanya mendengarkan di `127.0.0.1`. Jadi jalur masuknya memang HTTPS publik, dan hanya itu.
+
+**Yang belum diselesaikan dan bukan bagian keputusan ini:** basis data yang melayani produksi bernama `paadu_staging` dan seluruh isinya data seed. Itu keputusan terpisah.
+
 ---
 
 ## Menunggu Validasi Profesional

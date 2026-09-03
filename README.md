@@ -25,14 +25,24 @@ Perintah itu menyalakan PostgreSQL sementara di `.paadu-dev/`, menjalankan migra
 
 Masuk dengan salah satu akun contoh:
 
-| Email | Peran | Kata sandi |
-|---|---|---|
-| `admin@contoh.test` | Admin Company | `kata sandi contoh yang panjang` |
-| `staf@contoh.test` | Anggota | `kata sandi contoh yang panjang` |
+| Email | Peran |
+|---|---|
+| `admin@contoh.test` | Admin Company |
+| `staf@contoh.test` | Anggota |
+
+**Kata sandinya tidak ditulis di sini, dan tidak boleh ditulis di berkas mana pun.**
+Ia dibaca seed dari `SEED_PASSWORD`:
+
+```bash
+SEED_PASSWORD='pilih sendiri, minimal 12 karakter' npm run seed:dev
+```
+
+Seed mencetak kata sandi yang dipakainya sekali di akhir. Tanpa `SEED_PASSWORD`,
+seed berhenti dan meminta Anda memasangnya — ia tidak pernah memilih nilai bawaan.
 
 Keduanya punya akses ke dua company: **PT Nusantara Contoh** (tahun fiskal mulai Januari) dan **PT Samudra Contoh** (mulai April). Pengalih company ada di kiri atas.
 
-> **Seluruh isinya data contoh.** Nama perusahaan, pelanggan, vendor, NPWP, harga, dan bagan akunnya karangan. Kata sandinya sengaja lemah. Basis data yang pernah diisi `npm run seed:dev` tidak boleh dipakai sebagai basis data produksi.
+> **Seluruh isinya data contoh.** Nama perusahaan, pelanggan, vendor, NPWP, harga, dan bagan akunnya karangan. Basis data yang pernah diisi `npm run seed:dev` tidak boleh dipakai sebagai basis data produksi — dan akun `@contoh.test` tidak boleh hidup di sistem yang menerima lalu lintas. Pada 3 September 2026 keduanya ditemukan aktif di produksi; lihat `docs/DECISIONS.md`.
 
 ### Menyalakan modul Pajak
 

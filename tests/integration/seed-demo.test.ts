@@ -81,6 +81,14 @@ beforeAll(async () => {
    * Menyemai dengan peran aplikasi membuat setiap penegasan di bawah ikut
    * membuktikan bahwa seed berjalan tanpa kredensial pemilik basis data.
    */
+  /*
+   * Seed menolak berjalan tanpa `SEED_PASSWORD` — nilai bawaan adalah nilai
+   * yang suatu hari sampai ke produksi, dan pada 3 September 2026 itu sudah
+   * terjadi. Uji memasangnya sendiri; nilainya tidak penting di sini, yang
+   * diuji berkas ini adalah bentuk datanya.
+   */
+  process.env.SEED_PASSWORD ??= 'sandi seed untuk pengujian'
+
   hasil = await seedDemo(sebagaiApp(connectionString))
 
   const { rows } = await admin.query<{ id: string }>(

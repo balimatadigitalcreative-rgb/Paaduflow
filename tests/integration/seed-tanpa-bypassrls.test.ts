@@ -62,6 +62,10 @@ test('peran aplikasi memang tidak punya BYPASSRLS', async () => {
 })
 
 test('seed:dev berjalan penuh sebagai peran aplikasi', async () => {
+  // Seed menolak tanpa `SEED_PASSWORD`. Yang diuji di sini adalah hak akses,
+  // bukan kata sandinya.
+  process.env.SEED_PASSWORD ??= 'sandi seed untuk pengujian'
+
   const hasil = await seed(sebagaiPeran('paadu_app'))
 
   expect(hasil.tenantId).toBeTruthy()

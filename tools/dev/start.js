@@ -16,6 +16,7 @@
  */
 
 import { Buffer } from 'node:buffer'
+import { randomBytes } from 'node:crypto'
 import { existsSync } from 'node:fs'
 import { mkdir } from 'node:fs/promises'
 import { createConnection } from 'node:net'
@@ -205,6 +206,20 @@ async function seedBilaKosong(databaseUrl) {
     console.log('  Basis data sudah berisi. Seed dilewati.')
     return null
   }
+
+  /*
+   * Kata sandi seed dibangkitkan di sini bila belum dipasang.
+   *
+   * `seed()` menolak berjalan tanpa `SEED_PASSWORD` — nilai bawaan adalah nilai
+   * yang suatu hari sampai ke produksi, dan itu sudah pernah terjadi. Tetapi
+   * `npm run dev` menjanjikan satu perintah tanpa penyiapan, jadi di sini ia
+   * dibangkitkan acak dan dicetak sekali bersama alamat servernya.
+   *
+   * Acak, bukan tetap: basis data pengembangan yang tak sengaja terpapar tidak
+   * membawa kata sandi yang sama dengan mesin orang lain.
+   */
+  process.env.SEED_PASSWORD ??= randomBytes(12).toString('base64url')
+
   return seed(databaseUrl)
 }
 
