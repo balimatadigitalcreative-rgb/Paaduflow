@@ -7,8 +7,10 @@ Keputusan arsitektur dan penyimpangan dari dokumen dicatat di `docs/DECISIONS.md
 
 ## Aturan yang selalu berlaku
 
-- `docs/tokens.json` adalah sumber kebenaran tunggal untuk seluruh nilai visual.
-  `src/styles/tokens.css` dibangkitkan Style Dictionary — jangan diedit tangan.
+- `docs/tokens.json` adalah sumber kebenaran untuk BUILD. `src/styles/tokens.css`
+  dibangkitkan darinya dan tidak pernah diedit tangan.
+  `design-refs/Paadu Flow Design Spec.md` §1 adalah sumber kebenaran untuk NILAI.
+  Perubahan nilai visual masuk lewat `tokens.json`, tidak pernah lewat CSS.
 - Setiap tabel membawa `tenant_id` dan `company_id`, kecuali tabel identitas global.
 - Setiap tabel transaksional membawa `document_version` untuk optimistic concurrency.
 - Status dokumen memakai tiga kolom terpisah: `lifecycle_status`, `settlement_status`,
