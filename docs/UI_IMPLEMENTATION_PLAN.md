@@ -228,7 +228,7 @@ Total kasar **33–48 hari** untuk satu orang, tanpa perubahan skema. Fase 5 est
 | Q-1 · sumber kebenaran token | **ADR-003** — `tokens.json` untuk BUILD, Design Spec §1 untuk NILAI. Diterapkan di `a57f7c6` |
 | Q-2 · keberadaan brief | Disusun bertahap di repo. §8 sudah ada |
 | Q-3 · nilai Flow Amber | **ADR-003** — `#E8A33D`, `#FDF3E3`, `#F0D3A0`, `#8A5A12` + varian dark |
-| — · i18n, `z`, `dataviz` | **ADR-006 / 007 / 012** — repo yang menang; tugasnya **verifikasi cakupan**, bukan bangun ulang |
+| — · i18n, `z`, `dataviz` | **ADR-006** (palet chart) / **ADR-007** (z) / **ADR-012** (i18n) — repo yang menang; tugasnya **verifikasi cakupan**, bukan bangun ulang |
 | Q-4 · bahasa | **ADR-023** — id-ID locale sumber. "Dasbor" tetap. `Overdue` → "Jatuh Tempo" (ADR-011). Beda **makna** → berhenti dan lapor |
 | Q-5 · density | **ADR-024** — mekanisme `data-density` di Fase 1; skala paralel penuh tidak dibangun |
 | Q-7 · permukaan design system | **ADR-025** — `gallery.tsx` dinaikkan jadi `/design-system`. Storybook tidak dipasang |

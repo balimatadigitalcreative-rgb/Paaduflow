@@ -71,7 +71,7 @@
 
 **Keputusan.** Pertahankan 8 seri. Verifikasi keamanan defisiensi warna dan laporkan hasilnya. Jangan potong ke 6.
 
-**Alasan.** Sesuai ADR-012, tugasnya verifikasi cakupan, bukan bangun ulang. Memotong seri yang sudah ada dan sudah dipakai adalah pembangunan ulang.
+**Alasan.** Sesuai ADR-006, tugasnya verifikasi cakupan, bukan bangun ulang. Memotong seri yang sudah ada dan sudah dipakai adalah pembangunan ulang.
 
 **Trade-off.** Delapan seri lebih sulit dijamin aman-CVD daripada enam. Bila verifikasi gagal, keputusan pemotongan diambil saat itu dengan datanya di tangan.
 
